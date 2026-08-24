@@ -20,21 +20,16 @@
 
 ---
 
-## Try it in a browser
+## Try it without installing anything
 
-The web version runs the same engine compiled to WebAssembly. Lint, generate, browse,
-convert, look up codes and check IBAN/BIC/UETR values in the browser.
+**[The web version](https://sebastienrousseau.com/anchor/)** runs the same engine
+compiled to WebAssembly. Lint, generate, browse, convert, look up codes and check
+IBAN/BIC/UETR values in the browser.
 
 Your messages never leave the tab — there is no server to send them to. That matters when
 the payload is a real payment instruction.
 
-It is not hosted yet: GitHub Pages is not enabled on this repository, so
-`https://sebastienrousseau.github.io/anchor/` currently returns 404. Run it locally
-meanwhile — same bundle the site will serve:
-
-```bash
-make web-serve    # http://127.0.0.1:8765
-```
+Or run the identical bundle locally with `make web-serve`.
 
 ---
 
@@ -300,7 +295,12 @@ make web-serve   # http://127.0.0.1:8765
 
 The site is light mode only: it carries the embedded index of the standard, never any
 schema content. Anything needing the XSD text links to the official download and points
-at the CLI.
+at the CLI. The deploy workflow enforces that: it fails if an `.xsd`, `.pdf` or `.docx`
+ever reaches `web/site`.
+
+It publishes to <https://sebastienrousseau.com/anchor/> on every push to `main`, and the
+Go/JS smoke test gates the deploy — a renamed API or a field that stopped serialising
+would break the page silently otherwise.
 
 ---
 
