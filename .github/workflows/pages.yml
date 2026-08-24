@@ -1,0 +1,73 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Builds the website and publishes it to GitHub Pages.
+#
+# The site is pkg/iso20022 compiled to WebAssembly, so the browser runs the same
+# engine as the CLI. It ships no ISO 20022 specification content -- only the
+# embedded index of what exists and where the Registration Authority hosts it.
+
+name: Website
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26'
+          cache: true
+
+      - name: Build WebAssembly bundle
+        run: make web
+
+      # The site is only as trustworthy as the bridge between Go and JavaScript.
+      # A renamed API or a field that stops serialising would break the page
+      # silently, so the smoke test gates the deploy.
+      - name: Smoke-test the bundle
+        run: node web/wasm/smoke_test.mjs
+
+      - name: Verify no specification content is being published
+        run: |
+          if find web/site -name '*.xsd' -o -name '*.pdf' -o -name '*.docx' | grep -q .; then
+            echo "::error::the site must not ship ISO 20022 specification content"
+            find web/site -name '*.xsd' -o -name '*.pdf' -o -name '*.docx'
+            exit 1
+          fi
+          echo "site contents:"; ls -lh web/site
+
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: web/site
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

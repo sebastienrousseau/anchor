@@ -1,0 +1,115 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+name: 'Anchor ISO 20022 check'
+description: >-
+  Lint ISO 20022 messages and check them against a scheme rule profile, then
+  upload the findings to GitHub code scanning. Needs no ISO 20022 download:
+  linting and the rule profiles run from Anchor's embedded index.
+author: 'Sebastien Rousseau'
+
+branding:
+  icon: 'anchor'
+  color: 'blue'
+
+inputs:
+  path:
+    description: 'File, directory or glob to check.'
+    required: false
+    default: '.'
+  profile:
+    description: >-
+      Scheme rule profile to apply. cbpr-2026 checks the CBPR+ structured-address
+      requirement that takes effect on 14 November 2026. Empty applies none.
+    required: false
+    default: 'cbpr-2026'
+  version:
+    description: 'Anchor version to install, or "latest".'
+    required: false
+    default: 'latest'
+  sarif-file:
+    description: 'Where to write the SARIF report.'
+    required: false
+    default: 'anchor.sarif'
+  upload-sarif:
+    description: >-
+      Upload the report to GitHub code scanning, so a pull request that
+      introduces a non-compliant message is annotated rather than merged
+      silently. Needs security-events: write.
+    required: false
+    default: 'true'
+  fail-on-error:
+    description: 'Fail the job when any message has an error.'
+    required: false
+    default: 'true'
+
+outputs:
+  sarif-file:
+    description: 'Path to the SARIF report that was written.'
+    value: ${{ inputs.sarif-file }}
+  failed:
+    description: 'Number of messages with at least one error.'
+    value: ${{ steps.check.outputs.failed }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install Anchor
+      shell: bash
+      env:
+        ANCHOR_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        if [ "$ANCHOR_VERSION" = "latest" ]; then
+          go install github.com/sebastienrousseau/anchor/cmd/anchor@latest
+        else
+          go install "github.com/sebastienrousseau/anchor/cmd/anchor@${ANCHOR_VERSION}"
+        fi
+        echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+    - name: Check messages
+      id: check
+      shell: bash
+      env:
+        ANCHOR_PATH: ${{ inputs.path }}
+        ANCHOR_PROFILE: ${{ inputs.profile }}
+        ANCHOR_SARIF: ${{ inputs.sarif-file }}
+        ANCHOR_FAIL: ${{ inputs.fail-on-error }}
+      run: |
+        set -uo pipefail
+
+        args=("$ANCHOR_PATH")
+        if [ -n "$ANCHOR_PROFILE" ]; then
+          args+=(--profile "$ANCHOR_PROFILE")
+        fi
+
+        # The SARIF report is written whatever the verdict; it is the thing the
+        # upload step needs, and an empty run still has to produce a valid file.
+        anchor batch "${args[@]}" --format sarif > "$ANCHOR_SARIF"
+        sarif_status=$?
+
+        # The human-readable run is what shows up in the job log.
+        anchor batch "${args[@]}"
+        status=$?
+
+        failed=0
+        if [ "$status" -ne 0 ]; then
+          failed=1
+        fi
+        echo "failed=$failed" >> "$GITHUB_OUTPUT"
+
+        if [ "$sarif_status" -ne 0 ] && [ ! -s "$ANCHOR_SARIF" ]; then
+          echo "::error::anchor could not produce a SARIF report"
+          exit 1
+        fi
+        if [ "$ANCHOR_FAIL" = "true" ] && [ "$status" -ne 0 ]; then
+          exit "$status"
+        fi
+        exit 0
+
+    - name: Upload to code scanning
+      if: ${{ always() && inputs.upload-sarif == 'true' }}
+      uses: github/codeql-action/upload-sarif@42947a340483f03ba47bb1a039b2c519aab3df85 # v3
+      with:
+        sarif_file: ${{ inputs.sarif-file }}
+        category: anchor

@@ -1,0 +1,202 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+version: 2
+
+project_name: anchor
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: anchor
+    main: ./cmd/anchor
+    binary: anchor
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/sebastienrousseau/anchor/internal/tui.Version={{ .Version }}
+
+  # The Model Context Protocol server ships alongside the CLI. It is a separate
+  # binary because an MCP client launches it and takes over its stdin and
+  # stdout, which the CLI cannot give up.
+  - id: anchor-mcp
+    main: ./cmd/anchor-mcp
+    binary: anchor-mcp
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+  # The language server ships alongside too, for the same reason: an editor
+  # launches it and owns its stdin and stdout.
+  - id: anchor-lsp
+    main: ./cmd/anchor-lsp
+    binary: anchor-lsp
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+
+# One archive carrying all three binaries: the CLI, the MCP server and the
+# language server are one tool with three front ends, and shipping them apart
+# would leave someone with a client pointing at a binary they do not have.
+archives:
+  - id: anchor
+    ids:
+      - anchor
+      - anchor-mcp
+      - anchor-lsp
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - LICENSE*
+      - README.md
+      - NOTICE
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  version_template: '{{ incpatch .Version }}-next'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+
+# A software bill of materials per archive. Anyone running a payments tool needs
+# to be able to answer what is inside it without unpacking the binary.
+sboms:
+  - artifacts: archive
+
+# Keyless signing through Sigstore: no key to store, no key to leak, and the
+# certificate records which workflow and which commit produced the artifact.
+# Verify with:
+#   cosign verify-blob --signature <artifact>.sig --certificate <artifact>.pem \
+#     --certificate-identity-regexp 'https://github.com/sebastienrousseau/anchor/.*' \
+#     --certificate-oidc-issuer https://token.actions.githubusercontent.com <artifact>
+signs:
+  - cmd: cosign
+    certificate: '${artifact}.pem'
+    args:
+      - sign-blob
+      - '--output-certificate=${certificate}'
+      - '--output-signature=${signature}'
+      - '${artifact}'
+      - '--yes'
+    artifacts: checksum
+    output: true
+
+# Linux packages. A payments team running Anchor in a pipeline installs from a
+# package manager, not by unpacking a tarball into /usr/local/bin.
+nfpms:
+  - id: anchor
+    package_name: anchor
+    vendor: Sebastien Rousseau
+    homepage: https://github.com/sebastienrousseau/anchor
+    maintainer: Sebastien Rousseau <sebastian.rousseau@gmail.com>
+    description: |-
+      ISO 20022 reference tooling.
+      Search, lint, validate, generate and convert ISO 20022 financial messages,
+      and translate SWIFT MT messages to their ISO 20022 equivalents. Ships no
+      specification content: schemas come from your own download from
+      iso20022.org.
+    license: Apache-2.0 OR MIT
+    formats:
+      - deb
+      - rpm
+      - apk
+      - archlinux
+    bindir: /usr/bin
+    contents:
+      - src: LICENSE-APACHE
+        dst: /usr/share/doc/anchor/LICENSE-APACHE
+      - src: LICENSE-MIT
+        dst: /usr/share/doc/anchor/LICENSE-MIT
+      - src: README.md
+        dst: /usr/share/doc/anchor/README.md
+
+# homebrew_casks replaces the deprecated brews section: Homebrew now expects a
+# binary distribution to be a cask rather than a formula.
+homebrew_casks:
+  - name: anchor
+    repository:
+      owner: sebastienrousseau
+      name: homebrew-tap
+      token: '{{ .Env.HOMEBREW_TAP_TOKEN }}'
+    homepage: https://github.com/sebastienrousseau/anchor
+    description: ISO 20022 reference tooling for the terminal, an editor, and an AI assistant
+    binaries:
+      - anchor
+      - anchor-mcp
+      - anchor-lsp
+    caveats: |
+      Anchor ships no ISO 20022 specification content. Download the message sets
+      you need from https://www.iso20022.org/ then:
+
+        anchor catalog add <downloaded.zip>
+
+      Search, lint, generate and MT translation work without any download.
+
+scoops:
+  - name: anchor
+    repository:
+      owner: sebastienrousseau
+      name: scoop-bucket
+      token: '{{ .Env.SCOOP_BUCKET_TOKEN }}'
+    homepage: https://github.com/sebastienrousseau/anchor
+    description: ISO 20022 reference tooling for the terminal, an editor, and an AI assistant
+    license: Apache-2.0 OR MIT
+
+release:
+  prerelease: auto
+  footer: |
+    ## Verifying this release
+
+    Every checksum file is signed with Sigstore, keylessly. The certificate
+    records the workflow and the commit that produced it:
+
+    ```
+    cosign verify-blob checksums.txt \
+      --signature checksums.txt.sig \
+      --certificate checksums.txt.pem \
+      --certificate-identity-regexp 'https://github.com/sebastienrousseau/anchor/.*' \
+      --certificate-oidc-issuer https://token.actions.githubusercontent.com
+    ```
+
+    ## What is in the archive
+
+    `anchor` (CLI and TUI), `anchor-mcp` (Model Context Protocol server) and
+    `anchor-lsp` (language server). Anchor redistributes no ISO 20022
+    specification content.

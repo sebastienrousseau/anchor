@@ -1,0 +1,208 @@
+# SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+#
+# Actions are pinned by commit SHA (OpenSSF Scorecard "Pinned-Dependencies").
+# The trailing comment records the tag each SHA corresponds to.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Keep in step with the `go` directive in go.mod.
+  GO_VERSION: '1.26'
+  COVERAGE_FLOOR: '95'
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Verify formatting
+        run: |
+          unformatted="$(gofmt -s -l cmd/ internal/ pkg/ scripts/ web/)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::Unformatted files (run 'make fmt'):"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: Verify go.mod is tidy
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
+
+      - uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 # v8
+        with:
+          version: latest
+
+  test:
+    name: Test (${{ matrix.os }}, go${{ matrix.go }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go: ['1.25', '1.26']
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: ${{ matrix.go }}
+          cache: true
+
+      - name: Test with race detector
+        run: go test -race -coverpkg=./... -coverprofile=coverage.out -covermode=atomic ./...
+
+      - name: Build
+        run: |
+          go build -o anchor ./cmd/anchor
+          go build -o anchor-mcp ./cmd/anchor-mcp
+          go build -o anchor-lsp ./cmd/anchor-lsp
+
+      # The MCP transport is easy to break in ways unit tests on the server
+      # object do not notice -- a stray line on stdout corrupts the stream, and
+      # the handshake has to complete before tools can be listed. This drives
+      # the real binary the way a client does.
+      - name: MCP handshake
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          out="$(printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | ./anchor-mcp 2>/dev/null)"
+          echo "$out"
+          lines="$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
+          if [ "$lines" -ne 2 ]; then
+            echo "::error::expected exactly two replies on stdout, got $lines"
+            exit 1
+          fi
+          case "$out" in
+            *'"anchor_translate"'*) ;;
+            *) echo "::error::tools/list did not return the tool set"; exit 1 ;;
+          esac
+
+      # Anchor no longer ships the ISO 20022 catalogue, so a clean runner has
+      # none. Two properties must hold, and both have regressed before:
+      #   1. Commands needing the XSDs fail loudly instead of printing nothing.
+      #   2. Discovery still works from the embedded registry, so a fresh
+      #      install is never inert.
+      - name: Behaviour with no catalogue installed
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set +e
+          schema_out="$(./anchor schema pacs.008.001.10 2>&1)"; schema_code=$?
+          search_out="$(./anchor search pacs.008 2>&1)"; search_code=$?
+          set -e
+
+          echo "--- schema (expect failure) ---"; echo "$schema_out"
+          if [ "$schema_code" -eq 0 ]; then
+            echo "::error::schema exited 0 with no catalogue installed"
+            exit 1
+          fi
+          case "$schema_out" in
+            *iso20022.org*) ;;
+            *) echo "::error::the error must point users at iso20022.org"; exit 1 ;;
+          esac
+
+          echo "--- search (expect registry fallback) ---"; echo "$search_out"
+          if [ "$search_code" -ne 0 ]; then
+            echo "::error::search should fall back to the embedded registry"
+            exit 1
+          fi
+          case "$search_out" in
+            *pacs.008.001.10*) ;;
+            *) echo "::error::registry fallback did not return known messages"; exit 1 ;;
+          esac
+
+      # The LSP transport frames messages with headers rather than newlines. A
+      # framing bug looks like the server hanging rather than failing, so it has
+      # to be driven the way an editor drives it.
+      - name: LSP handshake
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          body='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}'
+          exit_body='{"jsonrpc":"2.0","method":"exit"}'
+          out="$( { printf 'Content-Length: %d\r\n\r\n%s' "${#body}" "$body"
+                    printf 'Content-Length: %d\r\n\r\n%s' "${#exit_body}" "$exit_body"
+                  } | ./anchor-lsp 2>/dev/null )"
+          echo "$out"
+          case "$out" in
+            *hoverProvider*) ;;
+            *) echo "::error::the language server did not advertise its capabilities"; exit 1 ;;
+          esac
+
+      - name: Enforce coverage floor
+        if: matrix.os == 'ubuntu-latest' && matrix.go == '1.26'
+        shell: bash
+        run: |
+          pct="$(go tool cover -func=coverage.out | tail -1 | grep -oE '[0-9]+\.[0-9]+')"
+          echo "Total coverage: ${pct}%  (floor ${COVERAGE_FLOOR}%)"
+          awk -v p="$pct" -v f="$COVERAGE_FLOOR" \
+            'BEGIN { if (p+0 < f+0) { print "::error::coverage " p "% is below floor " f "%"; exit 1 } }'
+
+  security:
+    name: Security
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+      - uses: github/codeql-action/init@42947a340483f03ba47bb1a039b2c519aab3df85 # v3
+        with:
+          languages: go
+      - uses: github/codeql-action/analyze@42947a340483f03ba47bb1a039b2c519aab3df85 # v3
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
