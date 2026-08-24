@@ -9,6 +9,19 @@
 // search, lookup, and guidance work with no setup at all, while anything
 // needing the actual XSDs uses a catalogue the user supplies.
 //
+// registry.tsv.gz is generated, and manifest.json at the repository root is the
+// input it is generated from — an index of the Registration Authority's message
+// sets: identifier, title, category, version, download URL, and the schema
+// filenames each set contains. Keeping it in the repository is what makes the
+// generated file reproducible rather than something only its author can rebuild.
+//
+// Its "files" lists carry .xsd names only. The generator reads nothing else from
+// them — it maps each schema filename back to the set that publishes it — so the
+// Word, PDF and spreadsheet filenames the Registration Authority also ships were
+// parsed and discarded. They are omitted here, which is 176,069 fewer strings
+// and 96% less of a file, with no effect on the output: regenerating produces a
+// byte-identical registry.tsv.gz.
+//
 //go:generate go run ../../scripts/gen-registry -manifest ../../manifest.json -out registry.tsv.gz
 package registry
 
