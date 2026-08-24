@@ -178,9 +178,9 @@ func resolveWatchDir() (string, error) {
 		return dir, nil
 	}
 
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("could not find your home directory; pass --watch: %w", err)
+	home := catalog.HomeDir()
+	if home == "" {
+		return "", errors.New("could not find your home directory; pass --watch")
 	}
 	downloads := filepath.Join(home, "Downloads")
 	if info, err := os.Stat(downloads); err == nil && info.IsDir() {
@@ -193,8 +193,8 @@ func expandHome(p string) string {
 	if !strings.HasPrefix(p, "~") {
 		return p
 	}
-	home, err := os.UserHomeDir()
-	if err != nil {
+	home := catalog.HomeDir()
+	if home == "" {
 		return p
 	}
 	return filepath.Join(home, strings.TrimPrefix(p, "~"))

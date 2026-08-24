@@ -38,6 +38,7 @@ func isolate(t *testing.T) {
 	t.Setenv(catalog.EnvCatalog, "")
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("LocalAppData", t.TempDir())
 	t.Chdir(t.TempDir())
 
 	prev := catalogPath

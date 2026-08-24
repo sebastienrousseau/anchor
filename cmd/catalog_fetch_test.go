@@ -189,6 +189,7 @@ func TestFetchDefaultsToTheDownloadsFolder(t *testing.T) {
 	// With no --watch, the Downloads folder is where a browser puts things.
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("LocalAppData", home)
 	if err := os.MkdirAll(filepath.Join(home, "Downloads"), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -204,6 +205,7 @@ func TestFetchDefaultsToTheDownloadsFolder(t *testing.T) {
 
 func TestFetchWithoutADownloadsFolder(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("LocalAppData", t.TempDir())
 
 	_, err := run(t, "catalog", "fetch", "pacs.008", "--no-open", "--timeout", "1s")
 	if err == nil {
@@ -217,6 +219,7 @@ func TestFetchWithoutADownloadsFolder(t *testing.T) {
 func TestFetchExpandsATildeInTheWatchPath(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("LocalAppData", home)
 	if err := os.MkdirAll(filepath.Join(home, "Inbox"), 0o755); err != nil {
 		t.Fatal(err)
 	}

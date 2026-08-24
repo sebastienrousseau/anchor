@@ -85,6 +85,7 @@ func TestResolveUsesEnv(t *testing.T) {
 
 func TestResolveIgnoresBadEnvAndKeepsSearching(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("LocalAppData", t.TempDir())
 	t.Chdir(t.TempDir())
 	t.Setenv(EnvCatalog, filepath.Join(t.TempDir(), "does-not-exist"))
 	root := fakeCatalogAt(t)
@@ -120,6 +121,7 @@ func TestResolveNotFoundIsActionable(t *testing.T) {
 	t.Setenv(EnvCatalog, "")
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("LocalAppData", t.TempDir())
 	t.Chdir(t.TempDir())
 
 	_, err := Resolve("")
@@ -166,6 +168,7 @@ func TestLoadCountsMessages(t *testing.T) {
 func TestDefaultDirHonoursXDG(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", "/xdg")
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("LocalAppData", t.TempDir())
 	if got, want := DefaultDir(), filepath.Join("/xdg", "anchor", "catalog"); got != want {
 		t.Errorf("got %s, want %s", got, want)
 	}
@@ -176,6 +179,7 @@ func TestDefaultDirHonoursXDG(t *testing.T) {
 func TestDefaultDirPrefersAnExistingCatalogue(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
+	t.Setenv("LocalAppData", home)
 	t.Setenv("XDG_DATA_HOME", filepath.Join(home, "xdg"))
 
 	dirs := DefaultDirs()
@@ -288,6 +292,7 @@ func TestLoadReportsUnreadableRoot(t *testing.T) {
 func TestDefaultDirWithoutHome(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", "")
 	t.Setenv("HOME", "")
+	t.Setenv("LocalAppData", "")
 	// With no home and no XDG override there may be no candidate at all; the
 	// call must still return rather than panic.
 	_ = DefaultDir()

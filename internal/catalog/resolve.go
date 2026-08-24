@@ -58,12 +58,32 @@ func DefaultDir() string {
 	return ""
 }
 
+// HomeDir returns the user's home directory, preferring an explicitly set HOME.
+//
+// os.UserHomeDir reads USERPROFILE on Windows and ignores HOME entirely, so a
+// caller that sets HOME — a test isolating itself, or a shell environment that
+// defines it — would silently get the real profile instead. Anchor writes a
+// catalogue into this directory, so that difference is the gap between an
+// isolated run and one that scribbles on the actual user account.
+func HomeDir() string {
+	if h := os.Getenv("HOME"); h != "" {
+		return h
+	}
+	h, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return h
+}
+
 // DefaultDirs lists every conventional location, in preference order.
 //
 // An explicitly set XDG_DATA_HOME comes first, because that is the user saying
 // where data belongs. The platform convention follows. macOS keeps both:
 // XDG_DATA_HOME is commonly set there by dotfile managers, and honouring it
-// alone would hide a catalogue sitting in Application Support.
+// alone would hide a catalogue sitting in Application Support. Windows uses
+// LocalAppData, which is where a catalogue of this size belongs — it is machine
+// state, not roaming profile data.
 func DefaultDirs() []string {
 	var dirs []string
 	seen := map[string]bool{}
@@ -75,16 +95,18 @@ func DefaultDirs() []string {
 		dirs = append(dirs, p)
 	}
 
-	home, err := os.UserHomeDir()
-	if err != nil {
-		home = ""
-	}
+	home := HomeDir()
 
 	if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
 		add(filepath.Join(xdg, "anchor", "catalog"))
 	}
 	if runtime.GOOS == "darwin" && home != "" {
 		add(filepath.Join(home, "Library", "Application Support", "anchor", "catalog"))
+	}
+	if runtime.GOOS == "windows" {
+		if local := os.Getenv("LocalAppData"); local != "" {
+			add(filepath.Join(local, "anchor", "catalog"))
+		}
 	}
 	if home != "" {
 		add(filepath.Join(home, ".local", "share", "anchor", "catalog"))

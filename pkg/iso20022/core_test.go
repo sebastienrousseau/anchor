@@ -172,6 +172,7 @@ func TestOpenCatalogueFailsWithoutOne(t *testing.T) {
 	t.Setenv("ANCHOR_CATALOG", "")
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
 	t.Setenv("HOME", t.TempDir())
+	t.Setenv("LocalAppData", t.TempDir())
 	t.Chdir(t.TempDir())
 
 	if _, err := iso20022.OpenCatalogue(""); err == nil {
