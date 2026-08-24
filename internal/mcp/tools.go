@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 )
 
 // Tool is one callable the server exposes.
@@ -175,7 +175,7 @@ func requireCatalogue(open CatalogueFunc) (*iso20022.Catalogue, error) {
 	if err != nil {
 		return nil, fmt.Errorf("this needs the ISO 20022 schemas, and none are installed.\n\n"+
 			"Download the message set from https://www.iso20022.org/ then run:\n"+
-			"  anchor catalog add <downloaded.zip>\n\n%w", err)
+			"  askiso catalog add <downloaded.zip>\n\n%w", err)
 	}
 	return cat, nil
 }
@@ -201,7 +201,7 @@ func defaultTools(open CatalogueFunc) []Tool {
 
 func searchTool(open CatalogueFunc) Tool {
 	return Tool{
-		Name:  "anchor_search",
+		Name:  "askiso_search",
 		Title: "Search ISO 20022 messages",
 		Description: "Search all 2,845 published ISO 20022 message definitions by identifier, " +
 			"domain, or keyword. Returns the message identifier, its name, the message set " +
@@ -233,9 +233,9 @@ func searchTool(open CatalogueFunc) Tool {
 
 func infoTool(open CatalogueFunc) Tool {
 	return Tool{
-		Name:  "anchor_info",
+		Name:  "askiso_info",
 		Title: "Look up one message definition",
-		Description: "Return everything Anchor knows about one message identifier: its name, " +
+		Description: "Return everything AskIso knows about one message identifier: its name, " +
 			"the message sets that publish it, the download location at the Registration " +
 			"Authority, and whether the schema is installed locally.",
 		Schema: object(map[string]any{
@@ -254,9 +254,9 @@ func infoTool(open CatalogueFunc) Tool {
 
 func lintTool() Tool {
 	return Tool{
-		Name:  "anchor_lint",
+		Name:  "askiso_lint",
 		Title: "Check a message's business rules",
-		Description: "Run Anchor's semantic linter over an ISO 20022 XML message. It verifies " +
+		Description: "Run AskIso's semantic linter over an ISO 20022 XML message. It verifies " +
 			"IBAN mod-97 checksums, BIC structure against ISO 9362, currency precision " +
 			"against ISO 4217, UETR format against RFC 4122, and date sanity. " +
 			"Call this before telling anyone a message is correct; it needs no schemas.",
@@ -280,7 +280,7 @@ func lintTool() Tool {
 
 func checkProfileTool() Tool {
 	return Tool{
-		Name:  "anchor_check_profile",
+		Name:  "askiso_check_profile",
 		Title: "Check a message against a scheme rule profile",
 		Description: "Apply a scheme rule profile to a message. The cbpr-2026 profile checks " +
 			"the CBPR+ structured-address requirement that takes effect on 14 November 2026: " +
@@ -310,7 +310,7 @@ func checkProfileTool() Tool {
 
 func validateTool(open CatalogueFunc) Tool {
 	return Tool{
-		Name:  "anchor_validate",
+		Name:  "askiso_validate",
 		Title: "Validate a message against its XSD",
 		Description: "Validate an ISO 20022 message against the schema its namespace names. " +
 			"This is full XSD validation -- element order, cardinality, patterns, lengths, " +
@@ -335,7 +335,7 @@ func validateTool(open CatalogueFunc) Tool {
 
 func generateTool(open CatalogueFunc) Tool {
 	return Tool{
-		Name:  "anchor_generate",
+		Name:  "askiso_generate",
 		Title: "Generate a sample message",
 		Description: "Build a valid ISO 20022 message. pacs.008, pacs.009, pain.001 and " +
 			"camt.053 come from templates with rail-specific defaults and need nothing " +
@@ -416,7 +416,7 @@ func generateTool(open CatalogueFunc) Tool {
 
 func translateTool() Tool {
 	return Tool{
-		Name:  "anchor_translate",
+		Name:  "askiso_translate",
 		Title: "Convert a SWIFT MT message, or look up the mapping",
 		Description: "Convert a real message in either direction, or look up the mapping. " +
 			"With mt_message: MT101/104/107 become pain.001/pain.008, MT103 becomes pacs.008, " +
@@ -426,7 +426,7 @@ func translateTool() Tool {
 			"field and whether it was carried, shortened, inferred, or dropped -- nothing is " +
 			"dropped silently. With code: return the field-level cross-reference. " +
 			"MT to MX produces unstructured addresses, which CBPR+ stops accepting on " +
-			"14 November 2026; check the result with anchor_check_profile. MX to MT loses " +
+			"14 November 2026; check the result with askiso_check_profile. MX to MT loses " +
 			"purpose codes, legal entity identifiers and structured addresses outright.",
 		Schema: object(map[string]any{
 			"mt_message": prop("string", "A complete SWIFT MT message, including its {1:} and {2:} headers."),
@@ -469,10 +469,10 @@ func translateTool() Tool {
 
 func codeTool(open CatalogueFunc) Tool {
 	return Tool{
-		Name:  "anchor_code",
+		Name:  "askiso_code",
 		Title: "Look up an ISO 20022 code",
 		Description: "Look up a code such as AC04 or SALA: what it means, which set it belongs " +
-			"to, and which messages use it. Codes come from Anchor's curated dictionary, from " +
+			"to, and which messages use it. Codes come from AskIso's curated dictionary, from " +
 			"the enumerations in the user's own schemas, and from the Registration Authority's " +
 			"external code set publication where the user has imported one.",
 		Schema: object(map[string]any{
@@ -504,7 +504,7 @@ func codeTool(open CatalogueFunc) Tool {
 
 func diffTool(open CatalogueFunc) Tool {
 	return Tool{
-		Name:  "anchor_diff",
+		Name:  "askiso_diff",
 		Title: "Compare two schema versions",
 		Description: "Compare two schema versions path by path and classify every difference " +
 			"as breaking or compatible. A change is breaking when a message that satisfied " +
@@ -555,7 +555,7 @@ func diffTool(open CatalogueFunc) Tool {
 
 func convertTool() Tool {
 	return Tool{
-		Name:  "anchor_convert",
+		Name:  "askiso_convert",
 		Title: "Convert a message between XML and JSON",
 		Description: "Convert an ISO 20022 message from XML to JSON or back. Element order is " +
 			"preserved in both directions, which matters because ISO 20022 schemas are " +

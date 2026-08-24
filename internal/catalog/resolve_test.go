@@ -43,7 +43,7 @@ func TestIsCatalog(t *testing.T) {
 }
 
 // A source checkout has cmd/ and internal/ but no message sets. It must not be
-// mistaken for a catalogue -- that is the bug that made `anchor search` return
+// mistaken for a catalogue -- that is the bug that made `askiso search` return
 // zero results with exit status 0.
 func TestIsCatalogIgnoresSourceTree(t *testing.T) {
 	root := t.TempDir()
@@ -89,10 +89,10 @@ func TestResolveIgnoresBadEnvAndKeepsSearching(t *testing.T) {
 	t.Chdir(t.TempDir())
 	t.Setenv(EnvCatalog, filepath.Join(t.TempDir(), "does-not-exist"))
 	root := fakeCatalogAt(t)
-	// DefaultDir appends "anchor/catalog", so XDG_DATA_HOME is two levels up.
+	// DefaultDir appends "askiso/catalog", so XDG_DATA_HOME is two levels up.
 	t.Setenv("XDG_DATA_HOME", filepath.Dir(filepath.Dir(root)))
 
-	// Anchor is a source checkout with no catalogue, so the cwd walk-up cannot
+	// AskIso is a source checkout with no catalogue, so the cwd walk-up cannot
 	// mask a failure to consult XDG_DATA_HOME.
 	got, err := Resolve("")
 	if err != nil {
@@ -103,10 +103,10 @@ func TestResolveIgnoresBadEnvAndKeepsSearching(t *testing.T) {
 	}
 }
 
-// fakeCatalogAt builds <tmp>/anchor/catalog so it is found via XDG_DATA_HOME.
+// fakeCatalogAt builds <tmp>/askiso/catalog so it is found via XDG_DATA_HOME.
 func fakeCatalogAt(t *testing.T) string {
 	t.Helper()
-	root := filepath.Join(t.TempDir(), "anchor", "catalog")
+	root := filepath.Join(t.TempDir(), "askiso", "catalog")
 	schemas := filepath.Join(root, "Payments Initiation", "Version 13.0", "Schemas")
 	if err := os.MkdirAll(schemas, 0o755); err != nil {
 		t.Fatal(err)
@@ -133,7 +133,7 @@ func TestResolveNotFoundIsActionable(t *testing.T) {
 	}
 
 	msg := err.Error()
-	for _, want := range []string{"iso20022.org", "anchor catalog add", EnvCatalog, "Searched:"} {
+	for _, want := range []string{"iso20022.org", "askiso catalog add", EnvCatalog, "Searched:"} {
 		if !strings.Contains(msg, want) {
 			t.Errorf("message should tell the user about %q:\n%s", want, msg)
 		}
@@ -169,7 +169,7 @@ func TestDefaultDirHonoursXDG(t *testing.T) {
 	t.Setenv("XDG_DATA_HOME", "/xdg")
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("LocalAppData", t.TempDir())
-	if got, want := DefaultDir(), filepath.Join("/xdg", "anchor", "catalog"); got != want {
+	if got, want := DefaultDir(), filepath.Join("/xdg", "askiso", "catalog"); got != want {
 		t.Errorf("got %s, want %s", got, want)
 	}
 }

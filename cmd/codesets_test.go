@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/codes"
+	"github.com/sebastienrousseau/askiso/internal/codes"
 )
 
 // Code sets come out of the schemas the user installed, so these tests need a

@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
-	"github.com/sebastienrousseau/anchor/internal/diff"
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/diff"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 	"github.com/spf13/cobra"
 )
 
@@ -36,10 +36,10 @@ when a receiver loses a field it used to get.
 Pattern changes are always reported as breaking. Deciding whether one regular
 expression accepts everything another does is not something a tool should
 guess at, and the answer that cannot mislead a migration is the cautious one.`,
-	Example: `  anchor diff pacs.008.001.09 pacs.008.001.10
-  anchor diff pacs.008.001.09 pacs.008.001.10 --breaking
-  anchor diff old.xsd new.xsd --json
-  anchor diff camt.053.001.10 camt.053.001.11 --strict`,
+	Example: `  askiso diff pacs.008.001.09 pacs.008.001.10
+  askiso diff pacs.008.001.09 pacs.008.001.10 --breaking
+  askiso diff old.xsd new.xsd --json
+  askiso diff camt.053.001.10 camt.053.001.11 --strict`,
 	Args: cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fromID, toID := args[0], args[1]
@@ -137,7 +137,7 @@ func printDiff(report *diff.Report) {
 	}
 
 	if breaking > 0 && !diffBreakingOnly {
-		fmt.Printf("  %s list only what breaks:  anchor diff %s %s --breaking\n\n",
+		fmt.Printf("  %s list only what breaks:  askiso diff %s %s --breaking\n\n",
 			subtleStyle.Render("→"), report.From, report.To)
 	}
 }

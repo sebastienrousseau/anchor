@@ -160,7 +160,7 @@ func TestConvertQuery(t *testing.T) {
 	}
 
 	// camt.110 wants a coded type and a coded reason, and an MT query carries
-	// neither. Anchor names the source message in the proprietary branch rather
+	// neither. AskIso names the source message in the proprietary branch rather
 	// than inventing a code nobody can verify.
 	if !strings.Contains(c.XML, "<Prtry>MT195</Prtry>") {
 		t.Errorf("the proprietary type was not used\n%s", c.XML)

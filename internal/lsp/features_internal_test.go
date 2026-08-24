@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
 // The schema helpers are the part of the server a client never exercises

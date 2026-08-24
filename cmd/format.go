@@ -28,9 +28,9 @@ var formatCmd = &cobra.Command{
 	Short:   "Pretty-print or minify ISO 20022 XML message instances",
 	Long: `Format standardizes indentation and structure for ISO 20022 XML files.
 Supports clean 2-space pretty printing and compact payload minification.`,
-	Example: `  anchor format payload.xml
-  anchor format payload.xml --minify --copy
-  anchor format payload.xml -o formatted.xml`,
+	Example: `  askiso format payload.xml
+  askiso format payload.xml --minify --copy
+  askiso format payload.xml -o formatted.xml`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filePath := filepath.Clean(args[0])

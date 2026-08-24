@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
-	"github.com/sebastienrousseau/anchor/internal/swift"
-	"github.com/sebastienrousseau/anchor/internal/validator"
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/swift"
+	"github.com/sebastienrousseau/askiso/internal/validator"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
 // A conversion that produces a schema-invalid document is worthless however good

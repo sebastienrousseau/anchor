@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sebastienrousseau/anchor/internal/generator"
+	"github.com/sebastienrousseau/askiso/internal/generator"
 )
 
 // Step represents a single message stage in the payment lifecycle.

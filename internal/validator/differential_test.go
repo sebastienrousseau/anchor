@@ -11,13 +11,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
-	"github.com/sebastienrousseau/anchor/internal/validator"
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/validator"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
 // The correctness bar for a validator written from scratch is agreement with
-// the reference implementation. This runs Anchor and xmllint over every sample
+// the reference implementation. This runs AskIso and xmllint over every sample
 // message in an installed catalogue and reports where they disagree.
 //
 // It needs both a catalogue and xmllint, so it skips on a clean CI runner. Run
@@ -25,7 +25,7 @@ import (
 //
 //	go test ./internal/validator/ -run Differential -v
 //
-// ANCHOR_DIFF_LIMIT caps how many pairs are checked (default 400); set it to 0
+// ASKISO_DIFF_LIMIT caps how many pairs are checked (default 400); set it to 0
 // for the whole catalogue.
 func TestDifferentialAgainstXmllint(t *testing.T) {
 	if testing.Short() {
@@ -44,7 +44,7 @@ func TestDifferentialAgainstXmllint(t *testing.T) {
 		t.Skip("catalogue has no sample messages to compare")
 	}
 
-	limit := envInt("ANCHOR_DIFF_LIMIT", 400)
+	limit := envInt("ASKISO_DIFF_LIMIT", 400)
 	step := 1
 	if limit > 0 && len(pairs) > limit {
 		step = (len(pairs) + limit - 1) / limit
@@ -55,7 +55,7 @@ func TestDifferentialAgainstXmllint(t *testing.T) {
 		agree         int
 		bothValid     int
 		bothInvalid   int
-		falseReject   []string // Anchor rejects, xmllint accepts -- the serious kind
+		falseReject   []string // AskIso rejects, xmllint accepts -- the serious kind
 		falseAccept   []string
 		parseFailures []string
 	)
@@ -114,7 +114,7 @@ func TestDifferentialAgainstXmllint(t *testing.T) {
 		t.Errorf("schema failed to parse: %s", f)
 	}
 
-	// A false reject means Anchor calls a valid message invalid. That is the
+	// A false reject means AskIso calls a valid message invalid. That is the
 	// failure mode that breaks a user's pipeline, so it is an error.
 	for _, f := range head(falseReject, 10) {
 		t.Errorf("false reject: %s", f)

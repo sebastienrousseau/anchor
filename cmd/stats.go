@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sebastienrousseau/anchor/internal/registry"
+	"github.com/sebastienrousseau/askiso/internal/registry"
 	"github.com/spf13/cobra"
 )
 
@@ -58,8 +58,8 @@ var statsCmd = &cobra.Command{
 	Short:   "Display comprehensive domain statistics and catalog metrics",
 	Long: `Stats analyzes all ISO 20022 message definitions in the repository,
 providing a detailed breakdown by business domain, version density, and category totals.`,
-	Example: `  anchor stats
-  anchor stats --json`,
+	Example: `  askiso stats
+  askiso stats --json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		domainCounts := make(map[string]int)
 		var totalCategories int

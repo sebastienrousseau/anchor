@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 )
 
 // The schema-driven half of the public API — Diff, GenerateFromSchema and the
@@ -144,7 +144,7 @@ func TestDiffRequiresBothSchemas(t *testing.T) {
 	}
 }
 
-// The external code sets are stored beside the catalogue, because Anchor does
+// The external code sets are stored beside the catalogue, because AskIso does
 // not redistribute the Registration Authority's publication.
 func TestExternalCodesRoundTripThroughImport(t *testing.T) {
 	c := realCatalogue(t, map[string]string{"pacs.008.001.10": schemaWith(

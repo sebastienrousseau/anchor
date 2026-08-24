@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/sebastienrousseau/anchor/internal/mock"
+	"github.com/sebastienrousseau/askiso/internal/mock"
 	"github.com/spf13/cobra"
 )
 
@@ -38,8 +38,8 @@ var mockCmd = &cobra.Command{
 	Short:   "Start a local HTTP mock ISO 20022 clearing rail server for testing",
 	Long: `Mock starts an embedded HTTP server simulating a live ISO 20022 clearing network.
 Accepts pacs.008 payments, runs semantic validation, and returns synchronous pacs.002 ACK/RJCT.`,
-	Example: `  anchor mock --port 8080
-  anchor mock`,
+	Example: `  askiso mock --port 8080
+  askiso mock`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if mockScenario != "" && !validScenario(mockScenario) {
 			return fmt.Errorf("unknown scenario %q (available: %s)",
@@ -52,7 +52,7 @@ Accepts pacs.008 payments, runs semantic validation, and returns synchronous pac
 			Scenario: mock.Scenario(mockScenario),
 		})
 
-		fmt.Printf("\n%s Mock ISO 20022 Clearing Rail\n\n", headStyle.Render(" ANCHOR MOCK SANDBOX "))
+		fmt.Printf("\n%s Mock ISO 20022 Clearing Rail\n\n", headStyle.Render(" ASKISO MOCK SANDBOX "))
 		fmt.Printf("  • Listening on   : http://%s\n", srv.Addr())
 		fmt.Printf("  • Health Check   : GET  /v1/health\n")
 		fmt.Printf("  • Submit Payment : POST /v1/payments   (pacs.008 ➔ pacs.002)\n")

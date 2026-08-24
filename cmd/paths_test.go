@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/registry"
+	"github.com/sebastienrousseau/askiso/internal/registry"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +23,7 @@ func TestNotInstalledErrorMessages(t *testing.T) {
 	// A message that exists but is not installed names the download.
 	err := notInstalled("pacs.008.001.10", "read its schema", nil)
 	msg := err.Error()
-	for _, want := range []string{"pacs.008.001.10", "read its schema", "iso20022.org", "anchor catalog add"} {
+	for _, want := range []string{"pacs.008.001.10", "read its schema", "iso20022.org", "askiso catalog add"} {
 		if !strings.Contains(msg, want) {
 			t.Errorf("message should contain %q:\n%s", want, msg)
 		}
@@ -32,7 +32,7 @@ func TestNotInstalledErrorMessages(t *testing.T) {
 	// An identifier outside the standard reads as a typo.
 	err = notInstalled("pacs.808", "read its schema", nil)
 	msg = err.Error()
-	if !strings.Contains(msg, "typo") || !strings.Contains(msg, "anchor search") {
+	if !strings.Contains(msg, "typo") || !strings.Contains(msg, "askiso search") {
 		t.Errorf("an unknown identifier should suggest a search:\n%s", msg)
 	}
 
@@ -74,7 +74,7 @@ func TestFirstToken(t *testing.T) {
 
 func TestLightModeNotice(t *testing.T) {
 	n := lightModeNotice("generated sample")
-	if !strings.Contains(n, "light mode") || !strings.Contains(n, "anchor catalog add") {
+	if !strings.Contains(n, "light mode") || !strings.Contains(n, "askiso catalog add") {
 		t.Errorf("the notice should explain the reduced scope:\n%s", n)
 	}
 }
@@ -231,7 +231,7 @@ func TestDiffReportsEveryChangeClass(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(base, "pacs.008.001.10.xsd"), []byte(newer), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("ANCHOR_CATALOG", dir)
+	t.Setenv("ASKISO_CATALOG", dir)
 
 	out, err := run(t, "diff", "pacs.008.001.09", "pacs.008.001.10")
 	if err != nil {
@@ -471,7 +471,7 @@ func TestSearchNoMatchesInLightMode(t *testing.T) {
 
 func TestCatalogAddDefaultsToResolvedLocation(t *testing.T) {
 	dest := t.TempDir()
-	t.Setenv("ANCHOR_CATALOG", dest)
+	t.Setenv("ASKISO_CATALOG", dest)
 	prev := catalogPath
 	catalogPath = ""
 	t.Cleanup(func() { catalogPath = prev })

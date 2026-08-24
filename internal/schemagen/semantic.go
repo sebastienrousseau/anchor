@@ -6,7 +6,7 @@ package schemagen
 import (
 	"strings"
 
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
 // A value that satisfies a pattern is not the same as a value that is right.
@@ -15,7 +15,7 @@ import (
 // full of those validates against the schema and fails the linter, which makes
 // it useless as an example of a correct message.
 //
-// So elements Anchor recognises get values that are correct as well as valid:
+// So elements AskIso recognises get values that are correct as well as valid:
 // an IBAN whose mod-97 works, a BIC with a real country code, a UUIDv4 that
 // passes the version and variant checks. Everything else falls through to the
 // facets.
@@ -48,26 +48,26 @@ var knownValues = map[string]string{
 	// difference between a sample someone can read and a sample they cannot.
 	"ISIN":                "GB0002634946",
 	"OtherIdentification": "GB0002634946",
-	"CorpActnEvtId":       "CA-ANCHOR-0001",
+	"CorpActnEvtId":       "CA-ASKISO-0001",
 	"OfficlCorpActnEvtId": "CA-OFFICIAL-0001",
 	"SfkpgAcct":           "SAFE-0001",
-	"AcctId":              "ACCT-ANCHOR-0001",
-	"Id":                  "ANCHOR-0001",
-	"Desc":                "Anchor sample value",
+	"AcctId":              "ACCT-ASKISO-0001",
+	"Id":                  "ASKISO-0001",
+	"Desc":                "AskIso sample value",
 	"ShrtNm":              "ACME",
 	"ClssfctnTp":          "ESVUFR",
 	"PlcOfListg":          "XLON",
 	"MktIdrCd":            "XLON",
-	"Issr":                "ANCHOR",
-	"SchmeNm":             "ANCHOR",
-	"Prtry":               "ANCHOR",
+	"Issr":                "ASKISO",
+	"SchmeNm":             "ASKISO",
+	"Prtry":               "ASKISO",
 
 	// Names and references that read as data rather than as filler.
 	"Nm":         "ACME TRADING LIMITED",
-	"MsgId":      "ANCHOR-SAMPLE-0001",
-	"EndToEndId": "E2E-ANCHOR-0001",
-	"InstrId":    "INSTR-ANCHOR-0001",
-	"TxId":       "TX-ANCHOR-0001",
+	"MsgId":      "ASKISO-SAMPLE-0001",
+	"EndToEndId": "E2E-ASKISO-0001",
+	"InstrId":    "INSTR-ASKISO-0001",
+	"TxId":       "TX-ASKISO-0001",
 	"NbOfTxs":    "1",
 	"Email":      "payments@example.com",
 	"EmailAdr":   "payments@example.com",

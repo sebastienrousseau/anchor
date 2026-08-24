@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Command anchor-lsp is a language server for ISO 20022 XML.
+// Command askiso-lsp is a language server for ISO 20022 XML.
 //
 // It speaks the Language Server Protocol over stdin and stdout, so an editor
 // can show the same verdicts the CLI gives: business-rule diagnostics, schema
@@ -11,8 +11,8 @@
 // Neovim:
 //
 //	vim.lsp.start({
-//	  name = 'anchor',
-//	  cmd = { 'anchor-lsp' },
+//	  name = 'askiso',
+//	  cmd = { 'askiso-lsp' },
 //	  root_dir = vim.fn.getcwd(),
 //	})
 //
@@ -30,8 +30,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/sebastienrousseau/anchor/internal/lsp"
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/internal/lsp"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 )
 
 // version is set at build time with -ldflags.
@@ -42,20 +42,20 @@ func main() {
 }
 
 func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
-	fs := flag.NewFlagSet("anchor-lsp", flag.ContinueOnError)
+	fs := flag.NewFlagSet("askiso-lsp", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	showVersion := fs.Bool("version", false, "print the version and exit")
 	profile := fs.String("profile", "cbpr-2026",
 		"scheme rule profile applied alongside the linter; empty disables it")
 
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, `anchor-lsp is a language server for ISO 20022 XML.
+		_, _ = fmt.Fprintf(stderr, `askiso-lsp is a language server for ISO 20022 XML.
 
 It reads Language Server Protocol messages from stdin and writes replies to
 stdout. Run it from an editor rather than by hand.
 
 Usage:
-  anchor-lsp [flags]
+  askiso-lsp [flags]
 
 Flags:
 `)
@@ -71,13 +71,13 @@ Flags:
 	}
 
 	if *showVersion {
-		_, _ = fmt.Fprintf(stdout, "anchor-lsp %s\n", version)
+		_, _ = fmt.Fprintf(stdout, "askiso-lsp %s\n", version)
 		return 0
 	}
 
 	if *profile != "" {
 		if _, err := iso20022.CheckProfile([]byte("<Document/>"), *profile, ""); err != nil {
-			_, _ = fmt.Fprintf(stderr, "anchor-lsp: %v\navailable profiles: %v\n",
+			_, _ = fmt.Fprintf(stderr, "askiso-lsp: %v\navailable profiles: %v\n",
 				err, iso20022.RuleProfiles())
 			return 2
 		}
@@ -91,7 +91,7 @@ Flags:
 	defer stop()
 
 	if err := server.Serve(ctx); err != nil && !errors.Is(err, context.Canceled) {
-		_, _ = fmt.Fprintf(stderr, "anchor-lsp: %v\n", err)
+		_, _ = fmt.Fprintf(stderr, "askiso-lsp: %v\n", err)
 		return 1
 	}
 	return 0

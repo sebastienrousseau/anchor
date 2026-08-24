@@ -14,7 +14,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sebastienrousseau/anchor/internal/converter"
+	"github.com/sebastienrousseau/askiso/internal/converter"
 )
 
 // Severity classifies a finding.

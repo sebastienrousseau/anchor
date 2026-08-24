@@ -12,11 +12,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/codes"
+	"github.com/sebastienrousseau/askiso/internal/codes"
 )
 
 // The external code sets are the Registration Authority's own publication.
-// Anchor imports the file the user downloaded and never carries one itself,
+// AskIso imports the file the user downloaded and never carries one itself,
 // which is the same arrangement the schemas are under.
 
 // writeCodePublication builds a spreadsheet in the shape the publication takes.
@@ -109,7 +109,7 @@ func TestCodeImport(t *testing.T) {
 	wantContains(t, out, "EXTERNAL CODE SETS", "3 code(s)", "2 set(s)", "stored")
 
 	// It lands beside the catalogue, not in the repository: it is the user's
-	// copy of a publication Anchor does not redistribute.
+	// copy of a publication AskIso does not redistribute.
 	stored := codes.ExternalCodesPath(root)
 	if _, err := os.Stat(stored); err != nil {
 		t.Fatalf("the publication was not stored at %s: %v", stored, err)

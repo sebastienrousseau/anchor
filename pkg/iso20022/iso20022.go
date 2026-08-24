@@ -1,21 +1,21 @@
 // SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Package iso20022 is Anchor's public API for working with ISO 20022 financial
+// Package iso20022 is AskIso's public API for working with ISO 20022 financial
 // messages. The CLI, the WebAssembly build, and any Go service that imports this
 // package all run exactly the same code, so a message linted in the browser gets
 // the same verdict as one linted in a terminal or a CI pipeline.
 //
 // # Light mode and full mode
 //
-// Everything here works with no setup. Anchor embeds an index of the published
+// Everything here works with no setup. AskIso embeds an index of the published
 // standard -- every message identifier, the message set that publishes it, and
 // the Registration Authority's download location -- so lookup, search,
 // generation, linting, conversion, code lookup and MT/MX cross-reference need no
 // files on disk. That is light mode, and it is what the browser build runs.
 //
 // Reading schema text needs a catalogue the user downloaded from
-// https://www.iso20022.org/. Anchor redistributes no specification content.
+// https://www.iso20022.org/. AskIso redistributes no specification content.
 // Open one with OpenCatalogue; the API reports Installed=false rather than
 // failing when a schema is absent, and names the download that would supply it.
 package iso20022
@@ -29,21 +29,21 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
-	"github.com/sebastienrousseau/anchor/internal/codes"
-	"github.com/sebastienrousseau/anchor/internal/converter"
-	"github.com/sebastienrousseau/anchor/internal/diff"
-	"github.com/sebastienrousseau/anchor/internal/flow"
-	"github.com/sebastienrousseau/anchor/internal/generator"
-	"github.com/sebastienrousseau/anchor/internal/graph"
-	"github.com/sebastienrousseau/anchor/internal/linter"
-	"github.com/sebastienrousseau/anchor/internal/registry"
-	"github.com/sebastienrousseau/anchor/internal/rules"
-	"github.com/sebastienrousseau/anchor/internal/schemagen"
-	"github.com/sebastienrousseau/anchor/internal/swift"
-	"github.com/sebastienrousseau/anchor/internal/translator"
-	"github.com/sebastienrousseau/anchor/internal/validator"
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/codes"
+	"github.com/sebastienrousseau/askiso/internal/converter"
+	"github.com/sebastienrousseau/askiso/internal/diff"
+	"github.com/sebastienrousseau/askiso/internal/flow"
+	"github.com/sebastienrousseau/askiso/internal/generator"
+	"github.com/sebastienrousseau/askiso/internal/graph"
+	"github.com/sebastienrousseau/askiso/internal/linter"
+	"github.com/sebastienrousseau/askiso/internal/registry"
+	"github.com/sebastienrousseau/askiso/internal/rules"
+	"github.com/sebastienrousseau/askiso/internal/schemagen"
+	"github.com/sebastienrousseau/askiso/internal/swift"
+	"github.com/sebastienrousseau/askiso/internal/translator"
+	"github.com/sebastienrousseau/askiso/internal/validator"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
 // Re-exported types, so callers need not reach into internal packages.
@@ -373,7 +373,7 @@ func JSONToXML(jsonData []byte) ([]byte, error) { return converter.JSONToXML(jso
 // LookupCode searches the external code sets by code, name, or description.
 func LookupCode(query string) []CodeItem { return codes.Lookup(query) }
 
-// AllCodes returns every external code Anchor knows.
+// AllCodes returns every external code AskIso knows.
 func AllCodes() []CodeItem { return codes.GetAllCodes() }
 
 // ExternalCode is one code from the Registration Authority's external code set
@@ -385,7 +385,7 @@ type ExternalCode = codes.ExternalCode
 //
 // Most ISO 20022 code sets are enumerated in the schemas. The rest are
 // maintained separately on a quarterly cycle and referenced by name only.
-// Anchor redistributes that publication no more than it redistributes the
+// AskIso redistributes that publication no more than it redistributes the
 // schemas: ImportExternalCodes reads the file the user downloaded.
 func (c *Catalogue) ExternalCodes() []ExternalCode {
 	if c == nil || c.idx == nil {

@@ -8,22 +8,22 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sebastienrousseau/anchor/internal/translator"
+	"github.com/sebastienrousseau/askiso/internal/translator"
 	"github.com/spf13/cobra"
 )
 
 var completionCmd = &cobra.Command{
 	Use:   "completion [bash|zsh|fish|powershell]",
-	Short: "Generate shell autocompletion script for anchor",
+	Short: "Generate shell autocompletion script for askiso",
 	Long: `To load completions:
 
 Bash:
-  $ source <(anchor completion bash)
+  $ source <(askiso completion bash)
   # To load completions for each session, execute once:
   # Linux:
-  $ anchor completion bash > /etc/bash_completion.d/anchor
+  $ askiso completion bash > /etc/bash_completion.d/askiso
   # macOS:
-  $ anchor completion bash > $(brew --prefix)/etc/bash_completion.d/anchor
+  $ askiso completion bash > $(brew --prefix)/etc/bash_completion.d/askiso
 
 Zsh:
   # If shell completion is not already enabled in your environment,
@@ -31,15 +31,15 @@ Zsh:
   $ echo "autoload -U compinit; compinit" >> ~/.zshrc
 
   # To load completions for each session, execute once:
-  $ anchor completion zsh > "${fpath[1]}/_anchor"
+  $ askiso completion zsh > "${fpath[1]}/_askiso"
 
 Fish:
-  $ anchor completion fish | source
+  $ askiso completion fish | source
   # To load completions for each session, execute once:
-  $ anchor completion fish > ~/.config/fish/completions/anchor.fish
+  $ askiso completion fish > ~/.config/fish/completions/askiso.fish
 
 PowerShell:
-  PS> anchor completion powershell | Out-String | Invoke-Expression
+  PS> askiso completion powershell | Out-String | Invoke-Expression
 `,
 	DisableFlagsInUseLine: true,
 	ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},

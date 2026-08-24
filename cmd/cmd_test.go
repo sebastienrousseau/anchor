@@ -13,8 +13,8 @@ func TestRootCommands(t *testing.T) {
 	RootCmd.SetOut(buf)
 	RootCmd.SetErr(buf)
 
-	if RootCmd.Use != "anchor" {
-		t.Errorf("expected command name 'anchor', got '%s'", RootCmd.Use)
+	if RootCmd.Use != "askiso" {
+		t.Errorf("expected command name 'askiso', got '%s'", RootCmd.Use)
 	}
 
 	subCmds := []string{"search", "ask", "info", "list", "validate", "version", "generate", "translate", "diff", "sample", "schema", "lint", "completion", "flow", "doctor", "format", "code", "convert", "graph", "mock", "stats"}

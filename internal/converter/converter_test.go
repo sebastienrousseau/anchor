@@ -88,7 +88,7 @@ func TestAttributeValuesAreEscapedAsXML(t *testing.T) {
 }
 
 func TestNamesThatCannotBeXML(t *testing.T) {
-	// Go's decoder accepts names the specification does not. Anchor must not
+	// Go's decoder accepts names the specification does not. AskIso must not
 	// accept one it could never emit.
 	if _, err := XMLToJSON([]byte("<A:0/>")); err == nil {
 		t.Error("an element name starting with a digit was accepted")

@@ -17,9 +17,9 @@ import (
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/glamour/styles"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/sebastienrousseau/anchor/internal/ai"
-	"github.com/sebastienrousseau/anchor/internal/catalog"
-	"github.com/sebastienrousseau/anchor/internal/tui"
+	"github.com/sebastienrousseau/askiso/internal/ai"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/tui"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -39,61 +39,65 @@ var askCmd = &cobra.Command{
 	Use:     "ask [prompt]",
 	Aliases: []string{"chat", "a"},
 	Short:   "Ask the ISO 20022 AI Assistant a question or enter interactive REPL",
-	Long: `Ask ⚓ provides an interactive REPL and CLI interface for querying the 
+	Long: `AskIso provides an interactive REPL and CLI interface for querying the 
 ISO 20022 knowledge base, comparing messages, inspecting schemas, and interacting
 with local or connected AI models.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		idx, err := loadCatalog()
-		if err != nil {
-			return err
+	RunE: runAsk,
+}
+
+// runAsk answers a question or opens the REPL. The root command shares it,
+// so `askiso ask "…"` and a bare `askiso <question>` take the same path.
+func runAsk(cmd *cobra.Command, args []string) error {
+	idx, err := loadCatalog()
+	if err != nil {
+		return err
+	}
+
+	aiEng := ai.New(idx)
+	prompt := strings.Join(args, " ")
+
+	// Check if input is being piped
+	stat, _ := os.Stdin.Stat()
+	isPiped := (stat.Mode() & os.ModeCharDevice) == 0
+
+	if isPiped && prompt == "" {
+		scanner := bufio.NewScanner(os.Stdin)
+		var sb strings.Builder
+		for scanner.Scan() {
+			sb.WriteString(scanner.Text() + " ")
 		}
+		prompt = strings.TrimSpace(sb.String())
+	}
 
-		aiEng := ai.New(idx)
-		prompt := strings.Join(args, " ")
-
-		// Check if input is being piped
-		stat, _ := os.Stdin.Stat()
-		isPiped := (stat.Mode() & os.ModeCharDevice) == 0
-
-		if isPiped && prompt == "" {
-			scanner := bufio.NewScanner(os.Stdin)
-			var sb strings.Builder
-			for scanner.Scan() {
-				sb.WriteString(scanner.Text() + " ")
-			}
-			prompt = strings.TrimSpace(sb.String())
-		}
-
-		// Direct One-shot Execution with Actionable Follow-up Loop
-		if prompt != "" {
-			ans := aiEng.Query(prompt)
-			if rawOutput {
-				fmt.Println(ans.Details)
-				return nil
-			}
-
-			// In interactive terminal, render actionable follow-ups and offer prompt
-			isInteractive := !isPiped && !textOutput && !plainOutput
-			renderAnswerWithContext(ans, isInteractive)
-
-			if isInteractive && len(ans.Suggestions) > 0 {
-				askLoop(aiEng, idx, os.Stdin, ans.Suggestions, false)
-			}
+	// Direct One-shot Execution with Actionable Follow-up Loop
+	if prompt != "" {
+		ans := aiEng.Query(prompt)
+		if rawOutput {
+			fmt.Println(ans.Details)
 			return nil
 		}
 
-		// Interactive REPL Mode (benchmarked on aichat)
-		if !quiet {
-			fmt.Print(tui.GetStyledLogo())
-		}
-		fmt.Println(lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22D3EE")).Render("=== Anchor Ask AI (REPL) ==="))
-		fmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Render("Type your question in natural language (e.g. 'what is pacs008', 'compare pacs.008 vs pacs.009')."))
-		fmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("Commands: /help, /info <id>, /xml <id>, /xsd <id>, /clear, /exit"))
-		fmt.Println()
+		// In interactive terminal, render actionable follow-ups and offer prompt
+		isInteractive := !isPiped && !textOutput && !plainOutput
+		renderAnswerWithContext(ans, isInteractive)
 
-		askLoop(aiEng, idx, os.Stdin, nil, true)
+		if isInteractive && len(ans.Suggestions) > 0 {
+			askLoop(aiEng, idx, os.Stdin, ans.Suggestions, false)
+		}
 		return nil
-	},
+	}
+
+	// Interactive REPL Mode (benchmarked on aichat)
+	if !quiet {
+		fmt.Print(tui.GetStyledLogo())
+	}
+	fmt.Println(lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22D3EE")).Render("=== AskIso Ask AI (REPL) ==="))
+	fmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Render("Type your question in natural language (e.g. 'what is pacs008', 'compare pacs.008 vs pacs.009')."))
+	fmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("Commands: /help, /info <id>, /xml <id>, /xsd <id>, /clear, /exit"))
+	fmt.Println()
+
+	askLoop(aiEng, idx, os.Stdin, nil, true)
+	return nil
 }
 
 // askLoop is the interactive conversation: numbered follow-ups, slash commands
@@ -108,7 +112,7 @@ func askLoop(eng *ai.Engine, idx *catalog.Index, in io.Reader, suggestions []str
 
 	for {
 		bar := lipgloss.NewStyle().Foreground(lipgloss.Color("#06B6D4")).Render("┃")
-		promptLabel := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22D3EE")).Render("Ask ⚓ > ")
+		promptLabel := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22D3EE")).Render("AskIso > ")
 		fmt.Print(" " + bar + "  " + promptLabel)
 
 		if !scanner.Scan() {
@@ -206,7 +210,7 @@ func isQuitWord(line string) bool {
 }
 
 func sayGoodbye() {
-	fmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Render("Goodbye! ⚓"))
+	fmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Render("Goodbye!"))
 }
 
 func parseSuggestionIndex(input string) int {
@@ -372,7 +376,7 @@ func renderAnswerWithContext(ans ai.MessageAnswer, isRepl bool) {
 
 		for i, s := range ans.Suggestions {
 			numStr := fmt.Sprintf("[%d] ", i+1)
-			cliHint := fmt.Sprintf("(./anchor ask %q)", s)
+			cliHint := fmt.Sprintf("(./askiso ask %q)", s)
 			sb.WriteString(numBadge.Render(numStr) + textStyle.Render(s) + " " + cmdStyle.Render(cliHint) + "\n")
 		}
 		if isRepl {

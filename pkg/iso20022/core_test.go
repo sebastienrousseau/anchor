@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 )
 
 // fixtureCatalogue builds a tiny catalogue so tests never depend on the
@@ -169,7 +169,7 @@ func TestCatalogueCounts(t *testing.T) {
 }
 
 func TestOpenCatalogueFailsWithoutOne(t *testing.T) {
-	t.Setenv("ANCHOR_CATALOG", "")
+	t.Setenv("ASKISO_CATALOG", "")
 	t.Setenv("XDG_DATA_HOME", t.TempDir())
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("LocalAppData", t.TempDir())
@@ -263,8 +263,8 @@ func TestCatalogueLocations(t *testing.T) {
 		t.Fatal("there should be at least one conventional location")
 	}
 	for _, l := range locs {
-		if !strings.Contains(l, "anchor") {
-			t.Errorf("location %q should be namespaced under anchor", l)
+		if !strings.Contains(l, "askiso") {
+			t.Errorf("location %q should be namespaced under askiso", l)
 		}
 	}
 }

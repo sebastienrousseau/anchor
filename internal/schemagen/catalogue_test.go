@@ -12,17 +12,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
-	"github.com/sebastienrousseau/anchor/internal/schemagen"
-	"github.com/sebastienrousseau/anchor/internal/validator"
-	"github.com/sebastienrousseau/anchor/internal/xsd"
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/schemagen"
+	"github.com/sebastienrousseau/askiso/internal/validator"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 )
 
 // The claim is that any message can be generated from its schema. The only way
 // to know is to try every one the user has installed and validate the result.
 //
-//	ANCHOR_GEN_LIMIT=0 go test ./internal/schemagen/ -run Installed -v
+//	ASKISO_GEN_LIMIT=0 go test ./internal/schemagen/ -run Installed -v
 func TestEveryInstalledMessageGenerates(t *testing.T) {
 	if testing.Short() {
 		t.Skip("this walks the whole catalogue")
@@ -37,7 +37,7 @@ func TestEveryInstalledMessageGenerates(t *testing.T) {
 	}
 
 	limit := 400
-	if v := os.Getenv("ANCHOR_GEN_LIMIT"); v != "" {
+	if v := os.Getenv("ASKISO_GEN_LIMIT"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			limit = n
 		}
@@ -134,7 +134,7 @@ func TestGeneratedMessagesLintClean(t *testing.T) {
 	}
 
 	limit := 400
-	if v := os.Getenv("ANCHOR_GEN_LIMIT"); v != "" {
+	if v := os.Getenv("ASKISO_GEN_LIMIT"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			limit = n
 		}

@@ -22,7 +22,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
 // maxDepth bounds the walk. ISO 20022 types nest deeply and a few are

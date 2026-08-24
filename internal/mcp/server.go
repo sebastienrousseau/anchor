@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Package mcp serves Anchor over the Model Context Protocol.
+// Package mcp serves AskIso over the Model Context Protocol.
 //
 // An assistant asked about an ISO 20022 message has two options: recall what it
 // read about the standard, or check. This server is the second option. It
@@ -58,7 +58,7 @@ type Server struct {
 // Diagnostics go to errOut, which must be a different stream from out.
 func New(in io.Reader, out, errOut io.Writer) *Server {
 	s := &Server{
-		Name:    "anchor",
+		Name:    "askiso",
 		Version: "dev",
 		in:      in,
 		out:     out,
@@ -266,17 +266,17 @@ func (s *Server) initialize(params json.RawMessage) (any, *rpcError) {
 	}, nil
 }
 
-const instructions = `Anchor answers questions about ISO 20022 from the specification rather than from memory.
+const instructions = `AskIso answers questions about ISO 20022 from the specification rather than from memory.
 
-Use anchor_lint and anchor_check_profile before telling anyone a message is correct: the
+Use askiso_lint and askiso_check_profile before telling anyone a message is correct: the
 linter checks IBAN checksums, BIC structure, currency precision and UETR format, and the
 cbpr-2026 profile checks the structured-address rules that take effect on 14 November 2026.
 
-anchor_validate and anchor_diff read the user's own downloaded schemas and report
+askiso_validate and askiso_diff read the user's own downloaded schemas and report
 Installed=false rather than guessing when a schema is absent. Everything else works with
 no files on disk.
 
-Anchor redistributes no specification content. Schemas come from the user's own download
+AskIso redistributes no specification content. Schemas come from the user's own download
 from iso20022.org.`
 
 func (s *Server) write(resp response) {
@@ -285,12 +285,12 @@ func (s *Server) write(resp response) {
 
 	data, err := json.Marshal(resp)
 	if err != nil {
-		_, _ = fmt.Fprintf(s.errOut, "anchor-mcp: could not encode a reply: %v\n", err)
+		_, _ = fmt.Fprintf(s.errOut, "askiso-mcp: could not encode a reply: %v\n", err)
 		return
 	}
 	data = append(data, '\n')
 	if _, err := s.out.Write(data); err != nil {
-		_, _ = fmt.Fprintf(s.errOut, "anchor-mcp: could not write a reply: %v\n", err)
+		_, _ = fmt.Fprintf(s.errOut, "askiso-mcp: could not write a reply: %v\n", err)
 	}
 }
 

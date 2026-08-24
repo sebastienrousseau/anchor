@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/generator"
+	"github.com/sebastienrousseau/askiso/internal/generator"
 )
 
 func TestHealthEndpoint(t *testing.T) {
@@ -22,8 +22,8 @@ func TestHealthEndpoint(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected 200 OK, got %d", w.Code)
 	}
-	if !strings.Contains(w.Body.String(), "Anchor") {
-		t.Errorf("Expected Anchor in body, got %s", w.Body.String())
+	if !strings.Contains(w.Body.String(), "AskIso") {
+		t.Errorf("Expected AskIso in body, got %s", w.Body.String())
 	}
 }
 

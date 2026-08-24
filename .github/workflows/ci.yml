@@ -71,7 +71,7 @@ jobs:
         # 1.26.6 is the floor, not a preference: it carries the standard library
         # fixes for GO-2026-6218/6090/6089/6088/5972/5026 that go.mod requires.
         # An older release cannot build the module, and testing on one would
-        # exercise a standard library Anchor does not ship against.
+        # exercise a standard library AskIso does not ship against.
         go: ['1.26.6']
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -88,9 +88,9 @@ jobs:
 
       - name: Build
         run: |
-          go build -o anchor ./cmd/anchor
-          go build -o anchor-mcp ./cmd/anchor-mcp
-          go build -o anchor-lsp ./cmd/anchor-lsp
+          go build -o askiso ./cmd/askiso
+          go build -o askiso-mcp ./cmd/askiso-mcp
+          go build -o askiso-lsp ./cmd/askiso-lsp
 
       # The MCP transport is easy to break in ways unit tests on the server
       # object do not notice -- a stray line on stdout corrupts the stream, and
@@ -104,7 +104,7 @@ jobs:
             '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
             '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
             '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-            | ./anchor-mcp 2>/dev/null)"
+            | ./askiso-mcp 2>/dev/null)"
           echo "$out"
           lines="$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
           if [ "$lines" -ne 2 ]; then
@@ -112,11 +112,11 @@ jobs:
             exit 1
           fi
           case "$out" in
-            *'"anchor_translate"'*) ;;
+            *'"askiso_translate"'*) ;;
             *) echo "::error::tools/list did not return the tool set"; exit 1 ;;
           esac
 
-      # Anchor no longer ships the ISO 20022 catalogue, so a clean runner has
+      # AskIso no longer ships the ISO 20022 catalogue, so a clean runner has
       # none. Two properties must hold, and both have regressed before:
       #   1. Commands needing the XSDs fail loudly instead of printing nothing.
       #   2. Discovery still works from the embedded registry, so a fresh
@@ -126,8 +126,8 @@ jobs:
         shell: bash
         run: |
           set +e
-          schema_out="$(./anchor schema pacs.008.001.10 2>&1)"; schema_code=$?
-          search_out="$(./anchor search pacs.008 2>&1)"; search_code=$?
+          schema_out="$(./askiso schema pacs.008.001.10 2>&1)"; schema_code=$?
+          search_out="$(./askiso search pacs.008 2>&1)"; search_code=$?
           set -e
 
           echo "--- schema (expect failure) ---"; echo "$schema_out"
@@ -161,7 +161,7 @@ jobs:
           exit_body='{"jsonrpc":"2.0","method":"exit"}'
           out="$( { printf 'Content-Length: %d\r\n\r\n%s' "${#body}" "$body"
                     printf 'Content-Length: %d\r\n\r\n%s' "${#exit_body}" "$exit_body"
-                  } | ./anchor-lsp 2>/dev/null )"
+                  } | ./askiso-lsp 2>/dev/null )"
           echo "$out"
           case "$out" in
             *hoverProvider*) ;;

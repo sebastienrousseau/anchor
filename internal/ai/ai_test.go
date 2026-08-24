@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
 )
 
 func TestAIEngine(t *testing.T) {
@@ -35,7 +35,7 @@ func TestAIEngine(t *testing.T) {
 	}
 }
 
-// fixtureIndex builds a small in-memory catalogue. Anchor no longer ships
+// fixtureIndex builds a small in-memory catalogue. AskIso no longer ships
 // specifications, so tests must not depend on one being installed.
 func fixtureIndex(t *testing.T) *catalog.Index {
 	t.Helper()

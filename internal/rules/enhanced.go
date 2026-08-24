@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sebastienrousseau/anchor/internal/converter"
+	"github.com/sebastienrousseau/askiso/internal/converter"
 )
 
 // 14 November 2026 ends the unstructured address. November 2027 is the next

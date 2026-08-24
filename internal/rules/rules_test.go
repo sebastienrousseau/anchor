@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/converter"
-	"github.com/sebastienrousseau/anchor/internal/rules"
+	"github.com/sebastienrousseau/askiso/internal/converter"
+	"github.com/sebastienrousseau/askiso/internal/rules"
 )
 
 // message wraps address fragments in a minimal document of the given type.

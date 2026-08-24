@@ -6,7 +6,7 @@ package rules
 import (
 	"strings"
 
-	"github.com/sebastienrousseau/anchor/internal/converter"
+	"github.com/sebastienrousseau/askiso/internal/converter"
 )
 
 // Two message families arrive with the modernisation programme, and both are

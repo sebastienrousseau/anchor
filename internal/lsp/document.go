@@ -10,7 +10,7 @@ import (
 	"unicode/utf16"
 )
 
-// An editor works in positions; the rest of Anchor works in element paths and
+// An editor works in positions; the rest of AskIso works in element paths and
 // values. This file is the bridge. It indexes a document once per change, so a
 // diagnostic that knows only "the IBAN is wrong" can still be underlined in the
 // right place, and a hover at a cursor can name the element under it.

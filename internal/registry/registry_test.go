@@ -96,7 +96,7 @@ func TestSetsForYieldsDownloadURL(t *testing.T) {
 }
 
 // Every message must point at a set that actually exists in the same blob,
-// otherwise the guidance Anchor prints would be a dead end.
+// otherwise the guidance AskIso prints would be a dead end.
 func TestEverySetReferenceResolves(t *testing.T) {
 	r := MustLoad()
 	orphans := 0

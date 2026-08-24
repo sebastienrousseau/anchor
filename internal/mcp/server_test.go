@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/mcp"
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/internal/mcp"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 )
 
 // session drives a server over a scripted set of requests and returns the
@@ -115,7 +115,7 @@ func TestInitializeHandshake(t *testing.T) {
 	}
 
 	info := res["serverInfo"].(map[string]any)
-	if info["name"] != "anchor" || info["version"] != "test" {
+	if info["name"] != "askiso" || info["version"] != "test" {
 		t.Errorf("serverInfo = %v", info)
 	}
 
@@ -176,9 +176,9 @@ func TestToolsList(t *testing.T) {
 	}
 
 	for _, want := range []string{
-		"anchor_search", "anchor_info", "anchor_lint", "anchor_check_profile",
-		"anchor_validate", "anchor_generate", "anchor_translate", "anchor_code",
-		"anchor_diff", "anchor_convert",
+		"askiso_search", "askiso_info", "askiso_lint", "askiso_check_profile",
+		"askiso_validate", "askiso_generate", "askiso_translate", "askiso_code",
+		"askiso_diff", "askiso_convert",
 	} {
 		if _, ok := seen[want]; !ok {
 			t.Errorf("%s is missing", want)
@@ -187,7 +187,7 @@ func TestToolsList(t *testing.T) {
 
 	// The tools that read the user's own schemas must say so, because that is
 	// why a call may report that nothing is installed.
-	for _, name := range []string{"anchor_validate", "anchor_diff"} {
+	for _, name := range []string{"askiso_validate", "askiso_diff"} {
 		desc := seen[name]["description"].(string)
 		if !strings.Contains(desc, "iso20022.org") {
 			t.Errorf("%s does not explain that it needs a catalogue: %q", name, desc)
@@ -198,7 +198,7 @@ func TestToolsList(t *testing.T) {
 func TestCallsBeforeInitialize(t *testing.T) {
 	replies := session(t,
 		`{"jsonrpc":"2.0","id":1,"method":"tools/list"}`,
-		call(2, "anchor_lint", map[string]any{"xml": "<Document/>"}))
+		call(2, "askiso_lint", map[string]any{"xml": "<Document/>"}))
 
 	for _, r := range replies {
 		e, ok := r["error"].(map[string]any)
@@ -262,12 +262,12 @@ func TestBlankLinesAreIgnored(t *testing.T) {
 func TestUnknownToolIsAProtocolError(t *testing.T) {
 	// Naming a tool that does not exist is the client's mistake, not a failure
 	// the model should reason about.
-	replies := session(t, initialize, call(2, "anchor_nope", nil))
+	replies := session(t, initialize, call(2, "askiso_nope", nil))
 	e, ok := replies[1]["error"].(map[string]any)
 	if !ok {
 		t.Fatalf("no error in %v", replies[1])
 	}
-	if !strings.Contains(e["message"].(string), "anchor_nope") {
+	if !strings.Contains(e["message"].(string), "askiso_nope") {
 		t.Errorf("message = %v", e["message"])
 	}
 }
@@ -298,7 +298,7 @@ MUELLER GMBH
 
 func TestSearchTool(t *testing.T) {
 	replies := session(t, initialize,
-		call(2, "anchor_search", map[string]any{"query": "pacs.008", "limit": 3}))
+		call(2, "askiso_search", map[string]any{"query": "pacs.008", "limit": 3}))
 
 	sc := result(t, replies[1])
 	messages := sc["messages"].([]any)
@@ -312,7 +312,7 @@ func TestSearchTool(t *testing.T) {
 }
 
 func TestSearchToolRequiresQuery(t *testing.T) {
-	replies := session(t, initialize, call(2, "anchor_search", map[string]any{}))
+	replies := session(t, initialize, call(2, "askiso_search", map[string]any{}))
 	if msg := toolError(t, replies[1]); !strings.Contains(msg, "query") {
 		t.Errorf("message = %q; it should name the missing argument", msg)
 	}
@@ -320,7 +320,7 @@ func TestSearchToolRequiresQuery(t *testing.T) {
 
 func TestInfoTool(t *testing.T) {
 	replies := session(t, initialize,
-		call(2, "anchor_info", map[string]any{"message_id": "pacs.008.001.10"}))
+		call(2, "askiso_info", map[string]any{"message_id": "pacs.008.001.10"}))
 
 	sc := result(t, replies[1])
 	if sc["id"] != "pacs.008.001.10" {
@@ -336,23 +336,23 @@ func TestInfoTool(t *testing.T) {
 func TestLintTool(t *testing.T) {
 	// A generated message must lint clean; a broken IBAN must not.
 	gen := session(t, initialize,
-		call(2, "anchor_generate", map[string]any{"message_type": "pacs.008", "preset": "sepa"}))
+		call(2, "askiso_generate", map[string]any{"message_type": "pacs.008", "preset": "sepa"}))
 	xmlDoc := result(t, gen[1])["xml"].(string)
 
-	clean := session(t, initialize, call(2, "anchor_lint", map[string]any{"xml": xmlDoc}))
+	clean := session(t, initialize, call(2, "askiso_lint", map[string]any{"xml": xmlDoc}))
 	if errs := result(t, clean[1])["error_count"].(float64); errs != 0 {
 		t.Errorf("a generated message did not lint clean: %v", text(clean[1]["result"].(map[string]any)))
 	}
 
 	broken := strings.Replace(xmlDoc, "<IBAN>", "<IBAN>ZZ", 1)
-	dirty := session(t, initialize, call(2, "anchor_lint", map[string]any{"xml": broken}))
+	dirty := session(t, initialize, call(2, "askiso_lint", map[string]any{"xml": broken}))
 	if errs := result(t, dirty[1])["error_count"].(float64); errs == 0 {
 		t.Error("a corrupted IBAN linted clean")
 	}
 }
 
 func TestLintToolRequiresXML(t *testing.T) {
-	replies := session(t, initialize, call(2, "anchor_lint", map[string]any{}))
+	replies := session(t, initialize, call(2, "askiso_lint", map[string]any{}))
 	if msg := toolError(t, replies[1]); !strings.Contains(msg, "xml") {
 		t.Errorf("message = %q", msg)
 	}
@@ -362,7 +362,7 @@ func TestCheckProfileTool(t *testing.T) {
 	// With no profile named, the tool lists what is available rather than
 	// guessing.
 	listed := session(t, initialize,
-		call(2, "anchor_check_profile", map[string]any{"xml": "<Document/>"}))
+		call(2, "askiso_check_profile", map[string]any{"xml": "<Document/>"}))
 	if profiles, _ := result(t, listed[1])["profiles"].([]any); len(profiles) == 0 {
 		t.Fatal("no profiles were listed")
 	}
@@ -376,7 +376,7 @@ func TestCheckProfileTool(t *testing.T) {
   </Cdtr></CdtTrfTxInf></FIToFICstmrCdtTrf>
 </Document>`
 	checked := session(t, initialize,
-		call(2, "anchor_check_profile", map[string]any{"xml": doc, "profile": "cbpr-2026"}))
+		call(2, "askiso_check_profile", map[string]any{"xml": doc, "profile": "cbpr-2026"}))
 	if errs := result(t, checked[1])["error_count"].(float64); errs == 0 {
 		t.Errorf("an unstructured address passed cbpr-2026: %v",
 			text(checked[1]["result"].(map[string]any)))
@@ -384,7 +384,7 @@ func TestCheckProfileTool(t *testing.T) {
 }
 
 func TestGenerateTool(t *testing.T) {
-	replies := session(t, initialize, call(2, "anchor_generate", map[string]any{
+	replies := session(t, initialize, call(2, "askiso_generate", map[string]any{
 		"message_type": "pacs.008",
 		"preset":       "target2",
 		"amount":       "1234.56",
@@ -401,13 +401,13 @@ func TestGenerateTool(t *testing.T) {
 	}
 
 	bad := session(t, initialize,
-		call(2, "anchor_generate", map[string]any{"message_type": "nope.999"}))
+		call(2, "askiso_generate", map[string]any{"message_type": "nope.999"}))
 	toolError(t, bad[1])
 }
 
 func TestTranslateToolConverts(t *testing.T) {
 	replies := session(t, initialize,
-		call(2, "anchor_translate", map[string]any{"mt_message": sampleMT103}))
+		call(2, "askiso_translate", map[string]any{"mt_message": sampleMT103}))
 
 	sc := result(t, replies[1])
 	if sc["source_type"] != "MT103" || sc["target_type"] != "pacs.008.001.10" {
@@ -435,14 +435,14 @@ func TestTranslateToolConverts(t *testing.T) {
 
 func TestTranslateToolCrossReference(t *testing.T) {
 	replies := session(t, initialize,
-		call(2, "anchor_translate", map[string]any{"code": "MT103"}))
+		call(2, "askiso_translate", map[string]any{"code": "MT103"}))
 	sc := result(t, replies[1])
 	if !strings.HasPrefix(sc["MXCode"].(string), "pacs.008") {
 		t.Errorf("MXCode = %v", sc["MXCode"])
 	}
 
 	// With no arguments at all it says what it can do.
-	listed := session(t, initialize, call(2, "anchor_translate", map[string]any{}))
+	listed := session(t, initialize, call(2, "askiso_translate", map[string]any{}))
 	described := result(t, listed[1])
 	if convertible, _ := described["convertible"].([]any); len(convertible) != 10 {
 		t.Errorf("convertible = %v, want every supported MT type", convertible)
@@ -454,18 +454,18 @@ func TestTranslateToolCrossReference(t *testing.T) {
 	}
 
 	unknown := session(t, initialize,
-		call(2, "anchor_translate", map[string]any{"code": "MT999"}))
+		call(2, "askiso_translate", map[string]any{"code": "MT999"}))
 	toolError(t, unknown[1])
 }
 
 func TestTranslateToolRejectsGarbage(t *testing.T) {
 	replies := session(t, initialize,
-		call(2, "anchor_translate", map[string]any{"mt_message": "not an MT message"}))
+		call(2, "askiso_translate", map[string]any{"mt_message": "not an MT message"}))
 	toolError(t, replies[1])
 }
 
 func TestCodeTool(t *testing.T) {
-	replies := session(t, initialize, call(2, "anchor_code", map[string]any{"query": "AC04"}))
+	replies := session(t, initialize, call(2, "askiso_code", map[string]any{"query": "AC04"}))
 	sc := result(t, replies[1])
 	codes := sc["codes"].([]any)
 	if len(codes) == 0 || codes[0].(map[string]any)["code"] != "AC04" {
@@ -473,10 +473,10 @@ func TestCodeTool(t *testing.T) {
 	}
 
 	missing := session(t, initialize,
-		call(2, "anchor_code", map[string]any{"query": "not-a-code-anywhere"}))
+		call(2, "askiso_code", map[string]any{"query": "not-a-code-anywhere"}))
 	toolError(t, missing[1])
 
-	empty := session(t, initialize, call(2, "anchor_code", map[string]any{}))
+	empty := session(t, initialize, call(2, "askiso_code", map[string]any{}))
 	toolError(t, empty[1])
 }
 
@@ -487,34 +487,34 @@ func TestConvertTool(t *testing.T) {
 </Document>`
 
 	// The target format is inferred from the content when it is not named.
-	toJSON := session(t, initialize, call(2, "anchor_convert", map[string]any{"content": doc}))
+	toJSON := session(t, initialize, call(2, "askiso_convert", map[string]any{"content": doc}))
 	sc := result(t, toJSON[1])
 	if sc["format"] != "json" || !strings.Contains(sc["content"].(string), "MsgId") {
 		t.Fatalf("XML did not convert to JSON: %v", sc)
 	}
 
 	back := session(t, initialize,
-		call(2, "anchor_convert", map[string]any{"content": sc["content"]}))
+		call(2, "askiso_convert", map[string]any{"content": sc["content"]}))
 	round := result(t, back[1])
 	if round["format"] != "xml" || !strings.Contains(round["content"].(string), "<MsgId>MSG-1</MsgId>") {
 		t.Errorf("the round trip lost the message: %v", round)
 	}
 
 	bad := session(t, initialize,
-		call(2, "anchor_convert", map[string]any{"content": doc, "to": "yaml"}))
+		call(2, "askiso_convert", map[string]any{"content": doc, "to": "yaml"}))
 	if msg := toolError(t, bad[1]); !strings.Contains(msg, "yaml") {
 		t.Errorf("message = %q", msg)
 	}
 
 	broken := session(t, initialize,
-		call(2, "anchor_convert", map[string]any{"content": "<unclosed>", "to": "json"}))
+		call(2, "askiso_convert", map[string]any{"content": "<unclosed>", "to": "json"}))
 	toolError(t, broken[1])
 
 	brokenJSON := session(t, initialize,
-		call(2, "anchor_convert", map[string]any{"content": "{oops", "to": "xml"}))
+		call(2, "askiso_convert", map[string]any{"content": "{oops", "to": "xml"}))
 	toolError(t, brokenJSON[1])
 
-	empty := session(t, initialize, call(2, "anchor_convert", map[string]any{}))
+	empty := session(t, initialize, call(2, "askiso_convert", map[string]any{}))
 	toolError(t, empty[1])
 }
 
@@ -522,9 +522,9 @@ func TestValidateAndDiffNeedArguments(t *testing.T) {
 	// These two read the user's own schemas, so they may legitimately report
 	// that nothing is installed. A missing argument must still be caught first.
 	replies := session(t, initialize,
-		call(2, "anchor_validate", map[string]any{}),
-		call(3, "anchor_diff", map[string]any{"to": "pacs.008.001.10"}),
-		call(4, "anchor_diff", map[string]any{"from": "pacs.008.001.09"}))
+		call(2, "askiso_validate", map[string]any{}),
+		call(3, "askiso_diff", map[string]any{"to": "pacs.008.001.10"}),
+		call(4, "askiso_diff", map[string]any{"from": "pacs.008.001.09"}))
 
 	if msg := toolError(t, replies[1]); !strings.Contains(msg, "xml") {
 		t.Errorf("validate: %q", msg)
@@ -658,8 +658,8 @@ func installed(t *testing.T) mcp.CatalogueFunc {
 
 func TestSchemaToolsWithoutACatalogue(t *testing.T) {
 	replies := sessionWith(t, noCatalogue, initialize,
-		call(2, "anchor_validate", map[string]any{"xml": "<Document/>"}),
-		call(3, "anchor_diff", map[string]any{"from": "pacs.008.001.09", "to": "pacs.008.001.10"}))
+		call(2, "askiso_validate", map[string]any{"xml": "<Document/>"}),
+		call(3, "askiso_diff", map[string]any{"from": "pacs.008.001.09", "to": "pacs.008.001.10"}))
 
 	// Neither may fail obscurely: both must name the download that fixes it.
 	for _, reply := range replies[1:] {
@@ -673,8 +673,8 @@ func TestSchemaToolsWithoutACatalogue(t *testing.T) {
 func TestSearchAndInfoWorkWithoutACatalogue(t *testing.T) {
 	// Light mode: the embedded registry answers, and says nothing is installed.
 	replies := sessionWith(t, noCatalogue, initialize,
-		call(2, "anchor_search", map[string]any{"query": "camt.053"}),
-		call(3, "anchor_info", map[string]any{"message_id": "camt.053.001.11"}))
+		call(2, "askiso_search", map[string]any{"query": "camt.053"}),
+		call(3, "askiso_info", map[string]any{"message_id": "camt.053.001.11"}))
 
 	messages := result(t, replies[1])["messages"].([]any)
 	if len(messages) == 0 {
@@ -697,10 +697,10 @@ func TestValidateToolAgainstRealSchemas(t *testing.T) {
 	open := installed(t)
 
 	gen := session(t, initialize,
-		call(2, "anchor_generate", map[string]any{"message_type": "pacs.008", "preset": "sepa"}))
+		call(2, "askiso_generate", map[string]any{"message_type": "pacs.008", "preset": "sepa"}))
 	doc := result(t, gen[1])["xml"].(string)
 
-	replies := sessionWith(t, open, initialize, call(2, "anchor_validate", map[string]any{"xml": doc}))
+	replies := sessionWith(t, open, initialize, call(2, "askiso_validate", map[string]any{"xml": doc}))
 	res := replies[1]["result"].(map[string]any)
 	if isErr, _ := res["isError"].(bool); isErr {
 		t.Skipf("pacs.008 is not installed in this catalogue: %s", text(res))
@@ -713,7 +713,7 @@ func TestValidateToolAgainstRealSchemas(t *testing.T) {
 	// guessed at.
 	unknown := strings.Replace(doc, "pacs.008.001.10", "zzzz.999.999.99", 1)
 	missing := sessionWith(t, open, initialize,
-		call(2, "anchor_validate", map[string]any{"xml": unknown}))
+		call(2, "askiso_validate", map[string]any{"xml": unknown}))
 	toolError(t, missing[1])
 }
 
@@ -721,10 +721,10 @@ func TestDiffToolAgainstRealSchemas(t *testing.T) {
 	open := installed(t)
 
 	replies := sessionWith(t, open, initialize,
-		call(2, "anchor_diff", map[string]any{"from": "pacs.008.001.09", "to": "pacs.008.001.10"}),
-		call(3, "anchor_diff", map[string]any{
+		call(2, "askiso_diff", map[string]any{"from": "pacs.008.001.09", "to": "pacs.008.001.10"}),
+		call(3, "askiso_diff", map[string]any{
 			"from": "pacs.008.001.10", "to": "pacs.008.001.13", "breaking_only": true}),
-		call(4, "anchor_diff", map[string]any{"from": "pacs.008.001.10", "to": "zzzz.999.999.99"}))
+		call(4, "askiso_diff", map[string]any{"from": "pacs.008.001.10", "to": "zzzz.999.999.99"}))
 
 	res := replies[1]["result"].(map[string]any)
 	if isErr, _ := res["isError"].(bool); isErr {
@@ -758,14 +758,14 @@ func TestDiffToolAgainstRealSchemas(t *testing.T) {
 func TestSearchLimitDefaults(t *testing.T) {
 	// A query matching many messages is capped, so a model is not handed
 	// hundreds of rows it has no use for.
-	replies := session(t, initialize, call(2, "anchor_search", map[string]any{"query": "camt"}))
+	replies := session(t, initialize, call(2, "askiso_search", map[string]any{"query": "camt"}))
 	if n := len(result(t, replies[1])["messages"].([]any)); n != 20 {
 		t.Errorf("got %d messages, want the default cap of 20", n)
 	}
 
 	// A limit of zero means no cap.
 	all := session(t, initialize,
-		call(2, "anchor_search", map[string]any{"query": "camt", "limit": 0}))
+		call(2, "askiso_search", map[string]any{"query": "camt", "limit": 0}))
 	if n := len(result(t, all[1])["messages"].([]any)); n <= 20 {
 		t.Errorf("a limit of zero capped the results at %d", n)
 	}
@@ -775,7 +775,7 @@ func TestToolCallWithoutArguments(t *testing.T) {
 	// A client may omit the arguments object entirely; the tool must report the
 	// missing argument rather than dereferencing a nil map.
 	replies := session(t, initialize,
-		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"anchor_info"}}`)
+		`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"askiso_info"}}`)
 	if msg := toolError(t, replies[1]); !strings.Contains(msg, "message_id") {
 		t.Errorf("message = %q", msg)
 	}
@@ -785,15 +785,15 @@ func TestRequiredArgumentsAreNamed(t *testing.T) {
 	// Every tool that needs an argument has to say which one is missing, or a
 	// model retries blindly.
 	cases := map[string]string{
-		"anchor_check_profile": "xml",
-		"anchor_generate":      "message_type",
-		"anchor_translate":     "",
+		"askiso_check_profile": "xml",
+		"askiso_generate":      "message_type",
+		"askiso_translate":     "",
 	}
 	for tool, want := range cases {
 		t.Run(tool, func(t *testing.T) {
 			replies := session(t, initialize, call(2, tool, map[string]any{}))
 			if want == "" {
-				// anchor_translate with nothing to do describes itself instead.
+				// askiso_translate with nothing to do describes itself instead.
 				if _, ok := result(t, replies[1])["mappings"]; !ok {
 					t.Errorf("the tool did not describe itself: %v", replies[1])
 				}

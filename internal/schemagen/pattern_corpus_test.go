@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/schemagen"
+	"github.com/sebastienrousseau/askiso/internal/schemagen"
 )
 
 // The corpus is every distinct pattern in the published standard, collected

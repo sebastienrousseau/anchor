@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
 	"github.com/spf13/cobra"
 )
 
@@ -56,7 +56,7 @@ func TestLoadCatalogFailsWithoutCatalogue(t *testing.T) {
 		t.Fatalf("expected an error, got an index with %d messages", len(idx.Messages))
 	}
 	msg := err.Error()
-	for _, want := range []string{"no ISO 20022 catalogue found", "iso20022.org", "anchor catalog add"} {
+	for _, want := range []string{"no ISO 20022 catalogue found", "iso20022.org", "askiso catalog add"} {
 		if !strings.Contains(msg, want) {
 			t.Errorf("error should mention %q:\n%s", want, msg)
 		}
@@ -80,7 +80,7 @@ func TestLoadCatalogUsesEnv(t *testing.T) {
 	}
 }
 
-// The --catalog flag must beat $ANCHOR_CATALOG.
+// The --catalog flag must beat $ASKISO_CATALOG.
 func TestLoadCatalogFlagBeatsEnv(t *testing.T) {
 	isolate(t)
 	t.Setenv(catalog.EnvCatalog, writeFixtureCatalogue(t))
@@ -119,7 +119,7 @@ func TestSchemaCommandsErrorWithoutCatalogue(t *testing.T) {
 	}
 }
 
-// Light mode: with no catalogue Anchor still knows what exists, what it is
+// Light mode: with no catalogue AskIso still knows what exists, what it is
 // called, and where the RA publishes it. These commands must answer usefully
 // rather than fail, so a fresh install is a starting point, not a dead end.
 func TestDiscoveryCommandsFallBackToRegistry(t *testing.T) {

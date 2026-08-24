@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/validator"
+	"github.com/sebastienrousseau/askiso/internal/validator"
 )
 
 // A schema error is turned into an editor range by preferring the element path,

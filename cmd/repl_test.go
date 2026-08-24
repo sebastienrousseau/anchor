@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/ai"
+	"github.com/sebastienrousseau/askiso/internal/ai"
 )
 
 // withStdin replaces os.Stdin with a file holding the given script. A regular

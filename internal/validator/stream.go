@@ -10,7 +10,7 @@ import (
 	"io"
 	"sort"
 
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
 // Validate reads the whole document into memory, which is fine for a payment

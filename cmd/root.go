@@ -9,8 +9,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
-	"github.com/sebastienrousseau/anchor/internal/tui"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -22,8 +22,8 @@ var (
 
 // loadCatalog resolves and loads the ISO 20022 catalogue.
 //
-// Anchor does not ship the catalogue; the user supplies it. Resolution order is
-// --catalog, $ANCHOR_CATALOG, the platform data directory, then the working
+// AskIso does not ship the catalogue; the user supplies it. Resolution order is
+// --catalog, $ASKISO_CATALOG, the platform data directory, then the working
 // directory and its parents. A missing catalogue is a hard error carrying the
 // command that fixes it -- never an empty result set.
 func loadCatalog() (*catalog.Index, error) {
@@ -32,16 +32,35 @@ func loadCatalog() (*catalog.Index, error) {
 
 // RootCmd represents the base command when called without any subcommands.
 var RootCmd = &cobra.Command{
-	Use:   "anchor",
-	Short: "Anchor ⚓ - High-performance ISO 20022 Message Explorer & Assistant",
+	Use:   "askiso",
+	Short: "AskIso — High-performance ISO 20022 Message Explorer & Assistant",
 	// Execute prints the error; usage on a runtime failure is noise.
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	Long: `Anchor ⚓ provides a full-featured Bubble Tea interactive terminal UI, 
-fuzzy search engine, and local AI assistant for exploring, inspecting, and 
-validating all 4,746+ ISO 20022 Message Definition Reports (MDRs), Schemas (XSD), 
-and XML Sample Messages.`,
+	Long: `AskIso provides a full-featured Bubble Tea interactive terminal UI,
+fuzzy search engine, and local AI assistant for exploring, inspecting, and
+validating all 4,746+ ISO 20022 Message Definition Reports (MDRs), Schemas (XSD),
+and XML Sample Messages.
+
+Run it bare to browse the catalogue, or put a question straight on the command
+line — no quoting needed:
+
+  askiso                                   browse in the terminal UI
+  askiso compare pacs.008 and pacs.009     ask the assistant
+  askiso validate payment.xml              run a command`,
+
+	// Free text is allowed so a question needs no subcommand and no quotes.
+	// Cobra still resolves a real subcommand before this ever runs, so
+	// `askiso validate x.xml` remains the validate command.
+	Args: cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// A bare invocation browses; anything else is a question. Words that
+		// are not a known subcommand fall through to here, which is what lets
+		// the query be typed unquoted.
+		if len(args) > 0 {
+			return runAsk(cmd, args)
+		}
+
 		idx, err := loadCatalog()
 		if err != nil {
 			return err
@@ -73,8 +92,8 @@ func Run(errOut io.Writer) int {
 }
 
 func init() {
-	RootCmd.PersistentFlags().StringVar(&catalogPath, "catalog", "", "Path to the ISO 20022 catalogue (overrides $ANCHOR_CATALOG)")
-	RootCmd.PersistentFlags().BoolVar(&showLogo, "logo", true, "Display ASCII Anchor logo banner")
+	RootCmd.PersistentFlags().StringVar(&catalogPath, "catalog", "", "Path to the ISO 20022 catalogue (overrides $ASKISO_CATALOG)")
+	RootCmd.PersistentFlags().BoolVar(&showLogo, "logo", true, "Display ASCII AskIso logo banner")
 	RootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppress banner and non-essential output")
 
 	helpTemplate := tui.GetStyledLogo() + `{{.Long}}

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/rules"
+	"github.com/sebastienrousseau/askiso/internal/rules"
 )
 
 func TestInvestigationMustIdentifyItsPayment(t *testing.T) {

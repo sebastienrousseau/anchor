@@ -1,4 +1,4 @@
-Anchor (https://github.com/sebastienrousseau/anchor)
+AskIso (https://github.com/sebastienrousseau/askiso)
 Copyright (c) 2026 Sebastien Rousseau.
 
 This product includes software developed by Sebastien Rousseau under the
@@ -8,14 +8,14 @@ Apache License, Version 2.0 and the MIT License.
 ISO 20022 Financial Repository & Specification Attribution
 ===============================================================================
 
-Anchor does NOT redistribute ISO 20022 specifications. It is a tool that reads
+AskIso does NOT redistribute ISO 20022 specifications. It is a tool that reads
 Message Definition Reports (MDR), XML Schema Definitions (.xsd), and sample
 messages that YOU download from the ISO 20022 Registration Authority (RA).
 
   This is not the official ISO 20022 site. The sole source of up-to-date
   ISO 20022 material is https://www.iso20022.org/
 
-Anchor embeds only factual metadata about the standard: message identifiers,
+AskIso embeds only factual metadata about the standard: message identifiers,
 domain codes, version numbers, and the official download locations published by
 the RA. No schema, report, or specification text is bundled with this software.
 

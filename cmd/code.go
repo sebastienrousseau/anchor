@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sebastienrousseau/anchor/internal/codes"
+	"github.com/sebastienrousseau/askiso/internal/codes"
 	"github.com/spf13/cobra"
 )
 
@@ -29,24 +29,24 @@ var codeCmd = &cobra.Command{
 	Short:   "Lookup and explain ISO 20022 external codes (reasons, purpose, charges, status)",
 	Long: `Code looks up ISO 20022 code values.
 
-Anchor carries a curated dictionary of the codes that come up most often. With a
+AskIso carries a curated dictionary of the codes that come up most often. With a
 catalogue installed it also reads every code set enumerated in your schemas --
 several thousand values across the whole standard -- so a lookup covers far more
 than the curated set.
 
 Codes maintained separately by the Registration Authority as "external code
-sets" are referenced by name in the schemas rather than enumerated. Anchor
+sets" are referenced by name in the schemas rather than enumerated. AskIso
 redistributes that publication no more than it redistributes the schemas:
 download it from iso20022.org and import it with --import, and every lookup
 searches it thereafter.`,
-	Example: `  anchor code AC04
-  anchor code SALA
-  anchor code "insufficient funds"
-  anchor code --set ChargeBearerType1Code
-  anchor code --sets
-  anchor code --import ~/Downloads/ExternalCodeSets.xlsx
-  anchor code --category reason
-  anchor code --json`,
+	Example: `  askiso code AC04
+  askiso code SALA
+  askiso code "insufficient funds"
+  askiso code --set ChargeBearerType1Code
+  askiso code --sets
+  askiso code --import ~/Downloads/ExternalCodeSets.xlsx
+  askiso code --category reason
+  askiso code --json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		query := ""
 		if len(args) > 0 {
@@ -210,8 +210,8 @@ func importExternalCodes(path string) error {
 		headStyle.Render(" EXTERNAL CODE SETS "), sets.Total(), len(sets.SetNames()))
 	fmt.Printf("  %-10s %s\n", "from", path)
 	fmt.Printf("  %-10s %s\n\n", "stored", stored)
-	fmt.Printf("  %s anchor code SALA\n", subtleStyle.Render("→"))
-	fmt.Printf("  %s anchor code --sets\n\n", subtleStyle.Render("→"))
+	fmt.Printf("  %s askiso code SALA\n", subtleStyle.Render("→"))
+	fmt.Printf("  %s askiso code --sets\n\n", subtleStyle.Render("→"))
 	return nil
 }
 
@@ -222,12 +222,12 @@ func noCodeMatch(query string, schemaIdx *codes.SchemaIndex, external *codes.Ext
 
 	var missing []string
 	if schemaIdx == nil {
-		missing = append(missing, "  Install a message set so Anchor can read the code sets your schemas enumerate:\n"+
-			"    anchor catalog add <downloaded.zip>")
+		missing = append(missing, "  Install a message set so AskIso can read the code sets your schemas enumerate:\n"+
+			"    askiso catalog add <downloaded.zip>")
 	}
 	if external.Total() == 0 {
 		missing = append(missing, "  Import the external code sets, which the Registration Authority publishes separately:\n"+
-			"    anchor code --import <ExternalCodeSets.xlsx>")
+			"    askiso code --import <ExternalCodeSets.xlsx>")
 	}
 	if len(missing) > 0 {
 		b.WriteString("\n\n" + strings.Join(missing, "\n\n"))
@@ -293,7 +293,7 @@ func capExternal(list []codes.ExternalCode, limit int) []codes.ExternalCode {
 	return list[:limit]
 }
 
-// listCodeSets prints every code set Anchor can see: those enumerated in the
+// listCodeSets prints every code set AskIso can see: those enumerated in the
 // installed schemas, and those from an imported publication.
 func listCodeSets(idx *codes.SchemaIndex, external *codes.ExternalSets) error {
 	if idx == nil && external.Total() == 0 {
@@ -333,7 +333,7 @@ func showCodeSet(idx *codes.SchemaIndex, name string) error {
 	}
 	members := idx.Set(name)
 	if len(members) == 0 {
-		return fmt.Errorf("no code set named %q (list them with: anchor code --sets)", name)
+		return fmt.Errorf("no code set named %q (list them with: askiso code --sets)", name)
 	}
 
 	if codeJSON {
@@ -358,9 +358,9 @@ func errNoCatalogueForCodes() error {
 	return fmt.Errorf("code sets come from your installed schemas and from the external code " +
 		"sets the Registration Authority publishes separately; neither is installed\n\n" +
 		"Download a message set from https://www.iso20022.org/ then:\n" +
-		"  anchor catalog add <downloaded.zip>\n\n" +
+		"  askiso catalog add <downloaded.zip>\n\n" +
 		"And for the external code sets:\n" +
-		"  anchor code --import <ExternalCodeSets.xlsx>")
+		"  askiso code --import <ExternalCodeSets.xlsx>")
 }
 
 func capCodes(list []codes.SchemaCode, limit int) []codes.SchemaCode {

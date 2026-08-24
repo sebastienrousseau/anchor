@@ -12,19 +12,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
 	"github.com/spf13/cobra"
 )
 
 var doctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "Run system diagnostics, catalog health checks, and toolchain verification",
-	Long: `Doctor performs a comprehensive diagnostic audit of Anchor including 
+	Long: `Doctor performs a comprehensive diagnostic audit of AskIso including 
 catalog index integrity, binary cache status, system toolchain dependencies 
 (xmllint, clipboard), and local AI LLM connectivity.`,
-	Example: `  anchor doctor`,
+	Example: `  askiso doctor`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Printf("\n%s Anchor Environment & System Diagnostics\n\n", headStyle.Render(" ANCHOR DOCTOR "))
+		fmt.Printf("\n%s AskIso Environment & System Diagnostics\n\n", headStyle.Render(" ASKISO DOCTOR "))
 
 		var problems int
 
@@ -90,7 +90,7 @@ catalog index integrity, binary cache status, system toolchain dependencies
 		if problems > 0 {
 			return fmt.Errorf("%d issue(s) need attention", problems)
 		}
-		fmt.Println("All core systems operating normally! ⚓")
+		fmt.Println("All core systems operating normally!")
 		return nil
 	},
 }

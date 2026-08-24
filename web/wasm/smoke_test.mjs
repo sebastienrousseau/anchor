@@ -23,19 +23,19 @@ new Function(fs.readFileSync(path.join(siteDir, "wasm_exec.js"), "utf8"))();
 
 const go = new globalThis.Go();
 const { instance } = await WebAssembly.instantiate(
-  fs.readFileSync(path.join(siteDir, "anchor.wasm")),
+  fs.readFileSync(path.join(siteDir, "askiso.wasm")),
   go.importObject,
 );
 
 let readyFired = false;
-globalThis.anchorReady = () => {
+globalThis.askisoReady = () => {
   readyFired = true;
 };
 
 go.run(instance);
 await new Promise((r) => setTimeout(r, 200));
 
-const A = globalThis.anchor;
+const A = globalThis.askiso;
 
 let failures = 0;
 function check(name, condition, detail) {
@@ -47,11 +47,11 @@ function check(name, condition, detail) {
   }
 }
 
-console.log("anchor wasm smoke test\n");
+console.log("askiso wasm smoke test\n");
 
 // --- bridge -----------------------------------------------------------------
 check("ready callback fires", readyFired);
-check("global anchor object exists", typeof A === "object");
+check("global askiso object exists", typeof A === "object");
 
 const expected = [
   "checkBIC", "checkIBAN", "checkUETR", "codes", "diagram", "generate",

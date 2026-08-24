@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
 // Every schema in an installed catalogue must parse, and every type the root
-// element references must resolve inside the same document. Anchor's validator
+// element references must resolve inside the same document. AskIso's validator
 // is only as good as this, so it is the acceptance test for the parser.
 //
 // It needs a catalogue, so it skips on a clean CI runner.

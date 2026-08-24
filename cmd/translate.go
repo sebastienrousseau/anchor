@@ -9,8 +9,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/sebastienrousseau/anchor/internal/translator"
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/internal/translator"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 	"github.com/spf13/cobra"
 )
 
@@ -61,14 +61,14 @@ the 16 an MT field allows.
 
 MT addresses are unstructured, so a converted message will not satisfy the CBPR+
 structured-address requirement that takes effect on 14 November 2026. The report
-says so, and 'anchor lint --profile cbpr-2026' shows exactly which elements need
+says so, and 'askiso lint --profile cbpr-2026' shows exactly which elements need
 enriching.`,
-	Example: `  anchor translate MT103
-  anchor translate --matrix
-  anchor translate payment.mt103
-  anchor translate request.mt101 --out pain001.xml --report
-  anchor translate payment.xml --report          # ISO 20022 back to MT
-  anchor translate statement.mt940 --format json`,
+	Example: `  askiso translate MT103
+  askiso translate --matrix
+  askiso translate payment.mt103
+  askiso translate request.mt101 --out pain001.xml --report
+  askiso translate payment.xml --report          # ISO 20022 back to MT
+  askiso translate statement.mt940 --format json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if showMatrix || len(args) == 0 {
 			printMatrix()
@@ -103,8 +103,8 @@ func printMatrix() {
 	for _, m := range mappings {
 		fmt.Printf("  %-12s %-24s %-32s\n", titleStyle.Render(m.MTCode), subtleStyle.Render(m.MXCode), m.MTTitle)
 	}
-	fmt.Println("\nConvert a real message:  anchor translate payment.mt103 --report")
-	fmt.Println("Field-level mapping:     anchor translate MT103")
+	fmt.Println("\nConvert a real message:  askiso translate payment.mt103 --report")
+	fmt.Println("Field-level mapping:     askiso translate MT103")
 	fmt.Println()
 }
 
@@ -211,7 +211,7 @@ func printConversionReport(path string, conv *iso20022.Conversion) {
 	}
 	fmt.Printf("  %s this conversion is lossy — review the entries above before relying on it\n",
 		warnMark)
-	fmt.Printf("  %s check the 14 Nov 2026 address rules:  anchor lint <file> --profile cbpr-2026\n\n",
+	fmt.Printf("  %s check the 14 Nov 2026 address rules:  askiso lint <file> --profile cbpr-2026\n\n",
 		subtleStyle.Render("→"))
 }
 

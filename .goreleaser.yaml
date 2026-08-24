@@ -3,16 +3,16 @@
 
 version: 2
 
-project_name: anchor
+project_name: askiso
 
 before:
   hooks:
     - go mod tidy
 
 builds:
-  - id: anchor
-    main: ./cmd/anchor
-    binary: anchor
+  - id: askiso
+    main: ./cmd/askiso
+    binary: askiso
     env:
       - CGO_ENABLED=0
     goos:
@@ -23,14 +23,14 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w -X github.com/sebastienrousseau/anchor/internal/tui.Version={{ .Version }}
+      - -s -w -X github.com/sebastienrousseau/askiso/internal/tui.Version={{ .Version }}
 
   # The Model Context Protocol server ships alongside the CLI. It is a separate
   # binary because an MCP client launches it and takes over its stdin and
   # stdout, which the CLI cannot give up.
-  - id: anchor-mcp
-    main: ./cmd/anchor-mcp
-    binary: anchor-mcp
+  - id: askiso-mcp
+    main: ./cmd/askiso-mcp
+    binary: askiso-mcp
     env:
       - CGO_ENABLED=0
     goos:
@@ -45,9 +45,9 @@ builds:
 
   # The language server ships alongside too, for the same reason: an editor
   # launches it and owns its stdin and stdout.
-  - id: anchor-lsp
-    main: ./cmd/anchor-lsp
-    binary: anchor-lsp
+  - id: askiso-lsp
+    main: ./cmd/askiso-lsp
+    binary: askiso-lsp
     env:
       - CGO_ENABLED=0
     goos:
@@ -64,11 +64,11 @@ builds:
 # language server are one tool with three front ends, and shipping them apart
 # would leave someone with a client pointing at a binary they do not have.
 archives:
-  - id: anchor
+  - id: askiso
     ids:
-      - anchor
-      - anchor-mcp
-      - anchor-lsp
+      - askiso
+      - askiso-mcp
+      - askiso-lsp
     formats: [tar.gz]
     name_template: >-
       {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
@@ -104,7 +104,7 @@ sboms:
 # certificate records which workflow and which commit produced the artifact.
 # Verify with:
 #   cosign verify-blob --signature <artifact>.sig --certificate <artifact>.pem \
-#     --certificate-identity-regexp 'https://github.com/sebastienrousseau/anchor/.*' \
+#     --certificate-identity-regexp 'https://github.com/sebastienrousseau/askiso/.*' \
 #     --certificate-oidc-issuer https://token.actions.githubusercontent.com <artifact>
 signs:
   - cmd: cosign
@@ -118,13 +118,13 @@ signs:
     artifacts: checksum
     output: true
 
-# Linux packages. A payments team running Anchor in a pipeline installs from a
+# Linux packages. A payments team running AskIso in a pipeline installs from a
 # package manager, not by unpacking a tarball into /usr/local/bin.
 nfpms:
-  - id: anchor
-    package_name: anchor
+  - id: askiso
+    package_name: askiso
     vendor: Sebastien Rousseau
-    homepage: https://github.com/sebastienrousseau/anchor
+    homepage: https://github.com/sebastienrousseau/askiso
     maintainer: Sebastien Rousseau <sebastian.rousseau@gmail.com>
     description: |-
       ISO 20022 reference tooling.
@@ -141,41 +141,41 @@ nfpms:
     bindir: /usr/bin
     contents:
       - src: LICENSE-APACHE
-        dst: /usr/share/doc/anchor/LICENSE-APACHE
+        dst: /usr/share/doc/askiso/LICENSE-APACHE
       - src: LICENSE-MIT
-        dst: /usr/share/doc/anchor/LICENSE-MIT
+        dst: /usr/share/doc/askiso/LICENSE-MIT
       - src: README.md
-        dst: /usr/share/doc/anchor/README.md
+        dst: /usr/share/doc/askiso/README.md
 
 # homebrew_casks replaces the deprecated brews section: Homebrew now expects a
 # binary distribution to be a cask rather than a formula.
 homebrew_casks:
-  - name: anchor
+  - name: askiso
     repository:
       owner: sebastienrousseau
       name: homebrew-tap
       token: '{{ .Env.HOMEBREW_TAP_TOKEN }}'
-    homepage: https://github.com/sebastienrousseau/anchor
+    homepage: https://github.com/sebastienrousseau/askiso
     description: ISO 20022 reference tooling for the terminal, an editor, and an AI assistant
     binaries:
-      - anchor
-      - anchor-mcp
-      - anchor-lsp
+      - askiso
+      - askiso-mcp
+      - askiso-lsp
     caveats: |
-      Anchor ships no ISO 20022 specification content. Download the message sets
+      AskIso ships no ISO 20022 specification content. Download the message sets
       you need from https://www.iso20022.org/ then:
 
-        anchor catalog add <downloaded.zip>
+        askiso catalog add <downloaded.zip>
 
       Search, lint, generate and MT translation work without any download.
 
 scoops:
-  - name: anchor
+  - name: askiso
     repository:
       owner: sebastienrousseau
       name: scoop-bucket
       token: '{{ .Env.SCOOP_BUCKET_TOKEN }}'
-    homepage: https://github.com/sebastienrousseau/anchor
+    homepage: https://github.com/sebastienrousseau/askiso
     description: ISO 20022 reference tooling for the terminal, an editor, and an AI assistant
     license: Apache-2.0 OR MIT
 
@@ -191,12 +191,12 @@ release:
     cosign verify-blob checksums.txt \
       --signature checksums.txt.sig \
       --certificate checksums.txt.pem \
-      --certificate-identity-regexp 'https://github.com/sebastienrousseau/anchor/.*' \
+      --certificate-identity-regexp 'https://github.com/sebastienrousseau/askiso/.*' \
       --certificate-oidc-issuer https://token.actions.githubusercontent.com
     ```
 
     ## What is in the archive
 
-    `anchor` (CLI and TUI), `anchor-mcp` (Model Context Protocol server) and
-    `anchor-lsp` (language server). Anchor redistributes no ISO 20022
+    `askiso` (CLI and TUI), `askiso-mcp` (Model Context Protocol server) and
+    `askiso-lsp` (language server). AskIso redistributes no ISO 20022
     specification content.

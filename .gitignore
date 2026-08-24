@@ -1,17 +1,17 @@
 # Build output
-/anchor
-/anchor-mcp
-/anchor-lsp
+/askiso
+/askiso-mcp
+/askiso-lsp
 /dist/
 coverage.out
 coverage.html
 
 # Generated website assets (rebuild with `make web`)
-web/site/anchor.wasm
+web/site/askiso.wasm
 web/site/wasm_exec.js
 
 # Local catalogue cache (catalogue lives outside the repo)
-.anchor.cache
+.askiso.cache
 
 # macOS
 .DS_Store

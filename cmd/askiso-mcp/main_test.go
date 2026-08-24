@@ -24,7 +24,7 @@ func TestVersionFlag(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("exit code = %d", code)
 	}
-	if !strings.HasPrefix(out, "anchor-mcp ") {
+	if !strings.HasPrefix(out, "askiso-mcp ") {
 		t.Errorf("output = %q", out)
 	}
 }
@@ -34,7 +34,7 @@ func TestToolsFlag(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("exit code = %d", code)
 	}
-	for _, want := range []string{"anchor_lint", "anchor_translate", "anchor_diff"} {
+	for _, want := range []string{"askiso_lint", "askiso_translate", "askiso_diff"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("the listing is missing %s:\n%s", want, out)
 		}
@@ -99,7 +99,7 @@ func TestServeReportsAFailure(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if !strings.Contains(errOut, "anchor-mcp:") {
+	if !strings.Contains(errOut, "askiso-mcp:") {
 		t.Errorf("stderr = %q", errOut)
 	}
 }

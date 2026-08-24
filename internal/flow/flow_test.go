@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/generator"
+	"github.com/sebastienrousseau/askiso/internal/generator"
 )
 
 func TestGenerateLifecycle(t *testing.T) {

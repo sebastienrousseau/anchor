@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/schemagen"
-	"github.com/sebastienrousseau/anchor/internal/validator"
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/schemagen"
+	"github.com/sebastienrousseau/askiso/internal/validator"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
 // A generated message is only worth anything if it validates, so every test
-// here generates and then validates with Anchor's own validator rather than
+// here generates and then validates with AskIso's own validator rather than
 // asserting on the text alone.
 
 func parse(t *testing.T, body string) *xsd.Schema {

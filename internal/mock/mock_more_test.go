@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sebastienrousseau/anchor/internal/generator"
+	"github.com/sebastienrousseau/askiso/internal/generator"
 )
 
 func validPayment(t *testing.T) string {

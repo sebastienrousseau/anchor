@@ -98,8 +98,8 @@ func sarifLevel(s Severity) string {
 // document rather than one per file.
 func WriteSARIF(w io.Writer, results ...*Result) error {
 	driver := sarifDriver{
-		Name:           "anchor",
-		InformationURI: "https://github.com/sebastienrousseau/anchor",
+		Name:           "askiso",
+		InformationURI: "https://github.com/sebastienrousseau/askiso",
 	}
 
 	// Describe every rule that produced a result, once.

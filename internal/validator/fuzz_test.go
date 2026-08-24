@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/validator"
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/validator"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
-// The validator is the part of Anchor most likely to be pointed at a file
+// The validator is the part of AskIso most likely to be pointed at a file
 // nobody vetted: a message that arrived over a wire, or one an editor is
 // half-way through writing. It must always return a verdict rather than
 // panicking, and its verdict must be internally consistent.

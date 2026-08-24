@@ -2,13 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 VERSION ?= 0.1.0
-BINARY_NAME = anchor
-CMD_PATH = ./cmd/anchor
-MCP_BINARY = anchor-mcp
-MCP_PATH = ./cmd/anchor-mcp
-LSP_BINARY = anchor-lsp
-LSP_PATH = ./cmd/anchor-lsp
-LDFLAGS = -s -w -X github.com/sebastienrousseau/anchor/internal/tui.Version=$(VERSION)
+BINARY_NAME = askiso
+CMD_PATH = ./cmd/askiso
+MCP_BINARY = askiso-mcp
+MCP_PATH = ./cmd/askiso-mcp
+LSP_BINARY = askiso-lsp
+LSP_PATH = ./cmd/askiso-lsp
+LDFLAGS = -s -w -X github.com/sebastienrousseau/askiso/internal/tui.Version=$(VERSION)
 SERVER_LDFLAGS = -s -w -X main.version=$(VERSION)
 COVERAGE_FLOOR = 95
 
@@ -37,7 +37,7 @@ mcp-check: mcp
 	  '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
 	  '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
 	  | ./$(MCP_BINARY) \
-	  | grep -q '"anchor_translate"' \
+	  | grep -q '"askiso_translate"' \
 	  && echo "mcp: handshake and tools/list ok" \
 	  || { echo "mcp: handshake failed"; exit 1; }
 
@@ -81,7 +81,7 @@ cover:
 # correctness bar for a validator written from scratch.
 differential:
 	@command -v xmllint >/dev/null || { echo "xmllint not found - install libxml2"; exit 1; }
-	ANCHOR_DIFF_LIMIT=0 go test ./internal/validator/ -run Differential -v -timeout 30m
+	ASKISO_DIFF_LIMIT=0 go test ./internal/validator/ -run Differential -v -timeout 30m
 
 # The parsers all take input nobody vetted: a schema the user downloaded, a
 # message that arrived over a wire, an MT file from another bank's system. These
@@ -96,25 +96,25 @@ fuzz:
 
 conformance:
 	@command -v xmllint >/dev/null || { echo "xmllint not found - install libxml2"; exit 1; }
-	@anchor_catalog=$${ANCHOR_CATALOG:-$$HOME/Library/Application Support/anchor/catalog}; \
-	test -d "$$anchor_catalog" || { echo "no catalogue at $$anchor_catalog"; echo "set ANCHOR_CATALOG or run: anchor catalog add <zip>"; exit 1; }; \
-	echo "Catalogue: $$anchor_catalog"; \
-	ANCHOR_CATALOG="$$anchor_catalog" go test ./internal/generator/ -run 'Schema|Linter|BAH|RoundTrip' -v; \
-	ANCHOR_CATALOG="$$anchor_catalog" go test ./internal/swift/ -run 'ConvertedMessagesValidate' -v; \
-	ANCHOR_CATALOG="$$anchor_catalog" ANCHOR_GEN_LIMIT=0 go test ./internal/schemagen/ -run 'Installed|LintClean' -v -timeout 20m; \
-	ANCHOR_CATALOG="$$anchor_catalog" go test ./internal/validator/ -run 'StreamingAgrees' -v
+	@askiso_catalog=$${ASKISO_CATALOG:-$$HOME/Library/Application Support/askiso/catalog}; \
+	test -d "$$askiso_catalog" || { echo "no catalogue at $$askiso_catalog"; echo "set ASKISO_CATALOG or run: askiso catalog add <zip>"; exit 1; }; \
+	echo "Catalogue: $$askiso_catalog"; \
+	ASKISO_CATALOG="$$askiso_catalog" go test ./internal/generator/ -run 'Schema|Linter|BAH|RoundTrip' -v; \
+	ASKISO_CATALOG="$$askiso_catalog" go test ./internal/swift/ -run 'ConvertedMessagesValidate' -v; \
+	ASKISO_CATALOG="$$askiso_catalog" ASKISO_GEN_LIMIT=0 go test ./internal/schemagen/ -run 'Installed|LintClean' -v -timeout 20m; \
+	ASKISO_CATALOG="$$askiso_catalog" go test ./internal/validator/ -run 'StreamingAgrees' -v
 
 # --- website ---------------------------------------------------------------
 # The site is pkg/iso20022 compiled to WebAssembly, so the browser runs exactly
 # the same engine as the CLI. It ships no schemas: light mode only.
 web:
-	GOOS=js GOARCH=wasm go build -o web/site/anchor.wasm ./web/wasm
+	GOOS=js GOARCH=wasm go build -o web/site/askiso.wasm ./web/wasm
 	@cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" web/site/ 2>/dev/null || \
 	 cp "$$(go env GOROOT)/misc/wasm/wasm_exec.js" web/site/ 2>/dev/null || \
 	 { echo "could not find wasm_exec.js in GOROOT"; exit 1; }
 	@printf 'wasm: %s (%s gzipped)\n' \
-	  "$$(du -h web/site/anchor.wasm | cut -f1)" \
-	  "$$(gzip -9 -c web/site/anchor.wasm | wc -c | awk '{printf "%.1fM", $$1/1048576}')"
+	  "$$(du -h web/site/askiso.wasm | cut -f1)" \
+	  "$$(gzip -9 -c web/site/askiso.wasm | wc -c | awk '{printf "%.1fM", $$1/1048576}')"
 
 web-test: web
 	@command -v node >/dev/null || { echo "node is required for the wasm smoke test"; exit 1; }
@@ -145,4 +145,4 @@ catalog-info:
 	@./$(BINARY_NAME) doctor || true
 
 clean:
-	rm -f $(BINARY_NAME) $(MCP_BINARY) $(LSP_BINARY) coverage.out coverage.html web/site/anchor.wasm web/site/wasm_exec.js
+	rm -f $(BINARY_NAME) $(MCP_BINARY) $(LSP_BINARY) coverage.out coverage.html web/site/askiso.wasm web/site/wasm_exec.js

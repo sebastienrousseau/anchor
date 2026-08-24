@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sebastienrousseau/anchor/internal/converter"
-	"github.com/sebastienrousseau/anchor/internal/linter"
-	"github.com/sebastienrousseau/anchor/internal/rules"
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/internal/converter"
+	"github.com/sebastienrousseau/askiso/internal/linter"
+	"github.com/sebastienrousseau/askiso/internal/rules"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 	"github.com/spf13/cobra"
 )
 
@@ -30,9 +30,9 @@ var lintCmd = &cobra.Command{
 	Long: `Lint evaluates ISO 20022 XML messages against rigorous semantic business rules 
 including ISO 13616 IBAN Modulo-97 checksums, ISO 9362 BIC validation, ISO 4217 
 currency decimal precision, and RFC 4122 UUIDv4 UETR formats.`,
-	Example: `  anchor lint sample.xml
-  anchor lint payload.xml --strict
-  anchor lint sample.xml --json`,
+	Example: `  askiso lint sample.xml
+  askiso lint payload.xml --strict
+  askiso lint sample.xml --json`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filePath := filepath.Clean(args[0])

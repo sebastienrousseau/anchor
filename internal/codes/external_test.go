@@ -12,11 +12,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/codes"
+	"github.com/sebastienrousseau/askiso/internal/codes"
 )
 
 // The Registration Authority publishes the external code sets as a spreadsheet,
-// and more recently as JSON. Anchor imports whichever the user got, because
+// and more recently as JSON. AskIso imports whichever the user got, because
 // they should not have to care.
 
 // writeSpreadsheet builds an .xlsx in the shape the publication takes: a shared
@@ -290,7 +290,7 @@ func TestImportRejectsUnknownShapes(t *testing.T) {
 		t.Error("an empty publication was accepted")
 	}
 
-	// A format Anchor does not read has to say where to get one it does.
+	// A format AskIso does not read has to say where to get one it does.
 	other := filepath.Join(dir, "codes.csv")
 	if err := os.WriteFile(other, []byte("a,b"), 0o644); err != nil {
 		t.Fatal(err)

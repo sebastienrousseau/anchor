@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/atotto/clipboard"
-	"github.com/sebastienrousseau/anchor/internal/graph"
+	"github.com/sebastienrousseau/askiso/internal/graph"
 	"github.com/spf13/cobra"
 )
 
@@ -25,9 +25,9 @@ var graphCmd = &cobra.Command{
 	Long: `Graph generates multi-actor sequence diagrams illustrating ISO 20022 message 
 flows between Debtor, Debtor Bank, Clearing Network, Creditor Bank, and Creditor. 
 Outputs formatted Mermaid markdown diagrams or terminal ASCII flows.`,
-	Example: `  anchor graph pacs.008
-  anchor graph --preset fednow --format ascii
-  anchor graph --format mermaid --copy`,
+	Example: `  askiso graph pacs.008
+  askiso graph --preset fednow --format ascii
+  askiso graph --format mermaid --copy`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		msgType := "pacs.008"
 		if len(args) > 0 {

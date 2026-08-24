@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/ai"
-	"github.com/sebastienrousseau/anchor/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/ai"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
 )
 
 func TestAskOneShot(t *testing.T) {

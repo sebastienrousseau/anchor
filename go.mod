@@ -1,4 +1,4 @@
-module github.com/sebastienrousseau/anchor
+module github.com/sebastienrousseau/askiso
 
 go 1.26.6
 

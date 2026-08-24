@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Package lsp serves Anchor as a language server for ISO 20022 XML.
+// Package lsp serves AskIso as a language server for ISO 20022 XML.
 //
 // Someone editing a payment message wants the same answers the CLI gives, at
 // the moment they type: is this IBAN's checksum right, does this element belong
@@ -24,8 +24,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sebastienrousseau/anchor/internal/xsd"
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 )
 
 // Server is a language server for ISO 20022 XML documents.
@@ -58,7 +58,7 @@ type CatalogueFunc func() (*iso20022.Catalogue, error)
 // server itself go to errOut, which must not be the same stream as out.
 func New(in io.Reader, out, errOut io.Writer) *Server {
 	return &Server{
-		Name:      "anchor-lsp",
+		Name:      "askiso-lsp",
 		Version:   "dev",
 		Profile:   "cbpr-2026",
 		conn:      newConn(in, out),
@@ -300,23 +300,23 @@ func (s *Server) didClose(params json.RawMessage) {
 func (s *Server) didChangeConfiguration(params json.RawMessage) {
 	var p struct {
 		Settings struct {
-			Anchor struct {
+			AskIso struct {
 				Profile string `json:"profile"`
-			} `json:"anchor"`
+			} `json:"askiso"`
 		} `json:"settings"`
 	}
 	if err := json.Unmarshal(params, &p); err != nil {
 		return
 	}
-	if p.Settings.Anchor.Profile == "" {
+	if p.Settings.AskIso.Profile == "" {
 		return
 	}
-	if _, err := iso20022.CheckProfile([]byte("<Document/>"), p.Settings.Anchor.Profile, ""); err != nil {
-		s.logf("ignoring unknown rule profile %q", p.Settings.Anchor.Profile)
+	if _, err := iso20022.CheckProfile([]byte("<Document/>"), p.Settings.AskIso.Profile, ""); err != nil {
+		s.logf("ignoring unknown rule profile %q", p.Settings.AskIso.Profile)
 		return
 	}
 
-	s.Profile = p.Settings.Anchor.Profile
+	s.Profile = p.Settings.AskIso.Profile
 
 	// The setting changes every verdict, so every open document is rechecked.
 	s.mu.RLock()
@@ -349,7 +349,7 @@ func (s *Server) document(uri string) (*Document, bool) {
 func (s *Server) logf(format string, args ...any) {
 	// A failure to log is not worth propagating: the stream it would report on
 	// is the one that just failed.
-	_, _ = fmt.Fprintf(s.errOut, "anchor-lsp: "+format+"\n", args...)
+	_, _ = fmt.Fprintf(s.errOut, "askiso-lsp: "+format+"\n", args...)
 }
 
 // ---------------------------------------------------------------------------

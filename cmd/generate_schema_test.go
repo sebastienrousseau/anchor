@@ -165,7 +165,7 @@ func TestGenerateFromSchemaPrintsItsDecisions(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(schemas, "pacs.008.001.10.xsd"), []byte(schema), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("ANCHOR_CATALOG", root)
+	t.Setenv("ASKISO_CATALOG", root)
 
 	dest := filepath.Join(dir, "generated.xml")
 	out, err := run(t, "generate", "pacs.008.001.10", "--from-schema", "-o", dest)

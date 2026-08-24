@@ -3,7 +3,7 @@
 
 // Package validator checks an ISO 20022 XML instance against a parsed schema.
 //
-// It is pure Go, so `anchor validate` works with no libxml2 and no cgo, on any
+// It is pure Go, so `askiso validate` works with no libxml2 and no cgo, on any
 // platform Go targets — including WebAssembly, which is what lets the website
 // validate a pasted message without uploading it.
 //
@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
 // Error is one schema violation.

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/rules"
+	"github.com/sebastienrousseau/askiso/internal/rules"
 )
 
 // findingsFor runs a profile over a fixture and returns the findings by rule.
@@ -196,7 +196,7 @@ func TestLEIWithAnUnexpandableCharacter(t *testing.T) {
 
 func TestEnhancedRulesOnAMessageWithoutAVersion(t *testing.T) {
 	// A message identifier that is not four dotted parts still has to classify,
-	// because a document may carry a namespace Anchor does not recognise.
+	// because a document may carry a namespace AskIso does not recognise.
 	body := `<FIToFICstmrCdtTrf><CdtTrfTxInf><PmtId/></CdtTrfTxInf></FIToFICstmrCdtTrf>`
 	if got := findingsFor(t, "cbpr-2027", "pacs008", body); len(got) == 0 {
 		t.Error("no rules ran against an unrecognised message identifier")

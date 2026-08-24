@@ -13,8 +13,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/sebastienrousseau/anchor/internal/rules"
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/internal/rules"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 	"github.com/spf13/cobra"
 )
 
@@ -59,10 +59,10 @@ This is the shape real operational work takes: a folder of messages, one report,
 one exit code. With --format sarif the output uploads straight to GitHub code
 scanning, so a pull request that introduces a non-compliant address is annotated
 rather than silently merged.`,
-	Example: `  anchor batch ./messages
-  anchor batch ./messages --profile cbpr-2026
-  anchor batch ./messages --profile cbpr-2026 --format sarif > anchor.sarif
-  anchor batch ./out --schema --profile cbpr-2026`,
+	Example: `  askiso batch ./messages
+  askiso batch ./messages --profile cbpr-2026
+  askiso batch ./messages --profile cbpr-2026 --format sarif > askiso.sarif
+  askiso batch ./out --schema --profile cbpr-2026`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		files, err := collectMessages(args)

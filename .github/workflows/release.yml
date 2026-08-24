@@ -43,20 +43,20 @@ jobs:
 
       - name: Protocol handshakes
         run: |
-          go build -o anchor-mcp ./cmd/anchor-mcp
-          go build -o anchor-lsp ./cmd/anchor-lsp
+          go build -o askiso-mcp ./cmd/askiso-mcp
+          go build -o askiso-lsp ./cmd/askiso-lsp
 
           printf '%s\n' \
             '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
             '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
             '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-            | ./anchor-mcp | grep -q '"anchor_translate"'
+            | ./askiso-mcp | grep -q '"askiso_translate"'
 
           body='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}'
           bye='{"jsonrpc":"2.0","method":"exit"}'
           { printf 'Content-Length: %d\r\n\r\n%s' "${#body}" "$body"
             printf 'Content-Length: %d\r\n\r\n%s' "${#bye}" "$bye"
-          } | ./anchor-lsp | grep -q 'hoverProvider'
+          } | ./askiso-lsp | grep -q 'hoverProvider'
 
   release:
     name: Release

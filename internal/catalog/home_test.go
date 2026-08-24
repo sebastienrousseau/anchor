@@ -45,7 +45,7 @@ func TestDefaultDirsUsesLocalAppDataOnWindows(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("XDG_DATA_HOME", "")
 
-	want := filepath.Join(local, "anchor", "catalog")
+	want := filepath.Join(local, "askiso", "catalog")
 	for _, d := range DefaultDirs() {
 		if d == want {
 			return

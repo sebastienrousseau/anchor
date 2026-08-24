@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/sebastienrousseau/anchor/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
 )
 
 // The Bubble Tea model is a pure function of its messages, so the whole TUI can
@@ -432,7 +432,7 @@ func TestUpdateTableRowsAndFilter(t *testing.T) {
 
 func TestStyledLogoCarriesName(t *testing.T) {
 	logo := GetStyledLogo()
-	if !strings.Contains(logo, "Anchor") {
+	if !strings.Contains(logo, "AskIso") {
 		t.Error("the logo should carry the product name")
 	}
 }

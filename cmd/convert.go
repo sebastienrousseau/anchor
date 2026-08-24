@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/atotto/clipboard"
-	"github.com/sebastienrousseau/anchor/internal/converter"
+	"github.com/sebastienrousseau/askiso/internal/converter"
 	"github.com/spf13/cobra"
 )
 
@@ -26,9 +26,9 @@ var convertCmd = &cobra.Command{
 	Short: "Convert between ISO 20022 XML and structured JSON payloads",
 	Long: `Convert transforms ISO 20022 messages bidirectionally between XML and 
 structured JSON formats for modern REST APIs and event streams.`,
-	Example: `  anchor convert payment.xml --to-json
-  anchor convert payment.xml -o payment.json
-  anchor convert payload.json --to-xml -o payload.xml`,
+	Example: `  askiso convert payment.xml --to-json
+  askiso convert payment.xml -o payment.json
+  askiso convert payload.json --to-xml -o payload.xml`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filePath := filepath.Clean(args[0])

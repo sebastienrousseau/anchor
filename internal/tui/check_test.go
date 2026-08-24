@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/sebastienrousseau/anchor/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
 )
 
 // checkableIndex builds a catalogue whose sample is a real message with a real
@@ -105,7 +105,7 @@ func TestCheckPaneOnACleanMessage(t *testing.T) {
 	}
 	// It has to say how to run the same checks outside the TUI, or the pane is
 	// a dead end.
-	if !strings.Contains(report, "anchor lint") || !strings.Contains(report, "anchor validate") {
+	if !strings.Contains(report, "askiso lint") || !strings.Contains(report, "askiso validate") {
 		t.Errorf("the report does not name the CLI equivalents:\n%s", report)
 	}
 }

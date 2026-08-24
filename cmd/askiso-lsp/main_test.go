@@ -67,7 +67,7 @@ func TestVersionFlag(t *testing.T) {
 	if code != 0 {
 		t.Fatalf("exit code = %d", code)
 	}
-	if !strings.HasPrefix(out, "anchor-lsp ") {
+	if !strings.HasPrefix(out, "askiso-lsp ") {
 		t.Errorf("output = %q", out)
 	}
 }
@@ -169,7 +169,7 @@ func TestFramingFailureExitsNonZero(t *testing.T) {
 	if code != 1 {
 		t.Errorf("exit code = %d, want 1", code)
 	}
-	if !strings.Contains(errOut, "anchor-lsp:") {
+	if !strings.Contains(errOut, "askiso-lsp:") {
 		t.Errorf("stderr = %q", errOut)
 	}
 }

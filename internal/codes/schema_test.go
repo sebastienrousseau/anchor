@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
-	"github.com/sebastienrousseau/anchor/internal/codes"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/codes"
 )
 
 const schemaWithCodes = `<?xml version="1.0" encoding="UTF-8"?>

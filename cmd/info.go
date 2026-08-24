@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/sebastienrousseau/anchor/internal/registry"
+	"github.com/sebastienrousseau/askiso/internal/registry"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +27,7 @@ var infoCmd = &cobra.Command{
 
 		idx, err := loadCatalog()
 		if err != nil {
-			// Without a catalogue Anchor still knows the message exists and
+			// Without a catalogue AskIso still knows the message exists and
 			// which set publishes it, which is exactly what the user needs in
 			// order to install it.
 			return infoFromRegistry(id)
@@ -117,7 +117,7 @@ func infoFromRegistry(id string) error {
 			fmt.Printf("    - %-52s %s\n", s, subtleStyle.Render(s.DownloadURL()))
 		}
 		fmt.Printf("\n  Download one from iso20022.org, then:\n")
-		fmt.Printf("    anchor catalog add <downloaded.zip>\n")
+		fmt.Printf("    askiso catalog add <downloaded.zip>\n")
 	}
 	fmt.Println()
 	return nil

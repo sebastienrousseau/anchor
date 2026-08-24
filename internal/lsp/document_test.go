@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/lsp"
+	"github.com/sebastienrousseau/askiso/internal/lsp"
 )
 
 const instance = `<?xml version="1.0" encoding="UTF-8"?>

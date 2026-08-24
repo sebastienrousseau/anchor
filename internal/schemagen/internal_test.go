@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
 // The helpers below are reachable through Generate only in combinations no real
@@ -30,7 +30,7 @@ func TestClampLength(t *testing.T) {
 		{"maximum trims", "ABCDEF", xsd.Facets{MaxLength: intp(2)}, "AB"},
 		{"minimum pads", "AB", xsd.Facets{MinLength: intp(5)}, "ABAAA"},
 		{"no facets, empty value", "", xsd.Facets{}, "A"},
-		{"no facets, real value", "ANCHOR", xsd.Facets{}, "ANCHOR"},
+		{"no facets, real value", "ASKISO", xsd.Facets{}, "ASKISO"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -119,7 +119,7 @@ func TestStringValueWithoutAPattern(t *testing.T) {
 	if len([]rune(got)) < 40 {
 		t.Errorf("stringValue = %q (%d runes), want at least 40", got, len([]rune(got)))
 	}
-	if !strings.Contains(got, "ANCHOR") {
+	if !strings.Contains(got, "ASKISO") {
 		t.Errorf("stringValue = %q, want something readable", got)
 	}
 }

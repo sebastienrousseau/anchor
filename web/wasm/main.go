@@ -3,7 +3,7 @@
 
 //go:build js && wasm
 
-// Command anchor-wasm exposes Anchor's core to the browser.
+// Command askiso-wasm exposes AskIso's core to the browser.
 //
 // It is the same pkg/iso20022 the CLI uses, compiled to WebAssembly, so a
 // message linted on the website gets the identical verdict to one linted in a
@@ -11,7 +11,7 @@
 //
 // Build:
 //
-//	GOOS=js GOARCH=wasm go build -o web/site/anchor.wasm ./web/wasm
+//	GOOS=js GOARCH=wasm go build -o web/site/askiso.wasm ./web/wasm
 package main
 
 import (
@@ -19,7 +19,7 @@ import (
 	"strings"
 	"syscall/js"
 
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 )
 
 func main() {
@@ -45,9 +45,9 @@ func main() {
 		"checkBIC":   js.FuncOf(checkBIC),
 		"checkUETR":  js.FuncOf(checkUETR),
 	}
-	js.Global().Set("anchor", js.ValueOf(api))
+	js.Global().Set("askiso", js.ValueOf(api))
 
-	if ready := js.Global().Get("anchorReady"); ready.Type() == js.TypeFunction {
+	if ready := js.Global().Get("askisoReady"); ready.Type() == js.TypeFunction {
 		ready.Invoke()
 	}
 
@@ -135,7 +135,7 @@ func lint(this js.Value, args []js.Value) any {
 	return ok(res)
 }
 
-// validate checks a pasted message against a pasted schema. Anchor ships no
+// validate checks a pasted message against a pasted schema. AskIso ships no
 // specification content, so the browser can only validate against an XSD the
 // user supplies -- downloaded from iso20022.org and dropped in alongside.
 func validate(this js.Value, args []js.Value) any {

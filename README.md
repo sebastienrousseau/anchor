@@ -1,10 +1,10 @@
 <!-- SPDX-License-Identifier: Apache-2.0 OR MIT -->
 
 <p align="center">
-  <img src="logo.svg" alt="Anchor" width="128" />
+  <img src="logo.svg" alt="AskIso" width="128" />
 </p>
 
-<h1 align="center">Anchor ⚓</h1>
+<h1 align="center">AskIso</h1>
 
 <p align="center">
   <strong>The ISO 20022 command line.</strong><br>
@@ -12,17 +12,17 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/sebastienrousseau/anchor/actions"><img src="https://img.shields.io/github/actions/workflow/status/sebastienrousseau/anchor/ci.yml?style=for-the-badge&logo=github" alt="Build" /></a>
+  <a href="https://github.com/sebastienrousseau/askiso/actions"><img src="https://img.shields.io/github/actions/workflow/status/sebastienrousseau/askiso/ci.yml?style=for-the-badge&logo=github" alt="Build" /></a>
   <a href="https://www.iso20022.org"><img src="https://img.shields.io/badge/standard-ISO%2020022-blue.svg?style=for-the-badge" alt="ISO 20022" /></a>
   <a href="LICENSE-APACHE"><img src="https://img.shields.io/badge/license-Apache%202.0%20%2F%20MIT-orange.svg?style=for-the-badge" alt="License" /></a>
-  <a href="https://scorecard.dev/viewer/?uri=github.com/sebastienrousseau/anchor"><img src="https://img.shields.io/ossf-scorecard/github.com/sebastienrousseau/anchor?style=for-the-badge&label=OpenSSF%20Scorecard&logo=openssf" alt="OpenSSF Scorecard" /></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/sebastienrousseau/askiso"><img src="https://img.shields.io/ossf-scorecard/github.com/sebastienrousseau/askiso?style=for-the-badge&label=OpenSSF%20Scorecard&logo=openssf" alt="OpenSSF Scorecard" /></a>
 </p>
 
 ---
 
 ## Try it without installing anything
 
-**[The web version](https://sebastienrousseau.com/anchor/)** runs the same engine
+**[The web version](https://askiso.io)** runs the same engine
 compiled to WebAssembly. Lint, generate, browse, convert, look up codes and check
 IBAN/BIC/UETR values in the browser.
 
@@ -33,16 +33,16 @@ Or run the identical bundle locally with `make web-serve`.
 
 ---
 
-## What Anchor is
+## What AskIso is
 
-Anchor is a single Go binary for working with ISO 20022 financial messages. It gives you
+AskIso is a single Go binary for working with ISO 20022 financial messages. It gives you
 fuzzy search across the whole message catalogue, a Bubble Tea TUI, schema and sample
 viewers, a semantic business-rule linter, synthetic message generation, MT ⇄ MX
 cross-references, and a mock clearing rail — without leaving the terminal.
 
-**Anchor does not redistribute ISO 20022 specifications.** The Registration Authority
+**AskIso does not redistribute ISO 20022 specifications.** The Registration Authority
 publishes them free of charge at [iso20022.org](https://www.iso20022.org/); you download
-what you need and point Anchor at it. That keeps the binary small, keeps your schemas
+what you need and point AskIso at it. That keeps the binary small, keeps your schemas
 current, and means the specification content you validate against comes from the source
 of truth rather than a mirror of unknown age.
 
@@ -54,14 +54,14 @@ of truth rather than a mirror of unknown age.
 ## Install
 
 ```bash
-go install github.com/sebastienrousseau/anchor/cmd/anchor@latest
+go install github.com/sebastienrousseau/askiso/cmd/askiso@latest
 ```
 
 Or build from source:
 
 ```bash
-git clone https://github.com/sebastienrousseau/anchor
-cd anchor && make build
+git clone https://github.com/sebastienrousseau/askiso
+cd askiso && make build
 ```
 
 No external dependencies. Validation is pure Go, so there is no libxml2 or cgo to
@@ -72,7 +72,7 @@ used as a cross-check with `--engine libxml2`.
 
 ## Getting a catalogue
 
-Anchor knows about all **2,845 message definitions across 285 published message sets**
+AskIso knows about all **2,845 message definitions across 285 published message sets**
 out of the box — that index is embedded, so `search`, `info`, `code`, `translate`,
 `lint` and `generate` work the moment you install it, with no download and no network.
 That includes converting a real SWIFT MT message: `translate payment.mt103` needs no
@@ -84,11 +84,11 @@ Commands that read the actual XSD files — `schema`, `sample`, `diff`, `stats`,
 and import them:
 
 ```bash
-anchor catalog fetch pacs.008        # opens the right page, imports what lands
-anchor code --import ~/Downloads/ExternalCodeSets.xlsx   # the external code sets
-anchor catalog add ~/Downloads/PaymentsClearingAndSettlement_v11.zip
-anchor catalog add ~/Downloads/*.zip
-anchor catalog add ~/Downloads --dry-run     # see what would happen first
+askiso catalog fetch pacs.008        # opens the right page, imports what lands
+askiso code --import ~/Downloads/ExternalCodeSets.xlsx   # the external code sets
+askiso catalog add ~/Downloads/PaymentsClearingAndSettlement_v11.zip
+askiso catalog add ~/Downloads/*.zip
+askiso catalog add ~/Downloads --dry-run     # see what would happen first
 ```
 
 `catalog add` unpacks nested archives (the RA ships zips inside zips), sorts every file
@@ -96,8 +96,8 @@ into the right place, and matches the archive against the official set names so
 `PaymentsClearingAndSettlement_v11.zip` and `payments-clearing-and-settlement.zip` both
 land in one canonical directory.
 
-Not sure what you have? `anchor catalog status` compares your install against the full
-published standard; `anchor catalog where` shows every location Anchor searches.
+Not sure what you have? `askiso catalog status` compares your install against the full
+published standard; `askiso catalog where` shows every location AskIso searches.
 
 The layout it produces, which you can also create by hand:
 
@@ -113,16 +113,16 @@ The layout it produces, which you can also create by hand:
     └── Version 12.0/
 ```
 
-Anchor looks for the catalogue in this order:
+AskIso looks for the catalogue in this order:
 
 | # | Location |
 | :-- | :--- |
 | 1 | `--catalog <path>` |
-| 2 | `$ANCHOR_CATALOG` |
-| 3 | `$XDG_DATA_HOME/anchor/catalog`, when that variable is set |
-| 4 | `~/Library/Application Support/anchor/catalog` (macOS) |
-| 5 | `%LocalAppData%\anchor\catalog` (Windows) |
-| 6 | `~/.local/share/anchor/catalog` |
+| 2 | `$ASKISO_CATALOG` |
+| 3 | `$XDG_DATA_HOME/askiso/catalog`, when that variable is set |
+| 4 | `~/Library/Application Support/askiso/catalog` (macOS) |
+| 5 | `%LocalAppData%\askiso\catalog` (Windows) |
+| 6 | `~/.local/share/askiso/catalog` |
 | 7 | The working directory and its parents |
 
 `HOME` wins over the operating system's own idea of your home directory wherever it is
@@ -132,14 +132,14 @@ set, which matters on Windows, where it is otherwise ignored entirely.
 message sets extends your existing one rather than quietly starting a second.
 
 ```bash
-anchor doctor    # confirms what Anchor found, and fails if it found nothing
+askiso doctor    # confirms what AskIso found, and fails if it found nothing
 ```
 
-If no catalogue is present, commands that need one tell you where Anchor looked and exit
+If no catalogue is present, commands that need one tell you where AskIso looked and exit
 non-zero. It never reports an empty catalogue as a healthy one.
 
 > **Keep the catalogue out of cloud-synced folders.** iCloud Drive, Dropbox and OneDrive
-> evict cold files and leave placeholders behind. Anchor detects iCloud placeholders and
+> evict cold files and leave placeholders behind. AskIso detects iCloud placeholders and
 > refuses to parse them, but the local data directory is the reliable home.
 
 ---
@@ -150,37 +150,37 @@ Commands marked ◆ need a catalogue; the rest work standalone.
 
 | Command | Description |
 | :--- | :--- |
-| `anchor catalog fetch <msg\|set>` | Open the right download page, then import the archive when it lands |
-| `anchor catalog add <zip\|dir>...` | Import message sets downloaded from iso20022.org (`--dry-run`, `--to`) |
-| `anchor catalog status` | Compare what you have installed against all 285 published sets (`--all`) |
-| `anchor catalog where` | Show every location Anchor searches, and which one it picked |
-| `anchor` ◆ | Interactive TUI: live search, message table, schema and sample viewers |
-| `anchor search <query>` | Search by ID, domain, code, or keyword (`--json`); uses the embedded registry when no catalogue is installed |
-| `anchor info <msg-id>` | Metadata and schema paths (`--json`); without a catalogue, names the message set to download |
-| `anchor schema <msg-id>` ◆ | Syntax-highlighted XSD (`--copy`, `--raw`) |
-| `anchor sample <msg-id>` ◆ | Syntax-highlighted sample XML (`--copy`, `--raw`) |
-| `anchor stats` ◆ | Catalogue metrics and domain distribution (`--json`) |
-| `anchor diff <from> <to>` ◆ | Path-level schema comparison with breaking-change classification (`--breaking`, `--strict`, `--json`) |
-| `anchor validate <xml> [xsd]` | Full XSD validation, pure Go, no external tools (`--json`, `--stream`, `--engine libxml2`) |
-| `anchor lint <xml>` | Business rules plus scheme profiles (`--profile all`, `--strict`, `--json`, `--format sarif`) |
-| `anchor generate <type>` | Any of the 2,845 messages: templates with rail presets for four, schema-driven for the rest (`--from-schema`, `--optional`) |
-| `anchor convert <file>` | ISO 20022 XML ⇄ JSON (`--to-json`, `--to-xml`) |
-| `anchor format <xml>` | Pretty-print or minify (`--minify`, `--copy`) |
-| `anchor code [query]` | Look up codes: curated, from your schemas, and from an imported publication (`--sets`, `--set`, `--import`) |
-| `anchor translate <code>` | SWIFT MT ⇄ ISO 20022 MX field-mapping reference (`--matrix`) |
-| `anchor translate <file>` | Convert a real message either way, with a fidelity report (`--out`, `--report`, `--format json`) |
-| `anchor translate --matrix` | The full MT ⇄ MX cross-reference, field by field |
-| `anchor batch <dir\|glob>` | Lint, validate and profile many messages at once (`--format sarif`, `--workers`) |
-| `anchor flow [type]` | Simulate a `pain.001` → `pacs.008` → `pacs.002` → `camt.053` lifecycle |
-| `anchor graph [type]` | Sequence diagrams (`--format mermaid/ascii`) |
-| `anchor mock` | Local HTTP mock clearing rail (`--port`) |
-| `anchor doctor` | Diagnostics: catalogue, toolchain, AI connectivity |
-| `anchor completion <shell>` | Shell completions for zsh, bash, fish, powershell |
-| `anchor version` | Build version and metadata |
+| `askiso catalog fetch <msg\|set>` | Open the right download page, then import the archive when it lands |
+| `askiso catalog add <zip\|dir>...` | Import message sets downloaded from iso20022.org (`--dry-run`, `--to`) |
+| `askiso catalog status` | Compare what you have installed against all 285 published sets (`--all`) |
+| `askiso catalog where` | Show every location AskIso searches, and which one it picked |
+| `askiso` ◆ | Interactive TUI: live search, message table, schema and sample viewers |
+| `askiso search <query>` | Search by ID, domain, code, or keyword (`--json`); uses the embedded registry when no catalogue is installed |
+| `askiso info <msg-id>` | Metadata and schema paths (`--json`); without a catalogue, names the message set to download |
+| `askiso schema <msg-id>` ◆ | Syntax-highlighted XSD (`--copy`, `--raw`) |
+| `askiso sample <msg-id>` ◆ | Syntax-highlighted sample XML (`--copy`, `--raw`) |
+| `askiso stats` ◆ | Catalogue metrics and domain distribution (`--json`) |
+| `askiso diff <from> <to>` ◆ | Path-level schema comparison with breaking-change classification (`--breaking`, `--strict`, `--json`) |
+| `askiso validate <xml> [xsd]` | Full XSD validation, pure Go, no external tools (`--json`, `--stream`, `--engine libxml2`) |
+| `askiso lint <xml>` | Business rules plus scheme profiles (`--profile all`, `--strict`, `--json`, `--format sarif`) |
+| `askiso generate <type>` | Any of the 2,845 messages: templates with rail presets for four, schema-driven for the rest (`--from-schema`, `--optional`) |
+| `askiso convert <file>` | ISO 20022 XML ⇄ JSON (`--to-json`, `--to-xml`) |
+| `askiso format <xml>` | Pretty-print or minify (`--minify`, `--copy`) |
+| `askiso code [query]` | Look up codes: curated, from your schemas, and from an imported publication (`--sets`, `--set`, `--import`) |
+| `askiso translate <code>` | SWIFT MT ⇄ ISO 20022 MX field-mapping reference (`--matrix`) |
+| `askiso translate <file>` | Convert a real message either way, with a fidelity report (`--out`, `--report`, `--format json`) |
+| `askiso translate --matrix` | The full MT ⇄ MX cross-reference, field by field |
+| `askiso batch <dir\|glob>` | Lint, validate and profile many messages at once (`--format sarif`, `--workers`) |
+| `askiso flow [type]` | Simulate a `pain.001` → `pacs.008` → `pacs.002` → `camt.053` lifecycle |
+| `askiso graph [type]` | Sequence diagrams (`--format mermaid/ascii`) |
+| `askiso mock` | Local HTTP mock clearing rail (`--port`) |
+| `askiso doctor` | Diagnostics: catalogue, toolchain, AI connectivity |
+| `askiso completion <shell>` | Shell completions for zsh, bash, fish, powershell |
+| `askiso version` | Build version and metadata |
 
-### Using Anchor from an AI assistant
+### Using AskIso from an AI assistant
 
-`anchor-mcp` serves the same engine over the [Model Context Protocol](https://modelcontextprotocol.io),
+`askiso-mcp` serves the same engine over the [Model Context Protocol](https://modelcontextprotocol.io),
 so an assistant can check the specification instead of recalling it. Ten tools:
 search, info, lint, profile check, validate, generate, MT translation, code
 lookup, schema diff, and XML/JSON conversion.
@@ -188,18 +188,18 @@ lookup, schema diff, and XML/JSON conversion.
 ```json
 {
   "mcpServers": {
-    "anchor": { "command": "anchor-mcp" }
+    "askiso": { "command": "askiso-mcp" }
   }
 }
 ```
 
 It speaks newline-delimited JSON-RPC 2.0 on stdin and stdout, writes nothing
 else to stdout, and needs no catalogue for the seven tools that work in light
-mode. `anchor-mcp --tools` lists what it exposes.
+mode. `askiso-mcp --tools` lists what it exposes.
 
-### Using Anchor from an editor
+### Using AskIso from an editor
 
-`anchor-lsp` is a language server for ISO 20022 XML. It publishes diagnostics as
+`askiso-lsp` is a language server for ISO 20022 XML. It publishes diagnostics as
 you type — business rules, schema validation against your own downloaded XSDs,
 and the CBPR+ rules that take effect on 14 November 2026 — and adds hover,
 completion and a document outline driven by the schema.
@@ -210,7 +210,7 @@ Neovim:
 vim.api.nvim_create_autocmd('FileType', {
   pattern = 'xml',
   callback = function()
-    vim.lsp.start({ name = 'anchor', cmd = { 'anchor-lsp' }, root_dir = vim.fn.getcwd() })
+    vim.lsp.start({ name = 'askiso', cmd = { 'askiso-lsp' }, root_dir = vim.fn.getcwd() })
   end,
 })
 ```
@@ -222,7 +222,7 @@ code set instead. Without a catalogue it offers nothing rather than guessing.
 
 `--profile` selects the rule profile (default `cbpr-2026`); an empty value turns
 scheme rules off. A client can change it at runtime by sending
-`workspace/didChangeConfiguration` with `{"anchor": {"profile": "cbpr-plus"}}`.
+`workspace/didChangeConfiguration` with `{"askiso": {"profile": "cbpr-plus"}}`.
 
 ### Rule profiles
 
@@ -258,7 +258,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
-      - uses: sebastienrousseau/anchor@v1
+      - uses: sebastienrousseau/askiso@v1
         with:
           path: ./messages
           profile: cbpr-2026
@@ -298,7 +298,7 @@ schema content. Anything needing the XSD text links to the official download and
 at the CLI. The deploy workflow enforces that: it fails if an `.xsd`, `.pdf` or `.docx`
 ever reaches `web/site`.
 
-It publishes to <https://sebastienrousseau.com/anchor/> on every push to `main`, and the
+It publishes to <https://askiso.io> on every push to `main`, and the
 Go/JS smoke test gates the deploy — a renamed API or a field that stopped serialising
 would break the page silently otherwise.
 
@@ -307,7 +307,7 @@ would break the page silently otherwise.
 ## Go SDK
 
 ```go
-import "github.com/sebastienrousseau/anchor/pkg/iso20022"
+import "github.com/sebastienrousseau/askiso/pkg/iso20022"
 
 xml, _ := iso20022.Generate(iso20022.GeneratorOptions{
     MsgType: "pacs.008",
@@ -346,10 +346,10 @@ user what to download.
 ## The November 2026 address requirement
 
 From **14 November 2026** CBPR+ rejects fully unstructured postal addresses outright,
-with no contingency. Anchor checks readiness:
+with no contingency. AskIso checks readiness:
 
 ```bash
-anchor lint payment.xml --profile cbpr-2026
+askiso lint payment.xml --profile cbpr-2026
 ```
 
 ```
@@ -370,7 +370,7 @@ durable. The exempt message types — `camt.052`, `camt.053`, `camt.054`, `camt.
 `camt.025`, `admi.024` — are skipped and reported as out of scope rather than passing.
 
 This matters because schema validation cannot catch it: ISO 20022 constrains `<Ctry>` to
-`[A-Z]{2,2}` and nothing more, so `XX` validates. Anchor checks against the 249 assigned
+`[A-Z]{2,2}` and nothing more, so `XX` validates. AskIso checks against the 249 assigned
 ISO 3166-1 codes.
 
 Available as `--profile cbpr-2026` in the CLI and as the **Nov 2026** tab on the website.
@@ -380,11 +380,11 @@ Neither needs a catalogue: the rules are embedded.
 
 ## Validation
 
-`anchor validate` implements the XML Schema subset ISO 20022 uses — element order,
+`askiso validate` implements the XML Schema subset ISO 20022 uses — element order,
 cardinality, choices, wildcards, patterns, enumerations, length and numeric facets — in
 pure Go.
 
-It is checked against the reference implementation: over the whole catalogue Anchor and
+It is checked against the reference implementation: over the whole catalogue AskIso and
 libxml2 agree on **4,746 of 4,746** documents, accepting the same 1,035 and rejecting the
 same 3,711. `make differential` reproduces that.
 
@@ -421,7 +421,7 @@ Stated plainly, because a validation tool that overstates itself is worse than n
 - **The exception family converts one way only.** MT n92, n95 and n96 become `camt.056`,
   `camt.110` and `camt.111` for every category (MT192, MT292, MT592 and the rest). The
   new messages want coded investigation types and reasons where MT carries prose, and
-  Anchor will not invent a code it cannot verify: the proprietary branch of the choice
+  AskIso will not invent a code it cannot verify: the proprietary branch of the choice
   names the source message and the prose becomes the narrative. Converting back is not
   implemented.
 - **The two directions lose different things, and both say so.** MT to MX produces
@@ -444,9 +444,9 @@ Stated plainly, because a validation tool that overstates itself is worse than n
 - **`code` searches three sources.** A curated dictionary of 33 codes that needs nothing
   installed; every code set enumerated in the schemas you downloaded; and the Registration
   Authority's external code set publication once you import it with
-  `anchor code --import <ExternalCodeSets.xlsx>`. Anchor ships none of the last two —
+  `askiso code --import <ExternalCodeSets.xlsx>`. AskIso ships none of the last two —
   they are your download, stored beside your catalogue.
-- **`anchor-lsp` synchronises whole documents**, not incremental edits, and offers no
+- **`askiso-lsp` synchronises whole documents**, not incremental edits, and offers no
   code actions or formatting. Completion and hover need an installed catalogue; without
   one they say so rather than guessing.
 - **Streaming validation releases transaction subtrees, not everything.** A file of
@@ -459,7 +459,7 @@ Stated plainly, because a validation tool that overstates itself is worse than n
   appears in your downloads folder. It never accepts the RA's terms on your behalf, and it
   will not, because those terms are yours to accept.
 - **`convert` refuses names that are not valid XML.** Go's XML decoder is more lenient
-  than the specification, and a name Anchor accepted on the way in would be one it could
+  than the specification, and a name AskIso accepted on the way in would be one it could
   not emit on the way back. Found by fuzzing, along with an attribute-escaping bug.
 - **Non-adjacent repeated elements cannot be converted to JSON.** A JSON object cannot
   express that ordering, so `convert` reports it rather than silently reordering the
@@ -474,31 +474,31 @@ next, listed so the gaps are visible rather than implied.
 
 | Next | Why it is not there yet |
 | :--- | :--- |
-| A published bank-transaction-code mapping | MT940 field 61 wants MT's own four-character vocabulary. A mapping exists in scheme documentation; Anchor will carry one when it can be verified against a source, not before |
-| Realistic schema-driven output | A schema walk produces a minimal, synthetic message with plausible identifiers. Making one read like a real trade — consistent parties, matching references across a lifecycle — needs domain data Anchor does not carry |
+| A published bank-transaction-code mapping | MT940 field 61 wants MT's own four-character vocabulary. A mapping exists in scheme documentation; AskIso will carry one when it can be verified against a source, not before |
+| Realistic schema-driven output | A schema walk produces a minimal, synthetic message with plausible identifiers. Making one read like a real trade — consistent parties, matching references across a lifecycle — needs domain data AskIso does not carry |
 
 ---
 
 ## Releases and packages
 
-Anchor has not been tagged yet, so there is no release to install from and the package
+AskIso has not been tagged yet, so there is no release to install from and the package
 managers below carry nothing. Until the first tag, `go install` is the way in:
 
 ```bash
-go install github.com/sebastienrousseau/anchor/cmd/anchor@latest
-go install github.com/sebastienrousseau/anchor/cmd/anchor-mcp@latest
-go install github.com/sebastienrousseau/anchor/cmd/anchor-lsp@latest
+go install github.com/sebastienrousseau/askiso/cmd/askiso@latest
+go install github.com/sebastienrousseau/askiso/cmd/askiso-mcp@latest
+go install github.com/sebastienrousseau/askiso/cmd/askiso-lsp@latest
 ```
 
 The release pipeline is wired and will publish to these on the first tag:
 
 ```bash
 # macOS and Linux
-brew install sebastienrousseau/tap/anchor
+brew install sebastienrousseau/tap/askiso
 
 # Windows
 scoop bucket add sebastienrousseau https://github.com/sebastienrousseau/scoop-bucket
-scoop install anchor
+scoop install askiso
 
 # Debian, Ubuntu, Fedora, RHEL, Alpine, Arch — packages on the release page
 ```
@@ -512,7 +512,7 @@ key anyone had to store:
 cosign verify-blob checksums.txt \
   --signature checksums.txt.sig \
   --certificate checksums.txt.pem \
-  --certificate-identity-regexp 'https://github.com/sebastienrousseau/anchor/.*' \
+  --certificate-identity-regexp 'https://github.com/sebastienrousseau/askiso/.*' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
 
@@ -561,4 +561,4 @@ Dual-licensed at your option:
 - **MIT License** ([LICENSE-MIT](LICENSE-MIT))
 
 ISO 20022 is a registered standard of the International Organization for Standardization.
-Anchor bundles no ISO 20022 specification content — see [NOTICE](NOTICE).
+AskIso bundles no ISO 20022 specification content — see [NOTICE](NOTICE).

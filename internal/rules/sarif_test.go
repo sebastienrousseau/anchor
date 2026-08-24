@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/rules"
+	"github.com/sebastienrousseau/askiso/internal/rules"
 )
 
 type sarifDoc struct {
@@ -72,7 +72,7 @@ func TestSARIFShape(t *testing.T) {
 		t.Fatalf("got %d runs, want 1", len(doc.Runs))
 	}
 	run := doc.Runs[0]
-	if run.Tool.Driver.Name != "anchor" {
+	if run.Tool.Driver.Name != "askiso" {
 		t.Errorf("driver name = %q", run.Tool.Driver.Name)
 	}
 	if len(run.Results) == 0 {

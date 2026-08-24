@@ -3,7 +3,7 @@
 
 package main
 
-import "github.com/sebastienrousseau/anchor/cmd"
+import "github.com/sebastienrousseau/askiso/cmd"
 
 func main() {
 	cmd.Execute()

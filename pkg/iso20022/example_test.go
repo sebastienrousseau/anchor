@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 )
 
 // These run under `go test`, so the documentation cannot drift from the API.

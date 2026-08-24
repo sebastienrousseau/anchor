@@ -511,7 +511,7 @@ func TestConvertMXRejectsWhatItCannotRead(t *testing.T) {
 		t.Error("a document with no ISO 20022 namespace was accepted")
 	}
 
-	// A message Anchor knows but cannot convert names what it can.
+	// A message AskIso knows but cannot convert names what it can.
 	_, err := ConvertMX([]byte(`<Document xmlns="urn:iso:std:iso:20022:tech:xsd:seev.031.001.09"/>`))
 	if err == nil {
 		t.Fatal("an unsupported message was accepted")

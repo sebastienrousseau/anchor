@@ -100,7 +100,7 @@ func fixtureInstance(msgID, ccy string) string {
 func withCatalogue(t *testing.T) string {
 	t.Helper()
 	root := fixtureCatalogue(t)
-	t.Setenv("ANCHOR_CATALOG", root)
+	t.Setenv("ASKISO_CATALOG", root)
 
 	prev := catalogPath
 	catalogPath = ""
@@ -196,7 +196,7 @@ func TestVersionCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("version: %v", err)
 	}
-	wantContains(t, out, "Anchor")
+	wantContains(t, out, "AskIso")
 }
 
 func TestGenerateCommand(t *testing.T) {
@@ -684,7 +684,7 @@ func TestCatalogWhere(t *testing.T) {
 	if err != nil {
 		t.Fatalf("catalog where: %v", err)
 	}
-	wantContains(t, out, "ANCHOR_CATALOG", "Using:")
+	wantContains(t, out, "ASKISO_CATALOG", "Using:")
 }
 
 func TestCatalogWhereWithoutCatalogue(t *testing.T) {
@@ -772,7 +772,7 @@ func TestRootHelp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("--help: %v", err)
 	}
-	wantContains(t, out, "anchor", "Available Commands")
+	wantContains(t, out, "askiso", "Available Commands")
 }
 
 // writeTestZip builds a zip archive from a name/content map.

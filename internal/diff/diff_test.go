@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/diff"
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/diff"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
 // schema wraps a body in the boilerplate every ISO 20022 schema carries, so the

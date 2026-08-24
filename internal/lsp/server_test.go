@@ -14,8 +14,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/lsp"
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/internal/lsp"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 )
 
 // The protocol frames messages with headers rather than newlines, so the tests
@@ -184,7 +184,7 @@ func TestInitializeAdvertisesCapabilities(t *testing.T) {
 	}
 
 	info := result["serverInfo"].(map[string]any)
-	if info["name"] != "anchor-lsp" || info["version"] != "test" {
+	if info["name"] != "askiso-lsp" || info["version"] != "test" {
 		t.Errorf("serverInfo = %v", info)
 	}
 }
@@ -390,7 +390,7 @@ func TestConfigurationChangesTheProfile(t *testing.T) {
 	replies := sessionWith(t, noCatalogue, initialize,
 		openDoc(t, "file:///a.xml", addressInstance),
 		notify(t, "workspace/didChangeConfiguration", map[string]any{
-			"settings": map[string]any{"anchor": map[string]any{"profile": "base"}},
+			"settings": map[string]any{"askiso": map[string]any{"profile": "base"}},
 		}))
 
 	// The base profile does not carry the address rules, so the same document
@@ -407,7 +407,7 @@ func TestUnknownProfileIsIgnored(t *testing.T) {
 	replies := sessionWith(t, noCatalogue, initialize,
 		openDoc(t, "file:///a.xml", addressInstance),
 		notify(t, "workspace/didChangeConfiguration", map[string]any{
-			"settings": map[string]any{"anchor": map[string]any{"profile": "no-such-profile"}},
+			"settings": map[string]any{"askiso": map[string]any{"profile": "no-such-profile"}},
 		}))
 
 	// The setting is refused rather than silently disabling every rule.
@@ -680,7 +680,7 @@ func TestSchemaDiagnostics(t *testing.T) {
 
 	var fromSchema int
 	for _, d := range diags {
-		if d["source"] == "anchor/schema" {
+		if d["source"] == "askiso/schema" {
 			fromSchema++
 		}
 	}
@@ -696,7 +696,7 @@ func TestNoSchemaDiagnosticsWithoutACatalogue(t *testing.T) {
 		openDoc(t, "file:///a.xml", schemaInstance))
 
 	for _, d := range diagnosticsFor(t, replies, "file:///a.xml") {
-		if d["source"] == "anchor/schema" {
+		if d["source"] == "askiso/schema" {
 			t.Errorf("a schema diagnostic appeared with no catalogue: %v", d)
 		}
 	}

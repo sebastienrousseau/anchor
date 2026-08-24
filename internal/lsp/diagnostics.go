@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/sebastienrousseau/anchor/internal/rules"
-	"github.com/sebastienrousseau/anchor/internal/validator"
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/internal/rules"
+	"github.com/sebastienrousseau/askiso/internal/validator"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 )
 
 // Severity is an LSP diagnostic severity.
@@ -64,7 +64,7 @@ func (s *Server) diagnose(doc *Document) []Diagnostic {
 			Range:    doc.errorRange(),
 			Severity: SeverityError,
 			Code:     "xml",
-			Source:   "anchor",
+			Source:   "askiso",
 			Message:  "this is not well-formed XML: " + doc.ParseError,
 		})
 	}
@@ -119,7 +119,7 @@ func (s *Server) lintDiagnostics(doc *Document) []Diagnostic {
 			Range:    rng,
 			Severity: severity,
 			Code:     issue.Rule,
-			Source:   "anchor",
+			Source:   "askiso",
 			Message:  issue.Message,
 		})
 	}
@@ -142,7 +142,7 @@ func (s *Server) schemaDiagnostics(doc *Document) []Diagnostic {
 			Range:    doc.rangeForSchemaError(e),
 			Severity: SeverityError,
 			Code:     e.Rule,
-			Source:   "anchor/schema",
+			Source:   "askiso/schema",
 			Message:  schemaMessage(e),
 		})
 	}
@@ -216,7 +216,7 @@ func (s *Server) profileDiagnostics(doc *Document) []Diagnostic {
 			Range:    rng,
 			Severity: severity,
 			Code:     f.RuleID,
-			Source:   "anchor/" + s.Profile,
+			Source:   "askiso/" + s.Profile,
 			Message:  message,
 		})
 	}

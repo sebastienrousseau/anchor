@@ -13,7 +13,7 @@ import (
 )
 
 // EnvCatalog is the environment variable that overrides catalogue discovery.
-const EnvCatalog = "ANCHOR_CATALOG"
+const EnvCatalog = "ASKISO_CATALOG"
 
 // ErrNotFound is returned when no ISO 20022 catalogue could be located.
 var ErrNotFound = errors.New("no ISO 20022 catalogue found")
@@ -30,17 +30,17 @@ func (e *NotFoundError) Error() string {
 	for _, p := range e.Searched {
 		sb.WriteString("  " + p + "\n")
 	}
-	sb.WriteString("\nAnchor does not redistribute ISO 20022 specifications. Download them\n")
+	sb.WriteString("\nAskIso does not redistribute ISO 20022 specifications. Download them\n")
 	sb.WriteString("from https://www.iso20022.org/ and import them:\n\n")
-	sb.WriteString("  anchor catalog add ~/Downloads/<message-set>.zip\n\n")
-	sb.WriteString("Or point Anchor at an existing copy:\n\n")
+	sb.WriteString("  askiso catalog add ~/Downloads/<message-set>.zip\n\n")
+	sb.WriteString("Or point AskIso at an existing copy:\n\n")
 	sb.WriteString("  export " + EnvCatalog + "=/path/to/catalogue\n")
 	return sb.String()
 }
 
 func (e *NotFoundError) Is(target error) bool { return target == ErrNotFound }
 
-// DefaultDir is where Anchor installs a catalogue when the user does not say.
+// DefaultDir is where AskIso installs a catalogue when the user does not say.
 //
 // If any conventional location already holds one, that wins, so importing a new
 // message set extends the existing catalogue instead of quietly starting a
@@ -62,7 +62,7 @@ func DefaultDir() string {
 //
 // os.UserHomeDir reads USERPROFILE on Windows and ignores HOME entirely, so a
 // caller that sets HOME — a test isolating itself, or a shell environment that
-// defines it — would silently get the real profile instead. Anchor writes a
+// defines it — would silently get the real profile instead. AskIso writes a
 // catalogue into this directory, so that difference is the gap between an
 // isolated run and one that scribbles on the actual user account.
 func HomeDir() string {
@@ -98,18 +98,18 @@ func DefaultDirs() []string {
 	home := HomeDir()
 
 	if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
-		add(filepath.Join(xdg, "anchor", "catalog"))
+		add(filepath.Join(xdg, "askiso", "catalog"))
 	}
 	if runtime.GOOS == "darwin" && home != "" {
-		add(filepath.Join(home, "Library", "Application Support", "anchor", "catalog"))
+		add(filepath.Join(home, "Library", "Application Support", "askiso", "catalog"))
 	}
 	if runtime.GOOS == "windows" {
 		if local := os.Getenv("LocalAppData"); local != "" {
-			add(filepath.Join(local, "anchor", "catalog"))
+			add(filepath.Join(local, "askiso", "catalog"))
 		}
 	}
 	if home != "" {
-		add(filepath.Join(home, ".local", "share", "anchor", "catalog"))
+		add(filepath.Join(home, ".local", "share", "askiso", "catalog"))
 	}
 	return dirs
 }
@@ -198,7 +198,7 @@ func IsCatalog(dir string) bool {
 }
 
 // EvictedError reports a file that iCloud Drive has evicted to a placeholder.
-// Reading it would either block on a network fetch or yield a stub, so Anchor
+// Reading it would either block on a network fetch or yield a stub, so AskIso
 // fails loudly instead of mis-parsing.
 type EvictedError struct {
 	Path string

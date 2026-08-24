@@ -9,9 +9,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
-	"github.com/sebastienrousseau/anchor/internal/registry"
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/registry"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 )
 
 // Browsing a catalogue tells you a message exists. What someone actually wants
@@ -19,7 +19,7 @@ import (
 // still be accepted after 14 November 2026. Both answers are one keystroke away
 // here, from the same engine the CLI runs.
 
-// checkMessage runs every check Anchor has against a message's sample and puts
+// checkMessage runs every check AskIso has against a message's sample and puts
 // the report in the viewer.
 func (m *Model) checkMessage(msg catalog.Message) {
 	m.viewingTitle = msg.ID + " (check)"
@@ -36,7 +36,7 @@ func (m *Model) renderCheck(msg catalog.Message) string {
 	if msg.XMLSamplePath == "" {
 		fmt.Fprintf(&b, "No sample message is installed for %s, so there is nothing to check.\n\n", msg.ID)
 		b.WriteString("Samples ship alongside the schemas in the Registration Authority's\n")
-		b.WriteString("download. Install the set with:\n\n  anchor catalog fetch " + msg.BaseCode + "\n")
+		b.WriteString("download. Install the set with:\n\n  askiso catalog fetch " + msg.BaseCode + "\n")
 		return b.String()
 	}
 
@@ -57,8 +57,8 @@ func (m *Model) renderCheck(msg catalog.Message) string {
 	b.WriteString(m.renderProfile(instance))
 
 	b.WriteString("\nRun the same checks outside the TUI:\n")
-	fmt.Fprintf(&b, "  anchor lint %s --profile cbpr-2026\n", msg.XMLSamplePath)
-	fmt.Fprintf(&b, "  anchor validate %s\n", msg.XMLSamplePath)
+	fmt.Fprintf(&b, "  askiso lint %s --profile cbpr-2026\n", msg.XMLSamplePath)
+	fmt.Fprintf(&b, "  askiso validate %s\n", msg.XMLSamplePath)
 	return b.String()
 }
 
@@ -216,7 +216,7 @@ func (m *Model) renderCatalogue() string {
 
 	b.WriteString("CATALOGUE\n──────────\n\n")
 	if root == "" {
-		b.WriteString("Nothing is installed. Anchor still knows the whole standard from its\n")
+		b.WriteString("Nothing is installed. AskIso still knows the whole standard from its\n")
 		b.WriteString("embedded index, but reading schema text needs the files.\n\n")
 	} else {
 		fmt.Fprintf(&b, "root      %s\n", root)
@@ -238,8 +238,8 @@ func (m *Model) renderCatalogue() string {
 		}
 	}
 
-	b.WriteString("\nInstall a set:  anchor catalog fetch <message-or-set>\n")
-	b.WriteString("Import a file:  anchor catalog add <downloaded.zip>\n")
+	b.WriteString("\nInstall a set:  askiso catalog fetch <message-or-set>\n")
+	b.WriteString("Import a file:  askiso catalog add <downloaded.zip>\n")
 	return b.String()
 }
 

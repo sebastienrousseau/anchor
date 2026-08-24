@@ -13,15 +13,15 @@ import (
 )
 
 // An imported publication lives beside the catalogue it belongs to, in a form
-// Anchor can read quickly. Tab-separated text is enough: a few thousand rows,
+// AskIso can read quickly. Tab-separated text is enough: a few thousand rows,
 // no escaping to get wrong, and a file anyone can open and check.
 //
 // It sits under the catalogue root rather than in the repository, because it is
-// the user's copy of a publication Anchor does not redistribute.
+// the user's copy of a publication AskIso does not redistribute.
 
 // externalCodesFile is where an imported publication is stored, relative to the
 // catalogue root.
-const externalCodesFile = ".anchor/external-codes.tsv"
+const externalCodesFile = ".askiso/external-codes.tsv"
 
 // ExternalCodesPath returns where an imported publication lives for a
 // catalogue root.
@@ -47,7 +47,7 @@ func SaveExternalSets(root string, sets *ExternalSets) (string, error) {
 	defer func() { _ = f.Close() }()
 
 	w := bufio.NewWriter(f)
-	_, _ = fmt.Fprintf(w, "# ISO 20022 external code sets, imported by Anchor from %s\n",
+	_, _ = fmt.Fprintf(w, "# ISO 20022 external code sets, imported by AskIso from %s\n",
 		filepath.Base(sets.Source))
 	_, _ = fmt.Fprintln(w, "# set\tcode\tname\tdefinition")
 

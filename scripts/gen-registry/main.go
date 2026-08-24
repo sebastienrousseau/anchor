@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Command gen-registry regenerates Anchor's embedded message registry.
+// Command gen-registry regenerates AskIso's embedded message registry.
 //
 // \tgo generate ./internal/registry/
 package main
@@ -9,7 +9,7 @@ package main
 import (
 	"os"
 
-	"github.com/sebastienrousseau/anchor/internal/registrygen"
+	"github.com/sebastienrousseau/askiso/internal/registrygen"
 )
 
 func main() {

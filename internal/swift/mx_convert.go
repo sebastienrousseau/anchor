@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sebastienrousseau/anchor/internal/converter"
+	"github.com/sebastienrousseau/askiso/internal/converter"
 )
 
 // MT field widths. They are the reason this direction loses data: a reference
@@ -472,7 +472,7 @@ var mtTransactionType = regexp.MustCompile(`^[NFS][A-Z0-9]{3}$`)
 // The transaction type identification code is the part that cannot be derived.
 // ISO 20022 describes a transaction with a structured bank transaction code --
 // a domain, a family and a sub-family -- and MT940 wants a four-character code
-// from a different vocabulary. Anchor uses the proprietary code when the
+// from a different vocabulary. AskIso uses the proprietary code when the
 // statement carries one that already has MT's shape, which is how a bank that
 // generated the camt.053 from an MT940 gets its own code back. Otherwise it
 // uses NMSC, which is the designated value for a transaction with no more
@@ -562,7 +562,7 @@ func (b *mtBuilder) transactionType(entry *converter.Node, path string) string {
 	}
 
 	// A structured code describes the transaction in a different vocabulary,
-	// and no mapping to MT's is published that Anchor can verify. NMSC is the
+	// and no mapping to MT's is published that AskIso can verify. NMSC is the
 	// designated code for a transaction with no more specific one.
 	structured := describeBankTransactionCode(code)
 	b.reports = append(b.reports, FieldReport{
@@ -596,7 +596,7 @@ func describeBankTransactionCode(code *converter.Node) string {
 }
 
 // entryReference finds the reference for the account owner. NONREF is what MT
-// carries when there is none, and is not a placeholder Anchor invented.
+// carries when there is none, and is not a placeholder AskIso invented.
 func entryReference(entry *converter.Node) string {
 	if details, ok := child(entry, "NtryDtls"); ok {
 		for _, tx := range childrenNamed(details, "TxDtls") {

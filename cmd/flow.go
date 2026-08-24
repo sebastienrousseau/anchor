@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sebastienrousseau/anchor/internal/flow"
-	"github.com/sebastienrousseau/anchor/internal/generator"
+	"github.com/sebastienrousseau/askiso/internal/flow"
+	"github.com/sebastienrousseau/askiso/internal/generator"
 	"github.com/spf13/cobra"
 )
 
@@ -29,9 +29,9 @@ var flowCmd = &cobra.Command{
 	Long: `Flow simulates a complete multi-hop transaction lifecycle (pain.001 -> pacs.008 -> 
 pacs.002 -> camt.053) with shared UETR, EndToEndId, and settlement amounts. 
 Can export all 4 connected XML payloads into an output directory for integration testing.`,
-	Example: `  anchor flow pacs.008 --preset sepa
-  anchor flow --preset fednow --output-dir ./test-suite/
-  anchor flow --json`,
+	Example: `  askiso flow pacs.008 --preset sepa
+  askiso flow --preset fednow --output-dir ./test-suite/
+  askiso flow --json`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		msgType := "pacs.008"
 		if len(args) > 0 {
@@ -93,7 +93,7 @@ Can export all 4 connected XML payloads into an output directory for integration
 		}
 
 		if flowOutputDir == "" {
-			fmt.Println("To export all 4 linked XML instances to disk: anchor flow --output-dir ./suite/")
+			fmt.Println("To export all 4 linked XML instances to disk: askiso flow --output-dir ./suite/")
 		}
 
 		return nil

@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sebastienrousseau/anchor/internal/ai"
-	"github.com/sebastienrousseau/anchor/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/ai"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
 )
 
 // A catalogue inside iCloud is called out, because macOS can evict those files
@@ -31,7 +31,7 @@ func TestDoctorWarnsAboutICloudCatalogue(t *testing.T) {
 		[]byte(fixtureSchema("pacs.008.001.10")), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("ANCHOR_CATALOG", icloud)
+	t.Setenv("ASKISO_CATALOG", icloud)
 	prev := catalogPath
 	catalogPath = ""
 	t.Cleanup(func() { catalogPath = prev })
@@ -144,7 +144,7 @@ func TestCatalogAddFallsBackToFlagAndDefault(t *testing.T) {
 
 	// --catalog is used when --to and the environment are unset.
 	dest := t.TempDir()
-	t.Setenv("ANCHOR_CATALOG", "")
+	t.Setenv("ASKISO_CATALOG", "")
 	prev := catalogPath
 	catalogPath = dest
 	t.Cleanup(func() { catalogPath = prev })

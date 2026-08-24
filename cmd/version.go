@@ -6,18 +6,18 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/sebastienrousseau/anchor/internal/tui"
+	"github.com/sebastienrousseau/askiso/internal/tui"
 	"github.com/spf13/cobra"
 )
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version number of Anchor",
+	Short: "Print the version number of AskIso",
 	Run: func(cmd *cobra.Command, args []string) {
 		if !quiet {
 			fmt.Print(tui.GetStyledLogo())
 		}
-		fmt.Printf("Anchor ⚓ version %s\n", tui.Version)
+		fmt.Printf("AskIso version %s\n", tui.Version)
 	},
 }
 

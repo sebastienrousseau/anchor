@@ -64,7 +64,7 @@ func Parse(data []byte) (*Node, error) {
 		switch t := tok.(type) {
 		case xml.StartElement:
 			// Go's decoder is lenient about names; the specification is not, and
-			// a name Anchor accepts here is one it would have to emit later.
+			// a name AskIso accepts here is one it would have to emit later.
 			// Refusing it now is better than producing JSON that cannot be
 			// converted back.
 			if !validXMLName(t.Name.Local) {
@@ -280,7 +280,7 @@ func JSONToXML(jsonData []byte) ([]byte, error) {
 		return nil, fmt.Errorf("json unmarshal error: document is empty")
 	}
 
-	// A key that is not a valid XML name would produce a document Anchor could
+	// A key that is not a valid XML name would produce a document AskIso could
 	// not read back, which is worse than refusing it.
 	if err := checkNames(obj); err != nil {
 		return nil, err

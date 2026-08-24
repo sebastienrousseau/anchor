@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/swift"
+	"github.com/sebastienrousseau/askiso/internal/swift"
 )
 
 // An MT message is a text file from another institution's system. The parser

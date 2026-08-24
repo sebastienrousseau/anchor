@@ -1,8 +1,8 @@
 <!-- SPDX-License-Identifier: Apache-2.0 OR MIT -->
 
-# Contributing to Anchor ⚓
+# Contributing to AskIso
 
-Thank you for your interest in contributing to Anchor! This document outlines our development workflows, coding standards, and governance rules.
+Thank you for your interest in contributing to AskIso! This document outlines our development workflows, coding standards, and governance rules.
 
 ---
 
@@ -21,7 +21,7 @@ All contributors and maintainers must strictly adhere to the project's semantic 
 
 ### Prerequisites
 * Go 1.26.6 or higher — the `go` directive in `go.mod` requires it, because that
-  release carries the standard library security fixes Anchor builds against
+  release carries the standard library security fixes AskIso builds against
 * Make
 
 ### Building & Testing

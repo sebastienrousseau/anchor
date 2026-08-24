@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
 )
 
 func TestPrettyPrintAndMinify(t *testing.T) {

@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/sebastienrousseau/anchor/internal/registry"
+	"github.com/sebastienrousseau/askiso/internal/registry"
 	"github.com/spf13/cobra"
 )
 
@@ -70,7 +70,7 @@ var searchCmd = &cobra.Command{
 	},
 }
 
-// searchRegistry answers from Anchor's embedded index of the standard. Results
+// searchRegistry answers from AskIso's embedded index of the standard. Results
 // carry no file paths, because nothing is installed -- they carry the message
 // set to download instead.
 func searchRegistry(query string, haveCatalogue bool) error {
@@ -119,7 +119,7 @@ func searchRegistry(query string, haveCatalogue bool) error {
 	}
 
 	if haveCatalogue {
-		fmt.Printf("\n%s nothing installed matched, so these come from Anchor's index of the\n",
+		fmt.Printf("\n%s nothing installed matched, so these come from AskIso's index of the\n",
 			subtleStyle.Render("note:"))
 		fmt.Printf("      whole standard and have no local schema paths.\n")
 	} else {
@@ -128,7 +128,7 @@ func searchRegistry(query string, haveCatalogue bool) error {
 	}
 	if sets := reg.SetsFor(results[0].ID); len(sets) > 0 {
 		fmt.Printf("      Get %s from %s\n", sets[0], sets[0].DownloadURL())
-		fmt.Printf("      then: anchor catalog add <downloaded.zip>\n")
+		fmt.Printf("      then: askiso catalog add <downloaded.zip>\n")
 	}
 	fmt.Println()
 	return nil

@@ -14,18 +14,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
-	"github.com/sebastienrousseau/anchor/internal/importer"
-	"github.com/sebastienrousseau/anchor/internal/registry"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/importer"
+	"github.com/sebastienrousseau/askiso/internal/registry"
 	"github.com/spf13/cobra"
 )
 
-// Anchor does not download specifications on the user's behalf. The
+// AskIso does not download specifications on the user's behalf. The
 // Registration Authority publishes them under terms the person downloading
 // accepts, and a tool that clicks through that on their behalf is a tool that
 // accepts terms nobody read.
 //
-// What Anchor can do is remove every other step: find the right message set,
+// What AskIso can do is remove every other step: find the right message set,
 // open the exact download page, then watch for the file to land and import it.
 // The user does the part that is theirs to do, and nothing else.
 
@@ -48,17 +48,17 @@ downloading anything on your behalf.
 
 Given a message identifier or a set name it finds the right message set, opens
 the Registration Authority's download page for it, then watches your downloads
-folder. When the archive appears it is imported and verified, and Anchor tells
+folder. When the archive appears it is imported and verified, and AskIso tells
 you what it installed.
 
-Anchor does not download the archive itself. The Registration Authority
+AskIso does not download the archive itself. The Registration Authority
 publishes these files under terms the person downloading them accepts, and a
 tool that clicks through those terms is a tool that accepts them for someone who
 never read them.`,
-	Example: `  anchor catalog fetch pacs.008
-  anchor catalog fetch "Payments Clearing and Settlement"
-  anchor catalog fetch camt.053 --watch ~/Downloads --timeout 10m
-  anchor catalog fetch pacs.008 --no-open`,
+	Example: `  askiso catalog fetch pacs.008
+  askiso catalog fetch "Payments Clearing and Settlement"
+  askiso catalog fetch camt.053 --watch ~/Downloads --timeout 10m
+  askiso catalog fetch pacs.008 --no-open`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		reg, err := registry.Load()
@@ -70,7 +70,7 @@ never read them.`,
 		if len(sets) == 0 {
 			return fmt.Errorf("nothing in the published standard matches %q\n\n"+
 				"Try a message identifier (pacs.008), a domain (camt), or a set name "+
-				"(\"Payments Clearing and Settlement\").\nList everything: anchor catalog status --all", args[0])
+				"(\"Payments Clearing and Settlement\").\nList everything: askiso catalog status --all", args[0])
 		}
 		if len(sets) > 1 {
 			return ambiguousSets(args[0], sets)
@@ -97,9 +97,9 @@ never read them.`,
 
 		fmt.Printf("  %s Accept the Registration Authority's terms and download the archive.\n",
 			subtleStyle.Render("1."))
-		fmt.Printf("  %s Anchor is watching %s and will import it when it lands.\n\n",
+		fmt.Printf("  %s AskIso is watching %s and will import it when it lands.\n\n",
 			subtleStyle.Render("2."), watchDir)
-		fmt.Printf("  waiting up to %s   (ctrl-c to stop; you can always run: anchor catalog add <file>)\n\n",
+		fmt.Printf("  waiting up to %s   (ctrl-c to stop; you can always run: askiso catalog add <file>)\n\n",
 			fetchTimeout)
 
 		archive, err := waitForArchive(watchDir, fetchTimeout)
@@ -238,7 +238,7 @@ func waitForArchive(dir string, timeout time.Duration) (string, error) {
 	}
 
 	return "", fmt.Errorf("no new archive appeared in %s within %s\n\n"+
-		"Download it yourself, then run:\n  anchor catalog add <downloaded.zip>", dir, timeout)
+		"Download it yourself, then run:\n  askiso catalog add <downloaded.zip>", dir, timeout)
 }
 
 func zipsIn(dir string) (map[string]int64, error) {
@@ -280,7 +280,7 @@ func importFetched(archive string, set registry.Set) error {
 		Limits:   importer.DefaultLimits(),
 	})
 	if err != nil {
-		return fmt.Errorf("importing %s: %w\n\nImport it yourself with: anchor catalog add %s",
+		return fmt.Errorf("importing %s: %w\n\nImport it yourself with: askiso catalog add %s",
 			filepath.Base(archive), err, archive)
 	}
 
@@ -291,8 +291,8 @@ func importFetched(archive string, set registry.Set) error {
 	fmt.Printf("  %-10s %d\n", "reports", res.Reports+res.Guidelines+res.Docs)
 	fmt.Printf("  %-10s %s\n\n", "written", humanBytes(res.BytesWritten))
 
-	fmt.Printf("  %s anchor stats\n", subtleStyle.Render("→"))
-	fmt.Printf("  %s anchor catalog status\n\n", subtleStyle.Render("→"))
+	fmt.Printf("  %s askiso stats\n", subtleStyle.Render("→"))
+	fmt.Printf("  %s askiso catalog status\n\n", subtleStyle.Render("→"))
 	return nil
 }
 

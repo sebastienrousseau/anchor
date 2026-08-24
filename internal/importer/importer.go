@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Package importer turns ISO 20022 downloads into a catalogue Anchor can read.
+// Package importer turns ISO 20022 downloads into a catalogue AskIso can read.
 //
 // The Registration Authority ships each message set as a zip, often with more
 // zips nested inside. This package explodes those archives, works out what each
@@ -26,7 +26,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/sebastienrousseau/anchor/internal/registry"
+	"github.com/sebastienrousseau/askiso/internal/registry"
 )
 
 // Limits bound what a single import may extract.
@@ -128,7 +128,7 @@ func (t Target) Path() string {
 	return filepath.Join(t.Category, t.Version, string(t.Class), t.Name)
 }
 
-// ErrNoContent means an archive held nothing Anchor recognises.
+// ErrNoContent means an archive held nothing AskIso recognises.
 var ErrNoContent = errors.New("archive contained no ISO 20022 content")
 
 // Options configures an import.

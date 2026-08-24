@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/atotto/clipboard"
-	"github.com/sebastienrousseau/anchor/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
 	"github.com/spf13/cobra"
 )
 
@@ -23,9 +23,9 @@ var schemaCmd = &cobra.Command{
 	Short:   "Display syntax-highlighted XML Schema Definition (XSD)",
 	Long: `Schema locates and outputs the official XML Schema Definition (.xsd) 
 for any ISO 20022 message with terminal syntax highlighting and clipboard export.`,
-	Example: `  anchor schema pacs.008.001.10
-  anchor schema pain.001 --copy
-  anchor schema camt.053 --raw`,
+	Example: `  askiso schema pacs.008.001.10
+  askiso schema pain.001 --copy
+  askiso schema camt.053 --raw`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		query := args[0]

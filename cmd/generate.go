@@ -9,10 +9,10 @@ import (
 	"os"
 
 	"github.com/atotto/clipboard"
-	"github.com/sebastienrousseau/anchor/internal/catalog"
-	"github.com/sebastienrousseau/anchor/internal/generator"
-	"github.com/sebastienrousseau/anchor/internal/schemagen"
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/generator"
+	"github.com/sebastienrousseau/askiso/internal/schemagen"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +42,7 @@ from templates with rail-aware defaults, so a payment comes out looking like a
 payment: real parties, a real amount, the right clearing system for the preset.
 Those need no catalogue.
 
-Every other message is built from its schema. Anchor walks the XSD, emits every
+Every other message is built from its schema. AskIso walks the XSD, emits every
 mandatory element in the order the content model declares, takes the first
 branch of each choice, and generates values that satisfy the type -- codes from
 enumerations, strings that match their patterns, numbers within their digit
@@ -51,12 +51,12 @@ installed.
 
 Generated messages validate against their own schema and pass the linter. That
 is asserted across the whole catalogue, not claimed.`,
-	Example: `  anchor generate pacs.008 --preset sepa --amount 15000.00
-  anchor generate pacs.008 --preset fednow --copy
-  anchor generate seev.031.001.09                # from the schema
-  anchor generate camt.053.001.11 --from-schema  # schema instead of the template
-  anchor generate pacs.008 --optional            # include optional elements
-  anchor generate pain.001 --debtor "Acme Corp" --output payload.xml`,
+	Example: `  askiso generate pacs.008 --preset sepa --amount 15000.00
+  askiso generate pacs.008 --preset fednow --copy
+  askiso generate seev.031.001.09                # from the schema
+  askiso generate camt.053.001.11 --from-schema  # schema instead of the template
+  askiso generate pacs.008 --optional            # include optional elements
+  askiso generate pain.001 --debtor "Acme Corp" --output payload.xml`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		msgType := args[0]

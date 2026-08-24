@@ -4,49 +4,50 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
 )
 
-func mirrorBrailleRune(r rune) rune {
-	if r == ' ' {
-		return ' '
+// The logo is drawn as a fixed-width block of braille cells, so the TUI can
+// centre it without measuring. Symmetry is not asserted: the mark is a question
+// mark, which is asymmetric by nature.
+func TestLogoIsAWellFormedBlock(t *testing.T) {
+	if len(logoLines) == 0 {
+		t.Fatal("the logo has no lines")
 	}
-	code := int(r) - 0x2800
-	if code < 0 || code > 255 {
-		return r
-	}
-	d1 := (code >> 0) & 1
-	d2 := (code >> 1) & 1
-	d3 := (code >> 2) & 1
-	d7 := (code >> 6) & 1
-	d4 := (code >> 3) & 1
-	d5 := (code >> 4) & 1
-	d6 := (code >> 5) & 1
-	d8 := (code >> 7) & 1
-	newCode := (d4 << 0) | (d5 << 1) | (d6 << 2) | (d8 << 6) | (d1 << 3) | (d2 << 4) | (d3 << 5) | (d7 << 7)
-	return rune(0x2800 + newCode)
-}
 
-func TestLogoSymmetry(t *testing.T) {
+	width := len([]rune(logoLines[0]))
+	if width == 0 {
+		t.Fatal("the first logo line is empty")
+	}
+
+	var inked int
 	for i, line := range logoLines {
 		runes := []rune(line)
-		n := len(runes)
-		for j := 0; j < n/2; j++ {
-			left := runes[j]
-			right := runes[n-1-j]
-			expectedRight := mirrorBrailleRune(left)
-			if right != expectedRight {
-				t.Errorf("Line %d is not symmetric at position %d: left '%c', right '%c', expected right '%c'",
-					i, j, left, right, expectedRight)
-			}
+		if len(runes) != width {
+			t.Errorf("line %d is %d cells wide, want %d — the block must be rectangular",
+				i, len(runes), width)
 		}
+		for j, r := range runes {
+			if r == ' ' {
+				continue
+			}
+			if r < 0x2800 || r > 0x28FF {
+				t.Errorf("line %d position %d holds %q, which is neither a space nor a braille cell",
+					i, j, r)
+			}
+			inked++
+		}
+	}
+
+	if inked == 0 {
+		t.Error("the logo is entirely blank")
 	}
 }
 
 func TestStyledLogo(t *testing.T) {
 	logo := GetStyledLogo()
-	if !strings.Contains(logo, "Anchor ⚓") {
-		t.Errorf("expected logo to contain 'Anchor ⚓', got:\n%s", logo)
+	if !strings.Contains(logo, "AskIso") {
+		t.Errorf("expected logo to contain 'AskIso', got:\n%s", logo)
 	}
 }
 
@@ -89,8 +90,8 @@ func TestAskViewRendering(t *testing.T) {
 	m.height = 24
 
 	view := m.View()
-	if !strings.Contains(view, "Anchor ⚓") {
-		t.Errorf("Expected logo 'Anchor ⚓' in Ask view, got:\n%s", view)
+	if !strings.Contains(view, "AskIso") {
+		t.Errorf("Expected logo 'AskIso' in Ask view, got:\n%s", view)
 	}
 	if !strings.Contains(view, "┃") {
 		t.Errorf("Expected vertical delimiter '┃' in Ask view, got:\n%s", view)

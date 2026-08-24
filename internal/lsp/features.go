@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sebastienrousseau/anchor/internal/xsd"
+	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
 // Hover, completion and the symbol outline all answer the same question from
@@ -72,7 +72,7 @@ func (s *Server) describeElement(el Element, schema *xsd.Schema, msgID string, h
 				"so no schema applies.\n\n")
 		}
 		b.WriteString("Install one: download the message set from https://www.iso20022.org/ " +
-			"then `anchor catalog add <downloaded.zip>`.\n")
+			"then `askiso catalog add <downloaded.zip>`.\n")
 		return b.String()
 	}
 

@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sebastienrousseau/anchor/internal/catalog"
-	"github.com/sebastienrousseau/anchor/pkg/iso20022"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 	"github.com/spf13/cobra"
 )
 
@@ -62,7 +62,7 @@ var validateCmd = &cobra.Command{
 	Long: `Validate checks an ISO 20022 message against its XML Schema.
 
 Validation is pure Go: no libxml2, no cgo, and identical results on every
-platform. When the schema is not given, Anchor resolves it from the document's
+platform. When the schema is not given, AskIso resolves it from the document's
 namespace against your installed catalogue.
 
 Diagnostics carry the element path, the schema rule that fired, and what was
@@ -71,11 +71,11 @@ expected versus what was found.
 A file of 8 MiB or more is validated as it is read rather than held in memory,
 which is what makes a month-long camt.053 checkable on an ordinary machine. The
 verdict is identical either way; --stream forces it on a smaller file.`,
-	Example: `  anchor validate payment.xml
-  anchor validate payment.xml pacs.008.001.10.xsd
-  anchor validate payment.xml --json
-  anchor validate payment.xml --engine libxml2
-  anchor validate statement.xml --stream`,
+	Example: `  askiso validate payment.xml
+  askiso validate payment.xml pacs.008.001.10.xsd
+  askiso validate payment.xml --json
+  askiso validate payment.xml --engine libxml2
+  askiso validate statement.xml --stream`,
 	Args: cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		xmlPath := filepath.Clean(args[0])
@@ -193,7 +193,7 @@ func (*silentError) Error() string { return "" }
 func resolveSchemaForInstance(xmlData []byte) (string, error) {
 	msgID, err := iso20022.MessageIDFromInstance(xmlData)
 	if err != nil {
-		return "", fmt.Errorf("%w\n\nPass the schema explicitly: anchor validate <xml> <xsd>", err)
+		return "", fmt.Errorf("%w\n\nPass the schema explicitly: askiso validate <xml> <xsd>", err)
 	}
 
 	cat, err := iso20022.OpenCatalogue(catalogPath)

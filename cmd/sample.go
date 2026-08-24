@@ -12,8 +12,8 @@ import (
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/atotto/clipboard"
-	"github.com/sebastienrousseau/anchor/internal/catalog"
-	"github.com/sebastienrousseau/anchor/internal/generator"
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/generator"
 	"github.com/spf13/cobra"
 )
 
@@ -27,9 +27,9 @@ var sampleCmd = &cobra.Command{
 	Short: "Display syntax-highlighted compliant XML sample message",
 	Long: `Sample locates and outputs the 100% schema-compliant XML sample instance 
 for any ISO 20022 message with terminal syntax highlighting and clipboard export.`,
-	Example: `  anchor sample pacs.008.001.10
-  anchor sample pain.001 --copy
-  anchor sample camt.053 --raw`,
+	Example: `  askiso sample pacs.008.001.10
+  askiso sample pain.001 --copy
+  askiso sample camt.053 --raw`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		query := args[0]

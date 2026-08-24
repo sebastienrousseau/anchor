@@ -10,7 +10,7 @@ TOTAL_PROBES=8
 
 echo ""
 echo "=========================================================================="
-echo "                   Anchor ISO 20022 Ecosystem Scorecard                   "
+echo "                   AskIso ISO 20022 Ecosystem Scorecard                   "
 echo "=========================================================================="
 echo "Host: $(uname -s) $(uname -m) | Go: $(go version | awk '{print $3}')"
 echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
@@ -36,16 +36,16 @@ run_probe "01" "Binary Compilation & Stripping" "make build" "make build"
 run_probe "02" "Code Formatting Cleanliness" "gofmt -l" "[ -z \"\$(gofmt -l cmd/ internal/ pkg/ 2>/dev/null)\" ]"
 run_probe "03" "Static Analysis & Vet" "go vet" "go vet ./..."
 run_probe "04" "Unit Test Suite & Concurrency" "go test" "go test -v ./..."
-if ./anchor doctor >/dev/null 2>&1; then
-    run_probe "05" "Catalogue integrity" "anchor info" "./anchor info pacs.008.001.10"
+if ./askiso doctor >/dev/null 2>&1; then
+    run_probe "05" "Catalogue integrity" "askiso info" "./askiso info pacs.008.001.10"
 else
-    printf " %-4s | %-38s | %-12s | \033[33mSKIP\033[0m\n" "05" "Catalogue integrity" "anchor info"
+    printf " %-4s | %-38s | %-12s | \033[33mSKIP\033[0m\n" "05" "Catalogue integrity" "askiso info"
     printf "      | %-38s |\n" "no catalogue installed - see README"
     TOTAL_PROBES=$((TOTAL_PROBES - 1))
 fi
-run_probe "06" "Semantic Linter (IBAN & UUIDv4)" "anchor lint" "./anchor generate pacs.008 --preset sepa -o /tmp/probe_pacs.xml && ./anchor lint /tmp/probe_pacs.xml"
-run_probe "07" "End-to-End Flow Simulator" "anchor flow" "./anchor flow --preset sepa"
-run_probe "08" "XML <-> JSON Bi-directional" "anchor convert" "./anchor convert /tmp/probe_pacs.xml --to-json"
+run_probe "06" "Semantic Linter (IBAN & UUIDv4)" "askiso lint" "./askiso generate pacs.008 --preset sepa -o /tmp/probe_pacs.xml && ./askiso lint /tmp/probe_pacs.xml"
+run_probe "07" "End-to-End Flow Simulator" "askiso flow" "./askiso flow --preset sepa"
+run_probe "08" "XML <-> JSON Bi-directional" "askiso convert" "./askiso convert /tmp/probe_pacs.xml --to-json"
 
 rm -f /tmp/probe_pacs.xml
 
