@@ -20,7 +20,8 @@ All contributors and maintainers must strictly adhere to the project's semantic 
 ## Development Workflow
 
 ### Prerequisites
-* Go 1.22 or higher
+* Go 1.26.6 or higher — the `go` directive in `go.mod` requires it, because that
+  release carries the standard library security fixes Anchor builds against
 * Make
 
 ### Building & Testing

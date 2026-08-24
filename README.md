@@ -20,14 +20,21 @@
 
 ---
 
-## Try it without installing anything
+## Try it in a browser
 
-**[anchor.dev — the web version](https://sebastienrousseau.github.io/anchor/)** runs the same
-engine compiled to WebAssembly. Lint, generate, browse, convert, look up codes and check
-IBAN/BIC/UETR values in the browser.
+The web version runs the same engine compiled to WebAssembly. Lint, generate, browse,
+convert, look up codes and check IBAN/BIC/UETR values in the browser.
 
 Your messages never leave the tab — there is no server to send them to. That matters when
 the payload is a real payment instruction.
+
+It is not hosted yet: GitHub Pages is not enabled on this repository, so
+`https://sebastienrousseau.github.io/anchor/` currently returns 404. Run it locally
+meanwhile — same bundle the site will serve:
+
+```bash
+make web-serve    # http://127.0.0.1:8765
+```
 
 ---
 
@@ -119,8 +126,12 @@ Anchor looks for the catalogue in this order:
 | 2 | `$ANCHOR_CATALOG` |
 | 3 | `$XDG_DATA_HOME/anchor/catalog`, when that variable is set |
 | 4 | `~/Library/Application Support/anchor/catalog` (macOS) |
-| 5 | `~/.local/share/anchor/catalog` |
-| 6 | The working directory and its parents |
+| 5 | `%LocalAppData%\anchor\catalog` (Windows) |
+| 6 | `~/.local/share/anchor/catalog` |
+| 7 | The working directory and its parents |
+
+`HOME` wins over the operating system's own idea of your home directory wherever it is
+set, which matters on Windows, where it is otherwise ignored entirely.
 
 `catalog add` writes to whichever of those already holds a catalogue, so importing more
 message sets extends your existing one rather than quietly starting a second.
@@ -468,7 +479,18 @@ next, listed so the gaps are visible rather than implied.
 
 ---
 
-## Installing
+## Releases and packages
+
+Anchor has not been tagged yet, so there is no release to install from and the package
+managers below carry nothing. Until the first tag, `go install` is the way in:
+
+```bash
+go install github.com/sebastienrousseau/anchor/cmd/anchor@latest
+go install github.com/sebastienrousseau/anchor/cmd/anchor-mcp@latest
+go install github.com/sebastienrousseau/anchor/cmd/anchor-lsp@latest
+```
+
+The release pipeline is wired and will publish to these on the first tag:
 
 ```bash
 # macOS and Linux
@@ -478,14 +500,10 @@ brew install sebastienrousseau/tap/anchor
 scoop bucket add sebastienrousseau https://github.com/sebastienrousseau/scoop-bucket
 scoop install anchor
 
-# Debian, Ubuntu, Fedora, RHEL, Alpine, Arch — see the release page for packages
-# Or from source:
-go install github.com/sebastienrousseau/anchor/cmd/anchor@latest
-go install github.com/sebastienrousseau/anchor/cmd/anchor-mcp@latest
-go install github.com/sebastienrousseau/anchor/cmd/anchor-lsp@latest
+# Debian, Ubuntu, Fedora, RHEL, Alpine, Arch — packages on the release page
 ```
 
-Every release archive carries all three binaries, an SBOM, and a Sigstore
+Every release archive will carry all three binaries, an SBOM, and a Sigstore
 signature over the checksums. The signing certificate records the workflow and
 the commit that produced the artifact, so it can be verified without trusting a
 key anyone had to store:
@@ -502,12 +520,19 @@ cosign verify-blob checksums.txt \
 
 ## Development
 
+Building from source needs **Go 1.26.6 or newer**. That is a floor rather than a
+preference: it is the release carrying the standard library fixes for the advisories
+`govulncheck` reports against anything older, one of which
+([GO-2026-6088](https://pkg.go.dev/vuln/GO-2026-6088)) guards `encoding/xml` against
+unbounded decode recursion — directly on the path every `validate`, `lint` and `convert`
+takes through untrusted input.
+
 ```bash
 make build         # build the binary
 make test          # unit tests
 make cover         # tests with a coverage floor
-make ci            # the full local gate: fmt, vet, lint, test, cover, vuln, build
-make conformance   # validate generated output against real schemas (needs a catalogue)
+make ci            # the full gate: fmt, vet, lint, test, cover, vuln, build,
+                   # web-test, mcp-check, lsp-check
 make conformance   # generate, convert and validate against your own catalogue
 make differential  # agreement with libxml2 across the whole catalogue
 make fuzz          # fuzz the parsers (FUZZTIME=5m for a longer run)
@@ -515,9 +540,14 @@ make web           # build the WebAssembly bundle for the website
 make web-test      # smoke-test the Go/JS bridge
 ```
 
-`make conformance` is not run in CI, because CI has no catalogue. Run it before tagging a
-release. It records known defects explicitly, so fixing one turns the suite red until the
-expectation is removed.
+CI runs that same gate on Linux, macOS and Windows on every push, plus `govulncheck`
+and CodeQL. Coverage is enforced at 95% on a runner with no catalogue installed, which
+is a stricter measurement than a developer machine gives you: anything reachable only
+when a catalogue happens to be present does not count towards it.
+
+`make conformance` and `make differential` are not run in CI, because CI has no
+catalogue. Run them before tagging a release. Conformance records known defects
+explicitly, so fixing one turns the suite red until the expectation is removed.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
