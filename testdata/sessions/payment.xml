@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.10">
+  <FIToFICstmrCdtTrf>
+    <GrpHdr>
+      <MsgId>MSG-0001</MsgId>
+      <CreDtTm>2026-08-25T10:00:00</CreDtTm>
+      <NbOfTxs>1</NbOfTxs>
+      <SttlmInf><SttlmMtd>INDA</SttlmMtd></SttlmInf>
+    </GrpHdr>
+    <CdtTrfTxInf>
+      <PmtId><EndToEndId>E2E-0001</EndToEndId><UETR>7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d</UETR></PmtId>
+      <IntrBkSttlmAmt Ccy="EUR">1000.00</IntrBkSttlmAmt>
+      <Dbtr>
+        <Nm>ACME Corporation</Nm>
+        <PstlAdr>
+          <StrtNm>Baker Street</StrtNm>
+          <BldgNb>221B</BldgNb>
+          <PstCd>NW1 6XE</PstCd>
+          <TwnNm>London</TwnNm>
+          <Ctry>GB</Ctry>
+        </PstlAdr>
+      </Dbtr>
+      <Cdtr>
+        <Nm>Beispiel GmbH</Nm>
+        <PstlAdr>
+          <AdrLine>Musterstrasse 1</AdrLine>
+          <AdrLine>10115 Berlin</AdrLine>
+        </PstlAdr>
+      </Cdtr>
+    </CdtTrfTxInf>
+  </FIToFICstmrCdtTrf>
+</Document>

@@ -12,7 +12,7 @@ LDFLAGS = -s -w -X github.com/sebastienrousseau/askiso/internal/tui.Version=$(VE
 SERVER_LDFLAGS = -s -w -X main.version=$(VERSION)
 COVERAGE_FLOOR = 95
 
-.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint vuln clean run catalog-info web web-test web-serve mcp lsp mcp-check lsp-check servers
+.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint vuln clean run catalog-info web web-test web-serve wasm sessions sessions-record mcp lsp mcp-check lsp-check servers
 
 all: build
 
@@ -103,6 +103,16 @@ conformance:
 	ASKISO_CATALOG="$$askiso_catalog" go test ./internal/swift/ -run 'ConvertedMessagesValidate' -v; \
 	ASKISO_CATALOG="$$askiso_catalog" ASKISO_GEN_LIMIT=0 go test ./internal/schemagen/ -run 'Installed|LintClean' -v -timeout 20m; \
 	ASKISO_CATALOG="$$askiso_catalog" go test ./internal/validator/ -run 'StreamingAgrees' -v
+
+# The terminal sessions on the website are executable. Every ```console block
+# whose commands are `askiso` is replayed against testdata/sessions and its
+# recorded output compared with what the binary actually writes, so the site
+# cannot go on showing output the tool stopped producing.
+sessions:
+	go run ./scripts/sessions
+
+sessions-record:
+	go run ./scripts/sessions -record
 
 # --- website ---------------------------------------------------------------
 # askiso.io is content built by ssg plus pkg/iso20022 compiled to WebAssembly,
@@ -200,7 +210,7 @@ vuln:
 	govulncheck ./...
 
 # The full gate CI runs, minus the catalogue-dependent conformance suite.
-ci: fmt vet lint test cover vuln build web-test mcp-check lsp-check
+ci: fmt vet lint test cover vuln build sessions web-test mcp-check lsp-check
 
 catalog-info:
 	@./$(BINARY_NAME) doctor || true

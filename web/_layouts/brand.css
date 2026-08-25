@@ -562,33 +562,78 @@ h3 {
   overflow-x: auto;
 }
 
-/* The reveal wipes the block open from the top, so lines appear in order.
-   clip-path leaves the markup untouched — the syntax highlighting inside is
-   nested spans, and anything that rewrites them loses content. */
-.terminal.is-typing pre {
-  animation: term-reveal var(--term-duration, 1s) steps(12, end) forwards;
+/* A replayed session: the prompt, the command being typed, then the output.
+   The caret sits on whichever command is currently being typed and stops when
+   the session finishes, because a terminal nobody is typing into does not
+   blink at you forever. */
+.terminal-screen {
+  padding: 1.15rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  line-height: 1.6;
+  color: #d6e4ea;
+  overflow-x: auto;
+  min-height: 3rem;
 }
 
-@keyframes term-reveal {
-  from {
-    clip-path: inset(0 0 100% 0);
-  }
-  to {
-    clip-path: inset(0 0 0 0);
-  }
+.term-cmd {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-/* Until the observer fires, the block is hidden — but only once the script has
-   confirmed it can animate. Without scripting the rule never applies and the
-   commands are simply visible. */
-.terminal.is-armed pre {
-  clip-path: inset(0 0 100% 0);
+.term-prompt {
+  color: #4ade80;
+  user-select: none;
+}
+
+.term-cmd.is-typing .term-typed::after,
+.term-cmd.is-done:last-of-type .term-typed::after {
+  content: "";
+  display: inline-block;
+  width: 0.55em;
+  height: 1.05em;
+  margin-left: 0.1em;
+  vertical-align: -0.18em;
+  background: #4ade80;
+  animation: term-caret 1s step-end infinite;
+}
+
+.terminal.is-settled .term-cmd.is-done:last-of-type .term-typed::after {
+  animation: none;
+  opacity: 0.35;
+}
+
+@keyframes term-caret {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* Output is printed, so it arrives whole. The slight rise is the only thing
+   that distinguishes an instant paint from a page that failed to update. */
+.term-out {
+  white-space: pre;
+  color: #9fb4bd;
+  opacity: 0;
+  transform: translateY(2px);
+  margin: 0.15rem 0 0.85rem;
+}
+
+.term-out.is-shown {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.14s ease-out, transform 0.14s ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .terminal.is-armed pre,
-  .terminal.is-typing pre {
-    clip-path: none;
+  .term-out,
+  .term-out.is-shown {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .term-cmd.is-typing .term-typed::after,
+  .term-cmd.is-done:last-of-type .term-typed::after {
     animation: none;
   }
 }

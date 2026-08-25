@@ -66,15 +66,98 @@ takes about a minute:
 
 ```bash
 go install github.com/sebastienrousseau/askiso/cmd/askiso@latest
+```
 
-askiso lint payment.xml --profile cbpr-2026
+Then point it at a message. This is a real session, replayed — the output below
+is what the binary writes, checked against it on every commit:
+
+```console
+$ askiso lint payment.xml --profile cbpr-2026
+  LINTER   Semantic Business Rule Linter: payment.xml
+
+  ✅ All 2 semantic checks passed with zero issues!
+     • IBAN Modulo-97 Checksums : Verified
+     • BIC / SWIFT Structure   : Verified
+     • ISO 4217 Decimals       : Verified
+     • RFC 4122 UUIDv4 UETR    : Verified
+
+    PROFILE   cbpr-2026 — CBPR+ requirements effective 14 November 2026: postal addresses must be hybrid or fully structured.
+
+  ❌ [CBPR-ADDR-002] the address is fully unstructured (2 address line(s), no structured element)
+     at       /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr
+     expected hybrid or structured
+     fix      Move the town into <TwnNm> and the country into <Ctry>; keep the remainder in at most two <AdrLine> elements.
+
+  ❌ [CBPR-ADDR-001] the address has no country
+     at       /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr/Ctry
+     expected a <Ctry> element
+     fix      Populate <TwnNm> and <Ctry> inside <PstlAdr>.
+
+  ❌ [CBPR-ADDR-001] the address has no town name
+     at       /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr/TwnNm
+     expected a <TwnNm> element
+     fix      Populate <TwnNm> and <Ctry> inside <PstlAdr>.
+
+Error: profile cbpr-2026 found 3 error(s)
 ```
 
 Run it across a directory to get a count rather than a verdict on one file:
 
-```bash
-askiso batch ./messages --profile cbpr-2026
-askiso batch ./messages --profile cbpr-2026 --format sarif > findings.sarif
+```console
+$ askiso batch ./messages --profile cbpr-2026
+  BATCH   4 file(s)
+
+  ✅ clean.xml
+  ❌ pay-1.xml  pacs.008.001.10
+      [CBPR-ADDR-002] the address is fully unstructured (2 address line(s), no structured element)
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr
+      [CBPR-ADDR-001] the address has no country
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr/Ctry
+      [CBPR-ADDR-001] the address has no town name
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr/TwnNm
+      [CBPR-ADDR-002] the address is fully unstructured (3 address line(s), no structured element)
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr
+      [CBPR-ADDR-004] 3 address lines; CBPR+ permits at most 2
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr/AdrLine
+      [CBPR-ADDR-001] the address has no country
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr/Ctry
+      [CBPR-ADDR-001] the address has no town name
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr/TwnNm
+
+  ❌ pay-2.xml  pacs.008.001.10
+      [CBPR-ADDR-002] the address is fully unstructured (2 address line(s), no structured element)
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr
+      [CBPR-ADDR-001] the address has no country
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr/Ctry
+      [CBPR-ADDR-001] the address has no town name
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr/TwnNm
+      [CBPR-ADDR-002] the address is fully unstructured (3 address line(s), no structured element)
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr
+      [CBPR-ADDR-004] 3 address lines; CBPR+ permits at most 2
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr/AdrLine
+      [CBPR-ADDR-001] the address has no country
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr/Ctry
+      [CBPR-ADDR-001] the address has no town name
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr/TwnNm
+
+  ❌ pay-3.xml  pacs.008.001.10
+      [CBPR-ADDR-002] the address is fully unstructured (2 address line(s), no structured element)
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr
+      [CBPR-ADDR-001] the address has no country
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr/Ctry
+      [CBPR-ADDR-001] the address has no town name
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr/TwnNm
+      [CBPR-ADDR-002] the address is fully unstructured (3 address line(s), no structured element)
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr
+      [CBPR-ADDR-004] 3 address lines; CBPR+ permits at most 2
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr/AdrLine
+      [CBPR-ADDR-001] the address has no country
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr/Ctry
+      [CBPR-ADDR-001] the address has no town name
+         at /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr/TwnNm
+
+  1 passed, 3 failed, 21 error(s) total
+$ askiso batch ./messages --profile cbpr-2026 --format sarif > findings.sarif
 ```
 
 The SARIF output drops into GitHub code scanning or any tool that reads it, so
@@ -83,27 +166,15 @@ the check can sit in a pipeline rather than in someone's terminal.
 Nothing is uploaded. AskIso runs locally, which matters when the input is a real
 payment instruction.
 
-## What a finding looks like
-
-Every diagnostic names the rule, the path, what was expected and what to do about
-it, so it can be handed to whoever owns the data rather than interpreted first:
-
-```
-  ❌ [CBPR-ADDR-002] the address is fully unstructured (3 address line(s), no structured element)
-     at       /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr
-     expected hybrid or structured
-     fix      Move the town into <TwnNm> and the country into <Ctry>; keep the
-              remainder in at most two <AdrLine> elements.
-
-  ❌ [CBPR-ADDR-001] the address has no country
-     at       /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr/Ctry
-     expected a <Ctry> element
-     fix      Populate <TwnNm> and <Ctry> inside <PstlAdr>.
-```
+## The rules behind it
 
 The `cbpr-2026` profile carries five address rules, `CBPR-ADDR-001` through
-`CBPR-ADDR-005`. `--profile cbpr-2027` checks the enhanced-data expectations that
-follow a year later, and `--profile all` runs everything.
+`CBPR-ADDR-005`. Every diagnostic names the rule, the path, what was expected
+and what to do about it, so it can be handed to whoever owns the data rather
+than interpreted first.
+
+`--profile cbpr-2027` checks the enhanced-data expectations that follow a year
+later, and `--profile all` runs everything.
 
 ## If you are converting from MT
 
@@ -112,14 +183,46 @@ A message converted from MT will therefore **not** satisfy the mandate until the
 addresses are enriched from another source. AskIso says so rather than handing
 you a message that looks compliant:
 
-```bash
-askiso translate payment.mt103 --report
-```
+```console
+$ askiso translate payment.mt103 --report
+  TRANSLATE    MT103 → pacs.008.001.10
 
-```
+  source   payment.mt103
+  fields   5 mapped, 3 derived, 2 truncated, 1 unmapped
+
+  ⚠️  :121:  derived
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/PmtId/UETR
+       the source carried no UETR; a new one was generated
+  ✅ :20:  mapped
+       → /Document/FIToFICstmrCdtTrf/GrpHdr/MsgId
+  ❌ :23B:  unmapped
+       bank operation code has no direct equivalent; carry it as a local
+       instrument if the rail defines one
+  ✅ :32A:  mapped
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/IntrBkSttlmAmt
+  ✅ :50K:  mapped
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr
   ⚠️  :50K (address):  truncated
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr/AdrLine
        MT addresses are unstructured; CBPR+ rejects those from 14
        November 2026. Populate TwnNm and Ctry before then.
+  ⚠️  :52:  derived
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/DbtrAgt
+       taken from the message header
+  ⚠️  :57:  derived
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/CdtrAgt
+       taken from the message header
+  ✅ :59:  mapped
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr
+  ⚠️  :59 (address):  truncated
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr/AdrLine
+       MT addresses are unstructured; CBPR+ rejects those from 14
+       November 2026. Populate TwnNm and Ctry before then.
+  ✅ :71A:  mapped
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/ChrgBr
+
+  ⚠️  this conversion is lossy — review the entries above before relying on it
+  → check the 14 Nov 2026 address rules:  askiso lint <file> --profile cbpr-2026
 ```
 
 The fidelity report names every field in the source and what became of it —

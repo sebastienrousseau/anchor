@@ -1,0 +1,290 @@
+// SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+package main
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func TestFindLocatesConsoleBlocks(t *testing.T) {
+	lines := strings.Split(`# Title
+
+Some prose.
+
+`+"```console"+`
+$ askiso version
+AskIso version 0.1.0
+`+"```"+`
+
+More prose.
+
+`+"```bash"+`
+not a session
+`+"```"+`
+
+`+"```console"+`
+$ askiso list
+`+"```"+`
+`, "\n")
+
+	got := find(lines)
+	if len(got) != 2 {
+		t.Fatalf("found %d console blocks, want 2", len(got))
+	}
+	// The bash block between them must not be picked up.
+	for _, s := range got {
+		if strings.TrimSpace(lines[s.start]) != "```console" {
+			t.Errorf("block starts at %q, want a console fence", lines[s.start])
+		}
+		if strings.TrimSpace(lines[s.end]) != "```" {
+			t.Errorf("block ends at %q, want a closing fence", lines[s.end])
+		}
+		if s.end <= s.start {
+			t.Errorf("block ends at %d, before it starts at %d", s.end, s.start)
+		}
+	}
+}
+
+func TestFindIgnoresAnUnclosedFence(t *testing.T) {
+	lines := strings.Split("```console\n$ askiso version\n", "\n")
+	if got := find(lines); len(got) != 0 {
+		t.Errorf("found %d blocks in an unclosed fence, want 0", len(got))
+	}
+}
+
+// The CLI writes colour. A session records what the text says, not how it was
+// painted, or every recording would be full of escape sequences.
+func TestCleanStripsColourAndTrailingBlanks(t *testing.T) {
+	raw := "\n\x1b[32mok\x1b[0m   \nsecond line\n\n\n"
+	got := clean(raw)
+
+	want := []string{"ok", "second line"}
+	if len(got) != len(want) {
+		t.Fatalf("got %d lines %q, want %d", len(got), got, len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("line %d = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+func TestCleanHandlesWindowsLineEndings(t *testing.T) {
+	got := clean("one\r\ntwo\r\n")
+	if len(got) != 2 || got[0] != "one" || got[1] != "two" {
+		t.Errorf("got %q, want [one two]", got)
+	}
+}
+
+func TestCleanOnEmptyOutput(t *testing.T) {
+	if got := clean(""); len(got) != 0 {
+		t.Errorf("got %q, want no lines", got)
+	}
+	if got := clean("\n\n\n"); len(got) != 0 {
+		t.Errorf("blank-only output gave %q, want no lines", got)
+	}
+}
+
+func TestEqualIgnoresTrailingWhitespace(t *testing.T) {
+	if !equal([]string{"a  ", "b"}, []string{"a", "b   "}) {
+		t.Error("trailing whitespace should not count as a difference")
+	}
+	if equal([]string{"a"}, []string{"a", "b"}) {
+		t.Error("different lengths are not equal")
+	}
+	if equal([]string{"a"}, []string{"b"}) {
+		t.Error("different content is not equal")
+	}
+}
+
+func TestDiffShowsBothSides(t *testing.T) {
+	got := diff([]string{"same", "old"}, []string{"same", "new"})
+
+	if strings.Contains(got, "same") {
+		t.Error("an unchanged line should not appear in the diff")
+	}
+	if !strings.Contains(got, "- old") {
+		t.Errorf("the recorded line is missing:\n%s", got)
+	}
+	if !strings.Contains(got, "+ new") {
+		t.Errorf("the actual line is missing:\n%s", got)
+	}
+}
+
+func TestDiffHandlesDifferentLengths(t *testing.T) {
+	if got := diff([]string{"a"}, []string{"a", "b"}); !strings.Contains(got, "+ b") {
+		t.Errorf("an added line is missing:\n%s", got)
+	}
+	if got := diff([]string{"a", "b"}, []string{"a"}); !strings.Contains(got, "- b") {
+		t.Errorf("a removed line is missing:\n%s", got)
+	}
+}
+
+// Only askiso commands run. A `go install` line is instruction for the reader
+// and a redirect belongs to the shell; executing either would be wrong, and
+// silently trusting them would defeat the point of the check.
+func TestReplayExecutesOnlyAskisoCommands(t *testing.T) {
+	dir := t.TempDir()
+
+	got, skipped, err := replay("/nonexistent-binary", dir, []string{
+		"$ go install github.com/sebastienrousseau/askiso/cmd/askiso@latest",
+		"$ askiso batch . --format sarif > out.sarif",
+	})
+	if err != nil {
+		t.Fatalf("replay: %v", err)
+	}
+	if skipped != 2 {
+		t.Errorf("skipped %d commands, want 2", skipped)
+	}
+	if len(got) != 2 {
+		t.Fatalf("got %d lines, want the 2 commands back unchanged: %q", len(got), got)
+	}
+	for i, line := range got {
+		if !strings.HasPrefix(line, "$ ") {
+			t.Errorf("line %d = %q, want the command preserved", i, line)
+		}
+	}
+}
+
+func TestReplayRunsTheBinaryAndRecordsItsOutput(t *testing.T) {
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "askiso")
+
+	// A stand-in binary: the runner should record whatever the command wrote,
+	// without caring what produced it.
+	script := "#!/bin/sh\necho \"ran: $*\"\n"
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	got, skipped, err := replay(bin, dir, []string{"$ askiso version"})
+	if err != nil {
+		t.Fatalf("replay: %v", err)
+	}
+	if skipped != 0 {
+		t.Errorf("skipped %d, want 0", skipped)
+	}
+	if len(got) != 2 {
+		t.Fatalf("got %q, want the command and one output line", got)
+	}
+	if got[0] != "$ askiso version" {
+		t.Errorf("command = %q", got[0])
+	}
+	if got[1] != "ran: version" {
+		t.Errorf("output = %q, want the binary's own output", got[1])
+	}
+}
+
+// A failing command is a real result — a linter that finds problems exits
+// non-zero, and that session still has to record.
+func TestReplayRecordsOutputFromAFailingCommand(t *testing.T) {
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "askiso")
+	if err := os.WriteFile(bin, []byte("#!/bin/sh\necho 'found 3 errors'\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	got, _, err := replay(bin, dir, []string{"$ askiso lint bad.xml"})
+	if err != nil {
+		t.Fatalf("a non-zero exit should not be an error: %v", err)
+	}
+	if len(got) != 2 || got[1] != "found 3 errors" {
+		t.Errorf("got %q, want the failure output recorded", got)
+	}
+}
+
+func setupContent(t *testing.T, body string) (string, string) {
+	t.Helper()
+	content := t.TempDir()
+	fixtures := t.TempDir()
+
+	bin := filepath.Join(fixtures, "askiso")
+	if err := os.WriteFile(bin, []byte("#!/bin/sh\necho 'real output'\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(content, "page.md"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return content, fixtures
+}
+
+func TestRunFailsWhenTheSessionDisagreesWithTheBinary(t *testing.T) {
+	body := "```console\n$ askiso version\nstale output\n```\n"
+	content, fixtures := setupContent(t, body)
+
+	err := run(content, fixtures, filepath.Join(fixtures, "askiso"), false)
+	if err == nil {
+		t.Fatal("a drifted session should fail verification")
+	}
+	if !strings.Contains(err.Error(), "disagree") {
+		t.Errorf("error should say the session disagrees: %v", err)
+	}
+}
+
+func TestRunRecordsTheRealOutput(t *testing.T) {
+	body := "```console\n$ askiso version\nstale output\n```\n"
+	content, fixtures := setupContent(t, body)
+
+	if err := run(content, fixtures, filepath.Join(fixtures, "askiso"), true); err != nil {
+		t.Fatalf("record: %v", err)
+	}
+
+	got, err := os.ReadFile(filepath.Join(content, "page.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(got), "stale output") {
+		t.Error("the stale output survived recording")
+	}
+	if !strings.Contains(string(got), "real output") {
+		t.Errorf("the real output was not recorded:\n%s", got)
+	}
+
+	// Recording must leave the file verifiable.
+	if err := run(content, fixtures, filepath.Join(fixtures, "askiso"), false); err != nil {
+		t.Errorf("a freshly recorded session should verify: %v", err)
+	}
+}
+
+func TestRunRewritesLaterBlocksWithoutShiftingEarlierOnes(t *testing.T) {
+	body := "```console\n$ askiso a\nstale one\n```\n\ntext\n\n```console\n$ askiso b\nstale two\n```\n"
+	content, fixtures := setupContent(t, body)
+
+	if err := run(content, fixtures, filepath.Join(fixtures, "askiso"), true); err != nil {
+		t.Fatalf("record: %v", err)
+	}
+
+	got, err := os.ReadFile(filepath.Join(content, "page.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(got)
+	if strings.Contains(s, "stale one") || strings.Contains(s, "stale two") {
+		t.Errorf("a stale block survived:\n%s", s)
+	}
+	if !strings.Contains(s, "$ askiso a") || !strings.Contains(s, "$ askiso b") {
+		t.Errorf("a command was lost:\n%s", s)
+	}
+	if !strings.Contains(s, "text") {
+		t.Error("prose between the blocks was lost")
+	}
+}
+
+func TestRunIgnoresContentWithoutSessions(t *testing.T) {
+	content, fixtures := setupContent(t, "# Just prose\n\n```bash\nnot a session\n```\n")
+	if err := run(content, fixtures, filepath.Join(fixtures, "askiso"), false); err != nil {
+		t.Errorf("a page with no sessions should pass: %v", err)
+	}
+}
+
+func TestRunReportsMissingFixtures(t *testing.T) {
+	content := t.TempDir()
+	err := run(content, filepath.Join(content, "nope"), "/bin/echo", false)
+	if err == nil || !strings.Contains(err.Error(), "fixtures") {
+		t.Errorf("a missing fixture directory should be named in the error: %v", err)
+	}
+}

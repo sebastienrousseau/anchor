@@ -51,6 +51,13 @@ jobs:
       - name: Install ssg
         run: command -v ssg || cargo install ssg --version 0.0.56 --locked
 
+      # The terminal sessions on the site are replayed against the binary
+      # before it is published. A reworded diagnostic or a renamed flag should
+      # fail the deploy, not quietly leave the site showing output the tool
+      # stopped producing months ago.
+      - name: Verify the terminal sessions against the binary
+        run: make sessions
+
       - name: Build the site
         run: make web
 
