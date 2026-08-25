@@ -1,7 +1,10 @@
 # SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-VERSION ?= 0.1.0
+# Versions increment by 0.0.1 and only by 0.0.1: v0.1.0 follows v0.0.999, not
+# v0.0.9. The slow climb is the point — maturity is earned across releases
+# rather than declared by a version number. See CONTRIBUTING.md.
+VERSION ?= 0.0.1
 BINARY_NAME = askiso
 CMD_PATH = ./cmd/askiso
 MCP_BINARY = askiso-mcp

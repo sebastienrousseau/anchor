@@ -60,7 +60,7 @@ Some prose.
 
 `+"```console"+`
 $ askiso version
-AskIso version 0.1.0
+AskIso version 0.0.1
 `+"```"+`
 
 More prose.
