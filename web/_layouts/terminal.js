@@ -9,8 +9,19 @@
 // using the tool — it is a wipe with a cursor on it. Commands type. Output
 // appears.
 //
-// A block is a session when its first line starts with "$ ". Lines beginning
-// "$ " are typed; every other line is output belonging to the command above it.
+// Two kinds of block get the treatment.
+//
+// A recorded session starts with "$ ": lines beginning "$ " are typed, every
+// other line is output belonging to the command above it, and the whole thing
+// is verified against the binary by scripts/sessions.
+//
+// A plain shell block — bash, sh, console — has no recorded output, so every
+// non-empty line is a command and is typed. It animates but claims nothing,
+// which is the right treatment for `go install` or a snippet the reader is
+// meant to adapt.
+//
+// Nothing else animates. A lua or yaml block is configuration to copy, not a
+// session, and typing it out would be theatre.
 //
 // Progressive enhancement throughout: the whole session is in the HTML, and
 // that is what a crawler, an assistant, or a reader without scripting gets.
@@ -30,6 +41,8 @@
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
 
+  var SHELL = /\blanguage-(bash|sh|console|shell)\b/;
+
   // A session is a list of steps: a command, and the output it produced.
   function parse(text) {
     var steps = [];
@@ -47,9 +60,22 @@
     return steps;
   }
 
+  // A plain shell block: every line is something the reader would type. A blank
+  // line is spacing rather than a command, so it does not become an empty
+  // prompt sitting there waiting for input that never comes.
+  function parseCommands(text) {
+    return text.replace(/\n+$/, "").split("\n").map(function (line) {
+      return line.trim() === ""
+        ? { command: null, output: [""] }
+        : { command: line, output: [] };
+    });
+  }
+
   function build(pre) {
     var text = pre.textContent;
-    if (!/^\s*\$ /.test(text)) {
+    var session = /^\s*\$ /.test(text);
+
+    if (!session && !SHELL.test(pre.className)) {
       return null;
     }
 
@@ -73,7 +99,9 @@
     transcript.className = "visually-hidden";
     transcript.textContent = text;
 
-    parse(text).forEach(function (step) {
+    var steps = session ? parse(text) : parseCommands(text);
+
+    steps.forEach(function (step) {
       if (step.command !== null) {
         var cmd = document.createElement("div");
         cmd.className = "term-cmd";
@@ -140,21 +168,36 @@
 
       var target = node.querySelector(".term-typed");
       var full = node.dataset.text;
-      var at = 0;
+      var started = null;
 
       node.classList.add("is-typing");
 
-      (function tick() {
-        if (at >= full.length) {
+      // Driven by elapsed time under requestAnimationFrame rather than a
+      // setTimeout per character. A background tab throttles timers to about
+      // one a second, which turned a one-second command into a minute of
+      // watching it crawl; rAF simply does not run until the tab is visible
+      // again, and deriving the position from the clock means the replay is
+      // the same length however the browser schedules it.
+      function tick(now) {
+        if (started === null) {
+          started = now;
+        }
+        var shown = Math.min(full.length, Math.floor((now - started) / CHAR_MS));
+
+        if (target.textContent.length !== shown) {
+          target.textContent = full.slice(0, shown);
+        }
+
+        if (shown >= full.length) {
           node.classList.remove("is-typing");
           node.classList.add("is-done");
           window.setTimeout(next, AFTER_COMMAND_MS);
           return;
         }
-        at += 1;
-        target.textContent = full.slice(0, at);
-        window.setTimeout(tick, CHAR_MS);
-      })();
+        window.requestAnimationFrame(tick);
+      }
+
+      window.requestAnimationFrame(tick);
     }
 
     next();

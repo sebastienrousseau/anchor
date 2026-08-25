@@ -637,3 +637,16 @@ h3 {
     animation: none;
   }
 }
+
+/* A command that has not started yet is not shown. A real terminal does not
+   display the prompts you are about to type at.
+   visibility rather than display: the space stays reserved, so the block does
+   not grow line by line and shove the page around while it plays. */
+.terminal .term-cmd {
+  visibility: hidden;
+}
+
+.terminal .term-cmd.is-typing,
+.terminal .term-cmd.is-done {
+  visibility: visible;
+}

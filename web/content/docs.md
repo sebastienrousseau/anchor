@@ -39,6 +39,59 @@ go install github.com/sebastienrousseau/askiso/cmd/askiso-lsp@latest
 Building from source needs **Go 1.26.6 or newer** — that release carries the
 standard library security fixes AskIso builds against.
 
+## See it work
+
+Every session on this site is replayed against the binary on each commit, so
+what follows is what AskIso actually prints — not a transcription of it.
+
+Converting a SWIFT MT message, with the fidelity report that says what survived
+the trip:
+
+```console
+$ askiso translate payment.mt103 --report
+  TRANSLATE    MT103 → pacs.008.001.10
+
+  source   payment.mt103
+  fields   5 mapped, 3 derived, 2 truncated, 1 unmapped
+
+  ⚠️  :121:  derived
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/PmtId/UETR
+       the source carried no UETR; a new one was generated
+  ✅ :20:  mapped
+       → /Document/FIToFICstmrCdtTrf/GrpHdr/MsgId
+  ❌ :23B:  unmapped
+       bank operation code has no direct equivalent; carry it as a local
+       instrument if the rail defines one
+  ✅ :32A:  mapped
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/IntrBkSttlmAmt
+  ✅ :50K:  mapped
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr
+  ⚠️  :50K (address):  truncated
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr/AdrLine
+       MT addresses are unstructured; CBPR+ rejects those from 14
+       November 2026. Populate TwnNm and Ctry before then.
+  ⚠️  :52:  derived
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/DbtrAgt
+       taken from the message header
+  ⚠️  :57:  derived
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/CdtrAgt
+       taken from the message header
+  ✅ :59:  mapped
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr
+  ⚠️  :59 (address):  truncated
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr/AdrLine
+       MT addresses are unstructured; CBPR+ rejects those from 14
+       November 2026. Populate TwnNm and Ctry before then.
+  ✅ :71A:  mapped
+       → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/ChrgBr
+
+  ⚠️  this conversion is lossy — review the entries above before relying on it
+  → check the 14 Nov 2026 address rules:  askiso lint <file> --profile cbpr-2026
+```
+
+Conversion between MT and MX is lossy in both directions. The report names
+every field and what became of it, so nothing is dropped without saying so.
+
 ## Commands
 
 Commands marked ◆ read the actual XSD files and need a catalogue installed.
