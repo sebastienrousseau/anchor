@@ -49,6 +49,13 @@ of truth rather than a mirror of unknown age.
 > This is not the official ISO 20022 site. The sole source of up-to-date ISO 20022
 > material is <https://www.iso20022.org/>
 
+**AskIso is a developer tool, not regulatory advice.** It reports what it can verify
+against the schemas and rules it was given. A clean result is not an assurance that a
+scheme, a correspondent or a market infrastructure will accept the message — the
+Registration Authority and your scheme operator remain authoritative on that. Where a
+mapping cannot be verified against a published source, AskIso reports the gap rather
+than guessing; [Known limitations](#known-limitations) lists every such case.
+
 ---
 
 ## Install

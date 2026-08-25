@@ -47,7 +47,11 @@ line — no quoting needed:
 
   askiso                                   browse in the terminal UI
   askiso compare pacs.008 and pacs.009     ask the assistant
-  askiso validate payment.xml              run a command`,
+  askiso validate payment.xml              run a command
+
+AskIso is a developer tool, not regulatory advice. The Registration Authority
+at iso20022.org and your scheme operator are the authoritative sources for what
+a message must contain; a clean result here is not an assurance of acceptance.`,
 
 	// Free text is allowed so a question needs no subcommand and no quotes.
 	// Cobra still resolves a real subcommand before this ever runs, so
