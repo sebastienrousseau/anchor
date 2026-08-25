@@ -93,6 +93,10 @@
     <!-- Brand layer: overrides the theme tokens and adds the components
          the theme has no opinion about. Order matters. -->
     <link rel="stylesheet" href="{{site_path}}brand.css" />
+    <!-- Only the playground needs the app styles, and they are the largest
+         stylesheet on the site. Loading them on all 2,848 pages would be a
+         page-weight regression for the 2,847 that never use them. -->
+    {{#if nav_playground}}<link rel="stylesheet" href="{{site_path}}playground.css" />{{/if}}
     <script src="{{site_path}}theme-init.js"></script>
   </head>
 
@@ -108,5 +112,8 @@
     {{> footer}}
 
     <script src="{{site_path}}main.js" defer></script>
+    <!-- Wraps shell blocks in terminal chrome and types them out. Purely
+         additive: the commands are in the HTML with or without it. -->
+    <script src="{{site_path}}terminal.js" defer></script>
   </body>
 </html>

@@ -145,11 +145,9 @@ web:
 	go run ./scripts/gen-message-pages -out web/content/messages
 	ssg build -f web/ssg.toml
 	@$(MAKE) --no-print-directory wasm
-	@for a in styles.css brand.css main.js theme-init.js deadline.js logo.svg; do \
+	@for a in styles.css brand.css playground.css main.js theme-init.js deadline.js playground.js terminal.js logo.svg; do \
 	  test -f "web/_layouts/$$a" && cp -f "web/_layouts/$$a" "$(WEB_OUT)/$$a"; \
 	done
-	@mkdir -p $(WEB_OUT)/playground
-	@cp -f web/app/playground.html $(WEB_OUT)/playground/index.html
 	@printf 'askiso.io\n' > $(WEB_OUT)/CNAME
 	@# Without this GitHub Pages runs its Jekyll filter over the artefact and
 	@# drops anything beginning with a dot or an underscore — which silently

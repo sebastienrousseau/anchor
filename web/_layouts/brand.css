@@ -279,22 +279,26 @@ h3 {
 
    A full-width accent block between white sections. It is what stops a long
    institutional page reading as an unbroken column of prose.
+
+   Named feature-panel rather than panel: the playground calls its tab panels
+   .panel, and a bare .panel here painted every one of them with the accent
+   background. Renaming is more durable than winning on specificity.
    --------------------------------------------------------------------------- */
 
-.panel {
+.feature-panel {
   background: var(--panel);
   color: var(--panel-ink);
   border-radius: 18px;
   padding: clamp(2rem, 5vw, 3.5rem);
 }
 
-.panel h2,
-.panel h3 {
+.feature-panel h2,
+.feature-panel h3 {
   color: var(--panel-ink);
 }
 
-.panel .lead,
-.panel p {
+.feature-panel .lead,
+.feature-panel p {
   color: var(--panel-ink);
   opacity: 0.88;
 }
@@ -460,4 +464,131 @@ h3 {
 
 .card.metric .metric-value {
   font-size: clamp(1.9rem, 3vw, 2.5rem);
+}
+
+/* ---------------------------------------------------------------------------
+   Status colours
+
+   Validation output needs to say pass, warn and fail in colour as well as in
+   words. These live here rather than in the playground because a diagnostic is
+   a diagnostic wherever it is rendered, and the two should not drift.
+   --------------------------------------------------------------------------- */
+
+:root,
+:root[data-theme="light"] {
+  --crit: #a01b3e;
+  --crit-bg: #fbe9ee;
+  --warn: #a8560a;
+  --warn-bg: #fcefe0;
+  --good: #10654a;
+  --good-bg: #e2f1ea;
+  --shadow: 0 1px 2px rgb(14 26 29 / 5%), 0 8px 24px -18px rgb(14 26 29 / 35%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --crit: #f2919f;
+    --crit-bg: #2c1119;
+    --warn: #e0a668;
+    --warn-bg: #2a1c0d;
+    --good: #74c9a5;
+    --good-bg: #0e2620;
+    --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px -18px rgb(0 0 0 / 70%);
+  }
+}
+
+:root[data-theme="dark"] {
+  --crit: #f2919f;
+  --crit-bg: #2c1119;
+  --warn: #e0a668;
+  --warn-bg: #2a1c0d;
+  --good: #74c9a5;
+  --good-bg: #0e2620;
+  --shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px -18px rgb(0 0 0 / 70%);
+}
+
+/* ---------------------------------------------------------------------------
+   Terminal blocks
+
+   Shell examples are wrapped in window chrome and typed out on scroll. The
+   text is in the HTML either way — the animation reveals it, it never supplies
+   it — so a reader without scripting, a crawler, or an assistant quoting the
+   page all get the complete command.
+   --------------------------------------------------------------------------- */
+
+.terminal {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line-soft);
+  background: #0c1418;
+  box-shadow: var(--shadow);
+  margin-block: 1.75rem;
+}
+
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.95rem;
+  background: #16232a;
+  border-bottom: 1px solid #22333c;
+}
+
+.terminal-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: #2f4650;
+}
+
+.terminal-title {
+  margin-left: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: #7c94a0;
+}
+
+/* The block sits on its own dark ground regardless of theme: a terminal that
+   turns white in light mode stops reading as a terminal. */
+.terminal pre,
+.terminal pre.highlight {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #d6e4ea;
+  padding: 1.15rem 1.25rem;
+  overflow-x: auto;
+}
+
+/* The reveal wipes the block open from the top, so lines appear in order.
+   clip-path leaves the markup untouched — the syntax highlighting inside is
+   nested spans, and anything that rewrites them loses content. */
+.terminal.is-typing pre {
+  animation: term-reveal var(--term-duration, 1s) steps(12, end) forwards;
+}
+
+@keyframes term-reveal {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Until the observer fires, the block is hidden — but only once the script has
+   confirmed it can animate. Without scripting the rule never applies and the
+   commands are simply visible. */
+.terminal.is-armed pre {
+  clip-path: inset(0 0 100% 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal.is-armed pre,
+  .terminal.is-typing pre {
+    clip-path: none;
+    animation: none;
+  }
 }
