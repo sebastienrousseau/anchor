@@ -139,6 +139,10 @@ web:
 	@# would otherwise produce a different site from CI, which always starts on
 	@# a fresh checkout. Reproducibility is worth the second of build time.
 	@rm -rf $(WEB_OUT)
+	@# One page per message definition, generated from the embedded registry.
+	@# They are derived data, so they are not tracked — regenerating is a
+	@# second of work and a stale copy in the tree would be worse than none.
+	go run ./scripts/gen-message-pages -out web/content/messages
 	ssg build -f web/ssg.toml
 	@$(MAKE) --no-print-directory wasm
 	@for a in styles.css main.js theme-init.js logo.svg; do \
@@ -159,6 +163,18 @@ web:
 	@# paths stay in place for the day the site moves to a host that serves them.
 	@test -f $(WEB_OUT)/.well-known/mcp.json && cp -f $(WEB_OUT)/.well-known/mcp.json $(WEB_OUT)/mcp.json || true
 	@test -f $(WEB_OUT)/.well-known/ai-plugin.json && cp -f $(WEB_OUT)/.well-known/ai-plugin.json $(WEB_OUT)/ai-plugin.json || true
+	@# ssg writes a copy of the site-level files into every page directory. With
+	@# one page that is invisible; with 2,845 it is 110 MB of duplicated
+	@# sitemaps, and every one of them is a wrong URL set for that subdirectory
+	@# anyway. Keep the copies at the root and drop the rest.
+	@for f in sitemap.xml news-sitemap.xml rss.xml robots.txt manifest.json; do \
+	  find $(WEB_OUT) -mindepth 2 -name "$$f" -delete; \
+	done
+	@# Build bookkeeping, not site content: front matter ssg already rendered
+	@# into the pages, plus its incremental caches. Publishing it serves nobody
+	@# and adds 12 MB to the artefact.
+	@rm -rf $(WEB_OUT)/.meta $(WEB_OUT)/.ssg-cache $(WEB_OUT)/.ssg-plugin-cache.json
+	@python3 scripts/gen-sitemap.py $(WEB_OUT)
 	@printf 'site: %s page(s), %s\n' \
 	  "$$(find $(WEB_OUT) -name '*.html' | wc -l | xargs)" \
 	  "$$(du -sh $(WEB_OUT) | cut -f1)"

@@ -85,6 +85,17 @@ jobs:
             fi
           done
 
+      # 2,845 of the pages are the message definitions, and they are the reason
+      # the site is discoverable at all. An empty sitemap published them to
+      # nobody, which is exactly the kind of failure that looks like success.
+      - name: Verify the sitemap lists every page
+        run: |
+          pages="$(find web/public -name index.html | wc -l | xargs)"
+          locs="$(grep -c '<loc>' web/public/sitemap.xml || echo 0)"
+          echo "pages: $pages   sitemap entries: $locs"
+          [ "$locs" = "$pages" ] || { echo "::error::sitemap lists $locs of $pages pages"; exit 1; }
+          [ "$pages" -gt 2000 ] || { echo "::error::only $pages pages built"; exit 1; }
+
       # ssg runs an accessibility pass over every page it builds. Failing the
       # deploy on it is what stops the WCAG 2.2 AA claim drifting out of date.
       - name: Enforce the accessibility gate
