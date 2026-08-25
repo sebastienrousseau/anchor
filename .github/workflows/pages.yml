@@ -103,6 +103,12 @@ jobs:
           [ "$locs" = "$pages" ] || { echo "::error::sitemap lists $locs of $pages pages"; exit 1; }
           [ "$pages" -gt 2000 ] || { echo "::error::only $pages pages built"; exit 1; }
 
+      # A dead reference in a shared layout is dead on every page, and a static
+      # site has no runtime to notice. This caught six such targets across all
+      # 2,850 pages at once.
+      - name: Verify every internal link resolves
+        run: make links
+
       # ssg runs an accessibility pass over every page it builds. Failing the
       # deploy on it is what stops the WCAG 2.2 AA claim drifting out of date.
       - name: Enforce the accessibility gate

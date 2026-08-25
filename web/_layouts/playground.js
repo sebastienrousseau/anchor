@@ -1,4 +1,16 @@
 // SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+
+// The distribution bars carry a width that depends on the data, and a
+// style="width:…" attribute is exactly what the CSP blocks. Setting it through
+// CSSOM after insertion is not covered by style-src, so the bars keep their
+// dynamic width without loosening the policy.
+function applyBarWidths(root) {
+  var bars = (root || document).querySelectorAll(".bar[data-width]");
+  for (var i = 0; i < bars.length; i++) {
+    bars[i].style.width = bars[i].getAttribute("data-width") + "px";
+    bars[i].removeAttribute("data-width");
+  }
+}
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 //
 // Extracted from the standalone page. It has to be a file rather than an
@@ -102,7 +114,7 @@
       : (d.warning_count > 0 ? d.warning_count + " warning(s)" : "All checks passed");
 
     var html = '<div class="verdict ' + cls + '">' + esc(verdict) +
-      ' &middot; <span style="font-weight:400">' + d.passed_count + " check(s) passed</span></div>";
+      ' &middot; <span class="fw-normal">' + d.passed_count + " check(s) passed</span></div>";
 
     if (issues.length) {
       html += '<ul class="issues">';
@@ -191,7 +203,7 @@
       html += "<tr>" +
         '<td class="mono">' + e.line + ":" + e.column + "</td>" +
         '<td><span class="chip err">' + esc(e.rule) + "</span></td>" +
-        '<td class="mono" style="white-space:normal">' + esc(e.path) + "</td>" +
+        '<td class="mono wrap-normal">' + esc(e.path) + "</td>" +
         '<td class="mono">' + esc(e.expected || "\u2014") + "</td>" +
         '<td class="mono">' + esc(e.actual || "\u2014") + "</td>" +
         "<td>" + esc(e.message) + "</td></tr>";
@@ -279,7 +291,7 @@
     // Shape of every address in the message.
     var shapes = call("addresses", payload);
     if (shapes.ok && shapes.data.length) {
-      html += '<div class="tablewrap" style="margin-bottom:1.2rem"><table><thead><tr>' +
+      html += '<div class="tablewrap mb-block"><table><thead><tr>' +
         "<th>Address</th><th>Shape</th><th>Status</th></tr></thead><tbody>";
       shapes.data.forEach(function (a) {
         var chip = SHAPE_CHIP[a.shape] || "info";
@@ -287,7 +299,7 @@
           : a.shape === "hybrid" ? "Accepted, no end date"
           : a.shape === "structured" ? "Fully compliant" : "Nothing to check";
         html += "<tr>" +
-          '<td class="mono" style="white-space:normal">' + esc(a.path) + "</td>" +
+          '<td class="mono wrap-normal">' + esc(a.path) + "</td>" +
           '<td><span class="chip ' + chip + '">' + esc(a.shape) + "</span></td>" +
           "<td>" + esc(note) + "</td></tr>";
       });
@@ -305,7 +317,7 @@
           '<div class="issue-msg">' + esc(f.message) + "</div>" +
           '<div class="issue-val">at ' + esc(f.path) + "</div>";
         if (f.expected) html += '<div class="issue-val">expected ' + esc(f.expected) + "</div>";
-        if (f.remediation) html += '<div class="issue-msg" style="margin-top:.35rem">' + esc(f.remediation) + "</div>";
+        if (f.remediation) html += '<div class="issue-msg mt-tight">' + esc(f.remediation) + "</div>";
         html += "</li>";
       });
       html += "</ul>";
@@ -360,7 +372,7 @@
           : "&mdash;") + "</td></tr>";
     });
     html += "</tbody></table></div>";
-    if (rows.length > 60) html += '<p class="hint" style="margin-top:.8rem">Showing the first 60 of ' + rows.length + ".</p>";
+    if (rows.length > 60) html += '<p class="hint mt-loose">Showing the first 60 of ' + rows.length + ".</p>";
     out.innerHTML = html;
   }
 
@@ -518,7 +530,7 @@
       var out = $("#chk-out");
       if (!r.ok) return showError(out, r.error);
       out.innerHTML = r.data.valid
-        ? '<div class="verdict pass">' + esc(spec[2]) + " is valid &middot; <span style=\"font-weight:400\">" + esc(value) + "</span></div>"
+        ? '<div class="verdict pass">' + esc(spec[2]) + " is valid &middot; <span class=\"fw-normal\">" + esc(value) + "</span></div>"
         : '<div class="verdict fail">' + esc(spec[2]) + " is invalid &mdash; " + esc(r.data.reason) + "</div>";
     });
   });
@@ -541,10 +553,11 @@
         '<td class="mono">' + esc(row.domain) + "</td>" +
         "<td>" + esc(row.name) + "</td>" +
         '<td class="mono">' + row.count + "</td>" +
-        '<td><span class="bar" style="width:' + Math.max(2, (row.count / max) * 140) + 'px"></span> ' +
-        '<span class="mono" style="font-size:.78rem;color:var(--muted)">' + pct.toFixed(1) + "%</span></td></tr>";
+        '<td><span class="bar" data-width="' + Math.max(2, Math.round((row.count / max) * 140)) + '"></span> ' +
+        '<span class="mono pct">' + pct.toFixed(1) + "%</span></td></tr>";
     });
     out.innerHTML = html + "</tbody></table></div>";
+    applyBarWidths(out);
     statsRendered = true;
   }
 })();

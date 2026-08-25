@@ -15,18 +15,18 @@
 <div class="playground">
 <nav class="tabs" aria-label="Playground tools" id="tools">
   <div class="wrap">
-    <ul class="tablist" role="tablist">
-      <li><button role="tab" aria-selected="true" data-panel="lint">Lint</button></li>
-      <li><button role="tab" aria-selected="false" data-panel="validate">Validate</button></li>
-      <li><button role="tab" aria-selected="false" data-panel="address">Nov 2026</button></li>
-      <li><button role="tab" aria-selected="false" data-panel="generate">Generate</button></li>
-      <li><button role="tab" aria-selected="false" data-panel="browse">Browse</button></li>
-      <li><button role="tab" aria-selected="false" data-panel="convert">Convert</button></li>
-      <li><button role="tab" aria-selected="false" data-panel="codes">Codes</button></li>
-      <li><button role="tab" aria-selected="false" data-panel="translate">MT ⇄ MX</button></li>
-      <li><button role="tab" aria-selected="false" data-panel="check">Validators</button></li>
-      <li><button role="tab" aria-selected="false" data-panel="stats">Standard</button></li>
-    </ul>
+    <div class="tablist" role="tablist">
+      <button role="tab" aria-selected="true" data-panel="lint">Lint</button>
+      <button role="tab" aria-selected="false" data-panel="validate">Validate</button>
+      <button role="tab" aria-selected="false" data-panel="address">Nov 2026</button>
+      <button role="tab" aria-selected="false" data-panel="generate">Generate</button>
+      <button role="tab" aria-selected="false" data-panel="browse">Browse</button>
+      <button role="tab" aria-selected="false" data-panel="convert">Convert</button>
+      <button role="tab" aria-selected="false" data-panel="codes">Codes</button>
+      <button role="tab" aria-selected="false" data-panel="translate">MT ⇄ MX</button>
+      <button role="tab" aria-selected="false" data-panel="check">Validators</button>
+      <button role="tab" aria-selected="false" data-panel="stats">Standard</button>
+    </div>
   </div>
 </nav>
 
@@ -38,7 +38,7 @@
     <p class="hint">Checks IBAN mod-97 checksums, BIC structure, ISO 4217 currency precision, UETR format, and date sanity. Identical rules to <code>askiso lint</code>.</p>
     <label class="sr" for="lint-in">ISO 20022 XML message</label>
     <textarea id="lint-in" spellcheck="false" placeholder="Paste an ISO 20022 XML message, or press Generate below to make one."></textarea>
-    <div class="row" style="margin-top:.8rem">
+    <div class="row mt-loose">
       <button class="act" id="lint-go">Lint message</button>
       <button class="act ghost" id="lint-fill">Use a sample pacs.008</button>
     </div>
@@ -49,17 +49,17 @@
   <section class="panel" data-panel="validate" role="tabpanel">
     <h2>Validate against a schema</h2>
     <p class="hint">Full XML Schema validation — element order, cardinality, choices, patterns, enumerations, lengths and numeric facets. The same pure-Go engine as <code>askiso validate</code>, which agrees with libxml2 on all 4,746 schemas in the ISO 20022 catalogue.</p>
-    <div class="notice" style="margin-top:0;margin-bottom:1.4rem">
+    <div class="notice lede-tight">
       AskIso ships no specification content, so paste the XSD too. Download it free from
       <a href="https://www.iso20022.org/iso-20022-message-definitions" rel="noopener">iso20022.org</a>
       — or use the CLI, which resolves the schema automatically from your local catalogue.
     </div>
-    <div class="row" style="align-items:stretch">
-      <div class="field" style="flex:1;min-width:280px">
+    <div class="row items-stretch">
+      <div class="field grow-280">
         <label for="val-xml">Message (XML)</label>
         <textarea id="val-xml" spellcheck="false" placeholder="Paste the ISO 20022 message."></textarea>
       </div>
-      <div class="field" style="flex:1;min-width:280px">
+      <div class="field grow-280">
         <label for="val-xsd">Schema (XSD)</label>
         <textarea id="val-xsd" spellcheck="false" placeholder="Paste the matching .xsd schema."></textarea>
       </div>
@@ -75,7 +75,7 @@
   <section class="panel" data-panel="address" role="tabpanel">
     <h2>The 14 November 2026 address requirement</h2>
     <p class="hint">From that date CBPR+ rejects fully unstructured postal addresses outright, with no contingency. Any address present must be hybrid or fully structured: town name and country in their own elements, at minimum. Paste a message to see where it stands.</p>
-    <div class="notice" style="margin-top:0;margin-bottom:1.4rem">
+    <div class="notice lede-tight">
       <strong>What changes.</strong> <code>&lt;TwnNm&gt;</code> and <code>&lt;Ctry&gt;</code> become mandatory
       wherever a <code>&lt;PstlAdr&gt;</code> appears, <code>&lt;Ctry&gt;</code> must be an ISO 3166-1 alpha-2
       code rather than a country name, and a hybrid address may keep at most two
@@ -85,7 +85,7 @@
     </div>
     <label class="sr" for="addr-in">ISO 20022 XML message</label>
     <textarea id="addr-in" spellcheck="false" placeholder="Paste a message containing postal addresses."></textarea>
-    <div class="row" style="margin-top:.8rem">
+    <div class="row mt-loose">
       <button class="act" id="addr-go">Check readiness</button>
       <button class="act ghost" id="addr-demo">Load a non-compliant example</button>
       <button class="act ghost" id="addr-demo-ok">Load a compliant example</button>
@@ -130,7 +130,7 @@
     <h2>Browse the standard</h2>
     <p class="hint">Every message definition the Registration Authority publishes, with the message set that carries it. Schema text is not bundled — each result links to the official download.</p>
     <div class="row">
-      <div class="field" style="flex:1;min-width:240px">
+      <div class="field grow-240">
         <label for="browse-q">Search by identifier, domain, or keyword</label>
         <input type="text" id="browse-q" value="pacs.008" placeholder="pacs.008, camt, pain.001.001.11…">
       </div>
@@ -145,7 +145,7 @@
     <p class="hint">Turn an ISO 20022 message into JSON for REST pipelines and log processing.</p>
     <label class="sr" for="conv-in">ISO 20022 XML message</label>
     <textarea id="conv-in" spellcheck="false" placeholder="Paste an ISO 20022 XML message."></textarea>
-    <div class="row" style="margin-top:.8rem">
+    <div class="row mt-loose">
       <button class="act" id="conv-go">Convert to JSON</button>
       <button class="act ghost" id="conv-fill">Use a sample pacs.008</button>
     </div>
@@ -157,7 +157,7 @@
     <h2>External code sets</h2>
     <p class="hint">Return reasons, payment purposes, transaction statuses and balance types. Search by code, name, or description.</p>
     <div class="row">
-      <div class="field" style="flex:1;min-width:240px">
+      <div class="field grow-240">
         <label for="codes-q">Code or keyword</label>
         <input type="text" id="codes-q" value="AC04" placeholder="AC04, account closed, purpose…">
       </div>
@@ -171,7 +171,7 @@
     <h2>SWIFT MT ⇄ ISO 20022 MX</h2>
     <p class="hint">Field-level migration mapping between legacy MT messages and their MX equivalents.</p>
     <div class="row">
-      <div class="field" style="flex:1;min-width:240px">
+      <div class="field grow-240">
         <label for="tr-q">MT or MX identifier</label>
         <input type="text" id="tr-q" value="MT103" placeholder="MT103, MT202, MT940, pacs.008…">
       </div>
@@ -180,7 +180,7 @@
     </div>
     <div class="out" id="tr-out"></div>
 
-    <h3 style="margin-top:2rem">Convert a real message</h3>
+    <h3 class="mt-section">Convert a real message</h3>
     <p class="hint">Paste an MT103, MT202 or MT940 and get the ISO 20022 document plus a fidelity report saying what was carried, shortened, inferred, or dropped. Same converter as <code>askiso translate</code>.</p>
     <label class="sr" for="mt-in">SWIFT MT message</label>
     <textarea id="mt-in" rows="12" spellcheck="false" placeholder="{1:F01BANKGB2LAXXX0000000000}{2:I103BANKDEFFXXXXN}{4:&#10;:20:REF20260824001&#10;..."></textarea>
@@ -196,21 +196,21 @@
     <h2>Field validators</h2>
     <p class="hint">Check a single value without building a whole message.</p>
     <div class="row">
-      <div class="field" style="flex:1;min-width:260px">
+      <div class="field grow-260">
         <label for="chk-iban">IBAN (ISO 13616, mod-97)</label>
         <input type="text" id="chk-iban" value="DE89370400440532013000">
       </div>
       <button class="act" data-check="iban">Check</button>
     </div>
     <div class="row">
-      <div class="field" style="flex:1;min-width:260px">
+      <div class="field grow-260">
         <label for="chk-bic">BIC (ISO 9362)</label>
         <input type="text" id="chk-bic" value="DEUTDEDDXXX">
       </div>
       <button class="act" data-check="bic">Check</button>
     </div>
     <div class="row">
-      <div class="field" style="flex:1;min-width:260px">
+      <div class="field grow-260">
         <label for="chk-uetr">UETR (RFC 4122 v4)</label>
         <input type="text" id="chk-uetr" value="e1b2c3d4-5678-4abc-8def-1234567890ab">
       </div>

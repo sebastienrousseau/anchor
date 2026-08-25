@@ -183,3 +183,66 @@
 .playground footer p {margin:0 0 .6rem;max-width:70ch}
 
 .playground .sr {position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------------------------------------------------------------------------
+   Classes replacing inline style attributes.
+
+   The site's CSP is style-src 'self', which blocks style="..." in markup. The
+   playground generated nine of them, so they were silently dropped: bold text
+   that should have been regular, table cells that would not wrap, and — the
+   one that actually broke something — the distribution bars, whose entire
+   width was an inline style and therefore never applied.
+   --------------------------------------------------------------------------- */
+
+.playground .fw-normal {
+  font-weight: 400;
+}
+
+.playground .wrap-normal {
+  white-space: normal;
+}
+
+.playground .mb-block {
+  margin-bottom: 1.2rem;
+}
+
+.playground .mt-tight {
+  margin-top: 0.35rem;
+}
+
+.playground .mt-loose {
+  margin-top: 0.8rem;
+}
+
+.playground .pct {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+/* Layout classes replacing the inline style attributes the markup carried over
+   from its standalone life. Under style-src 'self' every one of them was
+   dropped, so the two-column rows collapsed and the spacing was whatever the
+   defaults happened to be. */
+
+.playground .mt-section {
+  margin-top: 2rem;
+}
+
+.playground .lede-tight {
+  margin-top: 0;
+  margin-bottom: 1.4rem;
+}
+
+.playground .items-stretch {
+  align-items: stretch;
+}
+
+.playground .grow-240,
+.playground .grow-260,
+.playground .grow-280 {
+  flex: 1;
+}
+
+.playground .grow-240 { min-width: 240px; }
+.playground .grow-260 { min-width: 260px; }
+.playground .grow-280 { min-width: 280px; }

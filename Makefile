@@ -12,7 +12,7 @@ LDFLAGS = -s -w -X github.com/sebastienrousseau/askiso/internal/tui.Version=$(VE
 SERVER_LDFLAGS = -s -w -X main.version=$(VERSION)
 COVERAGE_FLOOR = 95
 
-.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint vuln clean run catalog-info web web-test web-serve wasm sessions sessions-record mcp lsp mcp-check lsp-check servers
+.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint vuln clean run catalog-info web web-test web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
 
 all: build
 
@@ -108,6 +108,10 @@ conformance:
 # whose commands are `askiso` is replayed against testdata/sessions and its
 # recorded output compared with what the binary actually writes, so the site
 # cannot go on showing output the tool stopped producing.
+links:
+	@test -d $(WEB_OUT) || { echo "build the site first: make web"; exit 1; }
+	python3 scripts/linkcheck.py $(WEB_OUT)
+
 sessions:
 	go run ./scripts/sessions
 
@@ -155,9 +159,13 @@ web:
 	go run ./scripts/gen-message-pages -out web/content/messages
 	ssg build -f web/ssg.toml
 	@$(MAKE) --no-print-directory wasm
-	@for a in styles.css brand.css playground.css main.js theme-init.js deadline.js playground.js terminal.js logo.svg; do \
+	@for a in styles.css brand.css playground.css main.js theme-init.js deadline.js playground.js terminal.js logo.svg favicon.ico; do \
 	  test -f "web/_layouts/$$a" && cp -f "web/_layouts/$$a" "$(WEB_OUT)/$$a"; \
 	done
+	@# ssg fingerprints its syntax-highlighting stylesheet but emits the page
+	@# referencing the bare name, so /highlight.css was a 404 on every page.
+	@h=$$(ls $(WEB_OUT)/highlight.*.css 2>/dev/null | head -1); \
+	 test -n "$$h" && cp -f "$$h" "$(WEB_OUT)/highlight.css" || true
 	@printf 'askiso.io\n' > $(WEB_OUT)/CNAME
 	@# Without this GitHub Pages runs its Jekyll filter over the artefact and
 	@# drops anything beginning with a dot or an underscore — which silently
