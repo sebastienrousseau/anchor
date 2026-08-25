@@ -124,7 +124,7 @@ nfpms:
   - id: askiso
     package_name: askiso
     vendor: Sebastien Rousseau
-    homepage: https://github.com/sebastienrousseau/askiso
+    homepage: https://askiso.io
     maintainer: Sebastien Rousseau <sebastian.rousseau@gmail.com>
     description: |-
       ISO 20022 reference tooling.
@@ -155,7 +155,7 @@ homebrew_casks:
       owner: sebastienrousseau
       name: homebrew-tap
       token: '{{ .Env.HOMEBREW_TAP_TOKEN }}'
-    homepage: https://github.com/sebastienrousseau/askiso
+    homepage: https://askiso.io
     description: ISO 20022 reference tooling for the terminal, an editor, and an AI assistant
     binaries:
       - askiso
@@ -175,7 +175,7 @@ scoops:
       owner: sebastienrousseau
       name: scoop-bucket
       token: '{{ .Env.SCOOP_BUCKET_TOKEN }}'
-    homepage: https://github.com/sebastienrousseau/askiso
+    homepage: https://askiso.io
     description: ISO 20022 reference tooling for the terminal, an editor, and an AI assistant
     license: Apache-2.0 OR MIT
 

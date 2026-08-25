@@ -494,7 +494,7 @@ The release pipeline is wired and will publish to these on the first tag:
 
 ```bash
 # macOS and Linux
-brew install sebastienrousseau/tap/askiso
+brew install --cask sebastienrousseau/tap/askiso
 
 # Windows
 scoop bucket add sebastienrousseau https://github.com/sebastienrousseau/scoop-bucket
