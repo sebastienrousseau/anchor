@@ -142,6 +142,10 @@ func buildPage(reg *registry.Registry, m registry.Message, versions []string,
 	fmt.Fprintf(&b, "changefreq: %q\n", "monthly")
 	fmt.Fprintf(&b, "copyright_year: %q\n", "2026")
 	fmt.Fprintf(&b, "form_origin: %q\n", "https://askiso.io")
+	// Without this the news-sitemap generator warns once per page and falls
+	// back to the build time, which would date all 2,845 pages to whenever CI
+	// last ran rather than to when they were published.
+	fmt.Fprintf(&b, "news_publication_date: %q\n", date)
 	fmt.Fprintf(&b, "eyebrow: %q\n", domain)
 	fmt.Fprintf(&b, "headline: %q\n", m.ID)
 	fmt.Fprintf(&b, "lead: %q\n", fmt.Sprintf(
