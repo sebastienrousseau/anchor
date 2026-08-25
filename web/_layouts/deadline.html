@@ -1,0 +1,27 @@
+{{#extends "base"}}
+{{#block "main"}}
+<section class="hero" aria-labelledby="deadline-heading">
+  <div class="container stack">
+    <p class="eyebrow">{{eyebrow}}</p>
+    <h1 id="deadline-heading">{{headline}}</h1>
+    <p class="lead">{{lead}}</p>
+
+    <!-- The number is filled in by deadline.js. The markup ships a correct
+         statement of the date so a reader without scripting sees the fact
+         rather than an empty box. -->
+    <div class="card metric" role="status">
+      <p class="metric-value"><span id="days-remaining">14 November 2026</span></p>
+      <p class="metric-title"><span id="days-label">is when unstructured addresses stop being accepted</span></p>
+    </div>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="deadline-body">
+  <div class="container prose">
+    <h2 id="deadline-body" class="visually-hidden">The November 2026 mandate</h2>
+    {{!content}}
+  </div>
+</section>
+
+<script src="{{site_path}}deadline.js" defer></script>
+{{/block}}
