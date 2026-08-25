@@ -134,6 +134,11 @@ wasm:
 # is deleted rather than published.
 web:
 	@command -v ssg >/dev/null || { echo "ssg is required: cargo install ssg"; exit 1; }
+	@# Always from empty. ssg keeps a plugin cache in its output directory and
+	@# an incremental run skips the agentic-discovery files, so a local rebuild
+	@# would otherwise produce a different site from CI, which always starts on
+	@# a fresh checkout. Reproducibility is worth the second of build time.
+	@rm -rf $(WEB_OUT)
 	ssg build -f web/ssg.toml
 	@$(MAKE) --no-print-directory wasm
 	@for a in styles.css main.js theme-init.js logo.svg; do \
