@@ -29,6 +29,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 )
 
@@ -143,19 +144,44 @@ func run(contentDir, fixtures, bin string, record bool) error {
 // build compiles the binary the sessions run against, so verification is
 // always against this working tree rather than whatever is on PATH.
 func build() (string, func(), error) {
+	root, err := moduleRoot()
+	if err != nil {
+		return "", nil, err
+	}
+
 	dir, err := os.MkdirTemp("", "askiso-sessions")
 	if err != nil {
 		return "", nil, err
 	}
 	bin := filepath.Join(dir, "askiso")
+	if runtime.GOOS == "windows" {
+		bin += ".exe"
+	}
 
 	cmd := exec.Command("go", "build", "-o", bin, "./cmd/askiso")
+	cmd.Dir = root
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		_ = os.RemoveAll(dir)
 		return "", nil, fmt.Errorf("building askiso: %w", err)
 	}
 	return bin, func() { _ = os.RemoveAll(dir) }, nil
+}
+
+// moduleRoot finds the directory holding go.mod. Building ./cmd/askiso only
+// works from there, and assuming the process was started from the repository
+// root makes the tool depend on how it happens to be invoked — `make sessions`
+// works, running it from anywhere else does not.
+func moduleRoot() (string, error) {
+	out, err := exec.Command("go", "env", "GOMOD").Output()
+	if err != nil {
+		return "", fmt.Errorf("locating the module: %w", err)
+	}
+	gomod := strings.TrimSpace(string(out))
+	if gomod == "" || gomod == os.DevNull {
+		return "", fmt.Errorf("not inside a Go module")
+	}
+	return filepath.Dir(gomod), nil
 }
 
 func find(lines []string) []session {

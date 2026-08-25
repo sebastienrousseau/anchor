@@ -4,11 +4,54 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
+
+// The tests need a stand-in for the askiso binary. Writing a shell script is
+// the obvious way and does not work on Windows, which has no /bin/sh — the
+// command simply fails to start, no output is recorded, and the test reports a
+// recording bug that is not there.
+//
+// Re-executing the test binary itself is portable: it is an executable this
+// platform can definitely run, and the environment tells it to behave as the
+// stand-in rather than run tests.
+const (
+	fakeEnv     = "ASKISO_SESSIONS_FAKE"
+	fakeOutEnv  = "ASKISO_SESSIONS_FAKE_OUT"
+	fakeExitEnv = "ASKISO_SESSIONS_FAKE_EXIT"
+)
+
+func TestMain(m *testing.M) {
+	if os.Getenv(fakeEnv) == "1" {
+		if out := os.Getenv(fakeOutEnv); out != "" {
+			fmt.Println(out)
+		}
+		code, _ := strconv.Atoi(os.Getenv(fakeExitEnv))
+		os.Exit(code)
+	}
+	os.Exit(m.Run())
+}
+
+// fakeBinary makes this test binary stand in for askiso, printing out and
+// exiting with code.
+func fakeBinary(t *testing.T, out string, code int) string {
+	t.Helper()
+	t.Setenv(fakeEnv, "1")
+	t.Setenv(fakeOutEnv, out)
+	t.Setenv(fakeExitEnv, strconv.Itoa(code))
+
+	self, err := os.Executable()
+	if err != nil {
+		t.Fatalf("locating the test binary: %v", err)
+	}
+	return self
+}
 
 func TestFindLocatesConsoleBlocks(t *testing.T) {
 	lines := strings.Split(`# Title
@@ -152,14 +195,7 @@ func TestReplayExecutesOnlyAskisoCommands(t *testing.T) {
 
 func TestReplayRunsTheBinaryAndRecordsItsOutput(t *testing.T) {
 	dir := t.TempDir()
-	bin := filepath.Join(dir, "askiso")
-
-	// A stand-in binary: the runner should record whatever the command wrote,
-	// without caring what produced it.
-	script := "#!/bin/sh\necho \"ran: $*\"\n"
-	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	bin := fakeBinary(t, "ran: version", 0)
 
 	got, skipped, err := replay(bin, dir, []string{"$ askiso version"})
 	if err != nil {
@@ -183,10 +219,7 @@ func TestReplayRunsTheBinaryAndRecordsItsOutput(t *testing.T) {
 // non-zero, and that session still has to record.
 func TestReplayRecordsOutputFromAFailingCommand(t *testing.T) {
 	dir := t.TempDir()
-	bin := filepath.Join(dir, "askiso")
-	if err := os.WriteFile(bin, []byte("#!/bin/sh\necho 'found 3 errors'\nexit 1\n"), 0o755); err != nil {
-		t.Fatal(err)
-	}
+	bin := fakeBinary(t, "found 3 errors", 1)
 
 	got, _, err := replay(bin, dir, []string{"$ askiso lint bad.xml"})
 	if err != nil {
@@ -197,26 +230,25 @@ func TestReplayRecordsOutputFromAFailingCommand(t *testing.T) {
 	}
 }
 
-func setupContent(t *testing.T, body string) (string, string) {
+// setupContent returns a content directory holding body, a fixtures directory
+// for the commands to run in, and the stand-in binary they should invoke.
+func setupContent(t *testing.T, body string) (string, string, string) {
 	t.Helper()
 	content := t.TempDir()
 	fixtures := t.TempDir()
+	bin := fakeBinary(t, "real output", 0)
 
-	bin := filepath.Join(fixtures, "askiso")
-	if err := os.WriteFile(bin, []byte("#!/bin/sh\necho 'real output'\n"), 0o755); err != nil {
-		t.Fatal(err)
-	}
 	if err := os.WriteFile(filepath.Join(content, "page.md"), []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	return content, fixtures
+	return content, fixtures, bin
 }
 
 func TestRunFailsWhenTheSessionDisagreesWithTheBinary(t *testing.T) {
 	body := "```console\n$ askiso version\nstale output\n```\n"
-	content, fixtures := setupContent(t, body)
+	content, fixtures, bin := setupContent(t, body)
 
-	err := run(content, fixtures, filepath.Join(fixtures, "askiso"), false)
+	err := run(content, fixtures, bin, false)
 	if err == nil {
 		t.Fatal("a drifted session should fail verification")
 	}
@@ -227,9 +259,9 @@ func TestRunFailsWhenTheSessionDisagreesWithTheBinary(t *testing.T) {
 
 func TestRunRecordsTheRealOutput(t *testing.T) {
 	body := "```console\n$ askiso version\nstale output\n```\n"
-	content, fixtures := setupContent(t, body)
+	content, fixtures, bin := setupContent(t, body)
 
-	if err := run(content, fixtures, filepath.Join(fixtures, "askiso"), true); err != nil {
+	if err := run(content, fixtures, bin, true); err != nil {
 		t.Fatalf("record: %v", err)
 	}
 
@@ -245,16 +277,16 @@ func TestRunRecordsTheRealOutput(t *testing.T) {
 	}
 
 	// Recording must leave the file verifiable.
-	if err := run(content, fixtures, filepath.Join(fixtures, "askiso"), false); err != nil {
+	if err := run(content, fixtures, bin, false); err != nil {
 		t.Errorf("a freshly recorded session should verify: %v", err)
 	}
 }
 
 func TestRunRewritesLaterBlocksWithoutShiftingEarlierOnes(t *testing.T) {
 	body := "```console\n$ askiso a\nstale one\n```\n\ntext\n\n```console\n$ askiso b\nstale two\n```\n"
-	content, fixtures := setupContent(t, body)
+	content, fixtures, bin := setupContent(t, body)
 
-	if err := run(content, fixtures, filepath.Join(fixtures, "askiso"), true); err != nil {
+	if err := run(content, fixtures, bin, true); err != nil {
 		t.Fatalf("record: %v", err)
 	}
 
@@ -275,8 +307,8 @@ func TestRunRewritesLaterBlocksWithoutShiftingEarlierOnes(t *testing.T) {
 }
 
 func TestRunIgnoresContentWithoutSessions(t *testing.T) {
-	content, fixtures := setupContent(t, "# Just prose\n\n```bash\nnot a session\n```\n")
-	if err := run(content, fixtures, filepath.Join(fixtures, "askiso"), false); err != nil {
+	content, fixtures, bin := setupContent(t, "# Just prose\n\n```bash\nnot a session\n```\n")
+	if err := run(content, fixtures, bin, false); err != nil {
 		t.Errorf("a page with no sessions should pass: %v", err)
 	}
 }
@@ -286,5 +318,67 @@ func TestRunReportsMissingFixtures(t *testing.T) {
 	err := run(content, filepath.Join(content, "nope"), "/bin/echo", false)
 	if err == nil || !strings.Contains(err.Error(), "fixtures") {
 		t.Errorf("a missing fixture directory should be named in the error: %v", err)
+	}
+}
+
+// build() is what makes verification trustworthy: it compiles the binary from
+// this working tree rather than trusting whatever `askiso` happens to be on
+// PATH. If it silently produced nothing, every session would verify against a
+// stale install and the check would be worse than useless.
+func TestBuildCompilesFromThisTree(t *testing.T) {
+	if testing.Short() {
+		t.Skip("compiles the CLI")
+	}
+
+	bin, cleanup, err := build()
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+	defer cleanup()
+
+	info, err := os.Stat(bin)
+	if err != nil {
+		t.Fatalf("the built binary is not there: %v", err)
+	}
+	if info.Size() == 0 {
+		t.Error("the built binary is empty")
+	}
+
+	// It has to actually run, not merely exist.
+	out, err := exec.Command(bin, "version").CombinedOutput()
+	if err != nil {
+		t.Fatalf("running the built binary: %v\n%s", err, out)
+	}
+	if !strings.Contains(string(out), "version") {
+		t.Errorf("unexpected output from the built binary:\n%s", out)
+	}
+
+	cleanup()
+	if _, err := os.Stat(bin); !os.IsNotExist(err) {
+		t.Error("cleanup left the temporary directory behind")
+	}
+}
+
+func TestRunReportsAnUnreadableContentFile(t *testing.T) {
+	content, fixtures, bin := setupContent(t, "```console\n$ askiso version\nreal output\n```\n")
+
+	// A directory where a .md file is expected: the read must fail loudly
+	// rather than being treated as a page with no sessions.
+	if err := os.Mkdir(filepath.Join(content, "broken.md"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := run(content, fixtures, bin, false); err == nil {
+		t.Error("an unreadable content file should be an error")
+	}
+}
+
+// A session whose commands are all non-askiso has nothing to verify, and must
+// not be reported as drifted just because it produced no output.
+func TestRunAcceptsASessionWithNothingToExecute(t *testing.T) {
+	body := "```console\n$ go install example.com/thing@latest\n```\n"
+	content, fixtures, bin := setupContent(t, body)
+
+	if err := run(content, fixtures, bin, false); err != nil {
+		t.Errorf("a session with no executable commands should pass: %v", err)
 	}
 }

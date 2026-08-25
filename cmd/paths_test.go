@@ -676,3 +676,19 @@ func TestValidateStreamOnAMissingFile(t *testing.T) {
 		t.Error("a missing file was accepted")
 	}
 }
+
+// Small helpers with a branch each. They are cheap to get wrong in a way no
+// integration test would notice: firstLineOf truncating a single-line message
+// to nothing, or capExternal returning an empty slice when asked for "all".
+func TestFirstLineOf(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"one line", "one line"},
+		{"first\nsecond", "first"},
+		{"\ntrailing", ""},
+		{"", ""},
+	} {
+		if got := firstLineOf(tc.in); got != tc.want {
+			t.Errorf("firstLineOf(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}

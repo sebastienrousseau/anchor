@@ -274,3 +274,37 @@ func TestListCodeSetsWithOnlyAnImport(t *testing.T) {
 		}
 	}
 }
+
+func TestFirstOfDefinitionPrefersTheDefinition(t *testing.T) {
+	full := codes.ExternalCode{Name: "Salary", Definition: "Salary payment"}
+	if got := firstOfDefinition(full); got != "Salary payment" {
+		t.Errorf("got %q, want the definition", got)
+	}
+	// The RA does not always publish a definition; the name is the fallback.
+	nameOnly := codes.ExternalCode{Name: "Salary"}
+	if got := firstOfDefinition(nameOnly); got != "Salary" {
+		t.Errorf("got %q, want the name as fallback", got)
+	}
+	if got := firstOfDefinition(codes.ExternalCode{}); got != "" {
+		t.Errorf("got %q, want empty", got)
+	}
+}
+
+// A limit of zero or less means "no limit" — capping to nothing would silently
+// hide every code the user asked to see.
+func TestCapExternal(t *testing.T) {
+	list := []codes.ExternalCode{{Code: "A"}, {Code: "B"}, {Code: "C"}}
+
+	if got := capExternal(list, 0); len(got) != 3 {
+		t.Errorf("limit 0 gave %d, want all 3", len(got))
+	}
+	if got := capExternal(list, -1); len(got) != 3 {
+		t.Errorf("a negative limit gave %d, want all 3", len(got))
+	}
+	if got := capExternal(list, 2); len(got) != 2 || got[1].Code != "B" {
+		t.Errorf("limit 2 gave %v, want the first two", got)
+	}
+	if got := capExternal(list, 10); len(got) != 3 {
+		t.Errorf("a limit above the length gave %d, want all 3", len(got))
+	}
+}
