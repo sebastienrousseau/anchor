@@ -152,6 +152,13 @@ web:
 	@# removes /.well-known/mcp.json, the file that tells an assistant AskIso
 	@# has an MCP server it can use.
 	@touch $(WEB_OUT)/.nojekyll
+	@# GitHub Pages will not serve a dot directory even with .nojekyll present:
+	@# the files are provably in the uploaded artefact and /.well-known/mcp.json
+	@# still returns 404. Publish the same manifests at the site root so they
+	@# are reachable at all, and point agents.txt at those copies. The canonical
+	@# paths stay in place for the day the site moves to a host that serves them.
+	@test -f $(WEB_OUT)/.well-known/mcp.json && cp -f $(WEB_OUT)/.well-known/mcp.json $(WEB_OUT)/mcp.json || true
+	@test -f $(WEB_OUT)/.well-known/ai-plugin.json && cp -f $(WEB_OUT)/.well-known/ai-plugin.json $(WEB_OUT)/ai-plugin.json || true
 	@printf 'site: %s page(s), %s\n' \
 	  "$$(find $(WEB_OUT) -name '*.html' | wc -l | xargs)" \
 	  "$$(du -sh $(WEB_OUT) | cut -f1)"

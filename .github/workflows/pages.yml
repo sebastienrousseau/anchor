@@ -77,7 +77,7 @@ jobs:
       # them here so the loss is a build failure rather than a quiet 404.
       - name: Verify agentic discovery files are present
         run: |
-          for f in .nojekyll .well-known/mcp.json .well-known/ai-plugin.json agents.txt; do
+          for f in .nojekyll .well-known/mcp.json .well-known/ai-plugin.json mcp.json ai-plugin.json agents.txt; do
             if [ -e "web/public/$f" ]; then
               echo "ok      $f"
             else
