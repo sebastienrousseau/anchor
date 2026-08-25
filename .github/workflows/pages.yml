@@ -69,7 +69,21 @@ jobs:
             find web/public -name '*.xsd' -o -name '*.pdf' -o -name '*.docx'
             exit 1
           fi
-          echo "site contents:"; ls -lh web/public
+          echo "site contents:"; ls -lha web/public
+
+      # These are the files that make the site discoverable to an assistant
+      # rather than only to a person, and they live under a dot directory that
+      # is easy to lose between the build and the deployed artefact. Assert
+      # them here so the loss is a build failure rather than a quiet 404.
+      - name: Verify agentic discovery files are present
+        run: |
+          for f in .nojekyll .well-known/mcp.json .well-known/ai-plugin.json agents.txt; do
+            if [ -e "web/public/$f" ]; then
+              echo "ok      $f"
+            else
+              echo "::error::missing $f"; exit 1
+            fi
+          done
 
       # ssg runs an accessibility pass over every page it builds. Failing the
       # deploy on it is what stops the WCAG 2.2 AA claim drifting out of date.
