@@ -246,3 +246,50 @@
 .playground .grow-240 { min-width: 240px; }
 .playground .grow-260 { min-width: 260px; }
 .playground .grow-280 { min-width: 280px; }
+
+/* ---------------------------------------------------------------------------
+   Local catalogue picker
+
+   The visitor points the page at the schemas they downloaded themselves. The
+   status line is the load-bearing part of the interface: it has to say where
+   the files came from and that they stayed put, because "select a folder" on
+   a payments site is a reasonable thing to hesitate over.
+   --------------------------------------------------------------------------- */
+
+.playground .cat-picker {
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1.1rem;
+  background: var(--bg-soft);
+}
+
+.playground .cat-status {
+  margin: 0.6rem 0 0;
+  font-size: 0.86rem;
+  color: var(--ink-muted);
+}
+
+.playground .cat-status.is-ready {
+  color: var(--good);
+}
+
+.playground .cat-status.is-error {
+  color: var(--crit);
+}
+
+/* A disabled picker is not a broken one — the browser simply cannot do it, and
+   the status line says so. */
+.playground #cat-pick:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Nothing to forget until something has been chosen. */
+.playground #cat-forget {
+  display: none;
+}
+
+body.has-catalogue .playground #cat-forget {
+  display: inline-flex;
+}

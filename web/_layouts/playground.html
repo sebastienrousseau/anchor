@@ -50,9 +50,19 @@
     <h2>Validate against a schema</h2>
     <p class="hint">Full XML Schema validation — element order, cardinality, choices, patterns, enumerations, lengths and numeric facets. The same pure-Go engine as <code>askiso validate</code>, which agrees with libxml2 on all 4,746 schemas in the ISO 20022 catalogue.</p>
     <div class="notice lede-tight">
-      AskIso ships no specification content, so paste the XSD too. Download it free from
+      AskIso ships no specification content. Point the page at the catalogue you
+      already downloaded from
       <a href="https://www.iso20022.org/iso-20022-message-definitions" rel="noopener">iso20022.org</a>
-      — or use the CLI, which resolves the schema automatically from your local catalogue.
+      and it resolves the schema itself — the files are read from your disk and
+      never leave it. Or paste the XSD by hand.
+    </div>
+
+    <div class="cat-picker">
+      <div class="row">
+        <button class="act ghost" id="cat-pick" type="button">Use my catalogue folder…</button>
+        <button class="act ghost" id="cat-forget" type="button">Forget it</button>
+      </div>
+      <p class="cat-status" id="cat-status" role="status">No catalogue selected.</p>
     </div>
     <div class="row items-stretch">
       <div class="field grow-280">
@@ -248,5 +258,6 @@
 </div>
 
 <script src="{{site_path}}wasm_exec.js"></script>
+<script src="{{site_path}}catalogue.js" defer></script>
 <script src="{{site_path}}playground.js" defer></script>
 {{/block}}

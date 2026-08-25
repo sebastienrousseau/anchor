@@ -181,10 +181,43 @@ function applyBarWidths(root) {
     $("#val-xsd").value = DEMO_XSD;
   });
 
-  $("#val-go").addEventListener("click", function () {
+  $("#val-go").addEventListener("click", async function () {
     if (!requireEngine()) return;
     var out = $("#val-out");
-    var r = call("validate", $("#val-xml").value, $("#val-xsd").value);
+
+    // Resolution notes go beside the picker rather than into the result pane,
+    // which belongs to the validator's own verdict.
+    function note(msg) {
+      var el = $("#cat-status");
+      if (el) {
+        el.textContent = msg;
+      }
+    }
+
+    var xml = $("#val-xml").value;
+    var xsd = $("#val-xsd").value;
+
+    // With a catalogue selected, the schema is resolved from the message's own
+    // namespace rather than asked for. This is the whole point of the picker:
+    // full validation without the site holding a byte of the specification.
+    if (!xsd.trim() && window.askisoCatalogue) {
+      try {
+        xsd = await window.askisoCatalogue.schemaFor(xml);
+      } catch (e) {
+        xsd = "";
+      }
+      if (xsd) {
+        var id = window.askisoCatalogue.messageIDFrom(xml);
+        note("Schema " + id + ".xsd resolved from your catalogue.");
+      } else if (window.askisoCatalogue.count() > 0) {
+        var wanted = window.askisoCatalogue.messageIDFrom(xml);
+        note(wanted
+          ? "Your catalogue has no " + wanted + ".xsd — import that message set, or paste the schema."
+          : "The message declares no ISO 20022 namespace, so the schema cannot be resolved.");
+      }
+    }
+
+    var r = call("validate", xml, xsd);
     if (!r.ok) return showError(out, r.error);
 
     var d = r.data;

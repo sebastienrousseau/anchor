@@ -162,7 +162,7 @@ web:
 	go run ./scripts/gen-message-pages -out web/content/messages
 	ssg build -f web/ssg.toml
 	@$(MAKE) --no-print-directory wasm
-	@for a in styles.css brand.css playground.css main.js theme-init.js deadline.js playground.js terminal.js logo.svg favicon.ico; do \
+	@for a in styles.css brand.css playground.css main.js theme-init.js deadline.js playground.js catalogue.js terminal.js logo.svg favicon.ico; do \
 	  test -f "web/_layouts/$$a" && cp -f "web/_layouts/$$a" "$(WEB_OUT)/$$a"; \
 	done
 	@# ssg fingerprints its syntax-highlighting stylesheet but emits the page
