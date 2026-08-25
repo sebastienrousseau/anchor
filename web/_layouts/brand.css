@@ -1,0 +1,463 @@
+/* SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+   SPDX-License-Identifier: Apache-2.0 OR MIT
+
+   AskIso brand layer.
+
+   Loaded after the theme stylesheet, so it only redefines tokens and adds the
+   components the theme has no opinion about. Overriding rather than forking
+   keeps the theme's accessibility work — focus rings, reduced-motion handling,
+   the three-state light/dark/system token structure — intact and upgradeable.
+
+   The register is institutional: generous whitespace, a single accent used
+   sparingly, plain declarative type. What it deliberately does not do is
+   reproduce another organisation's identity. AskIso operates in the market
+   Swift governs, so looking like Swift would invite exactly the confusion the
+   README spends a paragraph disclaiming.
+
+   No webfont. The site makes zero third-party requests and that is a claim on
+   the homepage, so the display face is the system stack set tighter and
+   lighter rather than something fetched from a font host. */
+
+:root,
+:root[data-theme="light"] {
+  /* Ink is warm-neutral near-black rather than pure black: on a white ground
+     pure black reads as harsh at display sizes. */
+  --ink: #14181c;
+  --ink-soft: #333b42;
+  --ink-muted: #5c6873;
+
+  --bg: #ffffff;
+  --bg-soft: #f4f7f9;
+  --surface: #ffffff;
+  --surface-soft: #f4f7f9;
+
+  /* The accent carries the AskIso mark. #0b6b80 is the darkest cyan that still
+     reads as cyan and clears 4.5:1 on white for body-size text. The bright
+     token is for large type and marks only, where the contrast floor is 3:1. */
+  --accent: #0b6b80;
+  --accent-hover: #08505f;
+  --accent-ink: #ffffff;
+  --accent-soft: #e6f4f7;
+  --on-accent-soft: #06414e;
+  --accent-bright: #22d3ee;
+
+  --line: #c8d3da;
+  --line-soft: #e6ecf0;
+  --focus: #0b6b80;
+
+  --panel: #e6f4f7;
+  --panel-ink: #06414e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink: #eef4f6;
+    --ink-soft: #cbd8dd;
+    --ink-muted: #93a5ad;
+
+    --bg: #0a1014;
+    --bg-soft: #0f171c;
+    --surface: #0f171c;
+    --surface-soft: #131d23;
+
+    --accent: #43d3ea;
+    --accent-hover: #77e2f2;
+    --accent-ink: #04191f;
+    --accent-soft: #0d2a33;
+    --on-accent-soft: #9fe6f3;
+    --accent-bright: #22d3ee;
+
+    --line: #2a3b44;
+    --line-soft: #1a262d;
+    --focus: #43d3ea;
+
+    --panel: #0d2a33;
+    --panel-ink: #d6f2f8;
+  }
+}
+
+:root[data-theme="dark"] {
+  --ink: #eef4f6;
+  --ink-soft: #cbd8dd;
+  --ink-muted: #93a5ad;
+
+  --bg: #0a1014;
+  --bg-soft: #0f171c;
+  --surface: #0f171c;
+  --surface-soft: #131d23;
+
+  --accent: #43d3ea;
+  --accent-hover: #77e2f2;
+  --accent-ink: #04191f;
+  --accent-soft: #0d2a33;
+  --on-accent-soft: #9fe6f3;
+  --accent-bright: #22d3ee;
+
+  --line: #2a3b44;
+  --line-soft: #1a262d;
+  --focus: #43d3ea;
+
+  --panel: #0d2a33;
+  --panel-ink: #d6f2f8;
+}
+
+/* ---------------------------------------------------------------------------
+   Type
+   --------------------------------------------------------------------------- */
+
+body {
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  letter-spacing: -0.003em;
+}
+
+h1,
+h2,
+h3,
+.metric-value {
+  letter-spacing: -0.022em;
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: clamp(2.35rem, 5vw, 3.85rem);
+  line-height: 1.06;
+}
+
+h2 {
+  font-size: clamp(1.7rem, 3.2vw, 2.5rem);
+  line-height: 1.14;
+}
+
+h3 {
+  font-size: 1.2rem;
+  line-height: 1.3;
+}
+
+.lead {
+  font-size: clamp(1.08rem, 1.6vw, 1.3rem);
+  line-height: 1.55;
+  color: var(--ink-soft);
+  max-width: 62ch;
+  text-wrap: pretty;
+}
+
+.eyebrow {
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------------------------
+   Rhythm
+
+   The single largest difference between a site that reads as institutional and
+   one that reads as a template is how much room the sections are given.
+   --------------------------------------------------------------------------- */
+
+.section {
+  padding-block: clamp(3.5rem, 8vw, 7rem);
+}
+
+.hero {
+  padding-block: clamp(3.5rem, 9vw, 8rem);
+}
+
+.section-soft {
+  background: var(--bg-soft);
+}
+
+/* ---------------------------------------------------------------------------
+   Buttons
+
+   Pill geometry, because a rectangular button in a dense institutional layout
+   reads as a form control rather than as a call to action.
+   --------------------------------------------------------------------------- */
+
+.btn {
+  border-radius: 999px;
+  padding: 0.72rem 1.5rem;
+  font-weight: 500;
+  font-size: 0.96rem;
+  letter-spacing: -0.005em;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-secondary,
+.btn-outline {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.btn-secondary:hover,
+.btn-outline:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Header
+   --------------------------------------------------------------------------- */
+
+.site-header {
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--surface);
+}
+
+.brand {
+  gap: 0.6rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-size: 1.22rem;
+  color: var(--ink);
+}
+
+.nav-link {
+  font-size: 0.95rem;
+  font-weight: 450;
+  color: var(--ink-soft);
+}
+
+.nav-link:hover,
+.nav-link[aria-current="page"] {
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------------------------
+   Cards and metrics
+   --------------------------------------------------------------------------- */
+
+.card {
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 1.6rem;
+}
+
+.metric-value {
+  font-size: clamp(2rem, 3.6vw, 2.9rem);
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-title {
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 0.55rem;
+}
+
+.card.metric p:last-child {
+  color: var(--ink-muted);
+  font-size: 0.94rem;
+}
+
+/* ---------------------------------------------------------------------------
+   Feature panel
+
+   A full-width accent block between white sections. It is what stops a long
+   institutional page reading as an unbroken column of prose.
+   --------------------------------------------------------------------------- */
+
+.panel {
+  background: var(--panel);
+  color: var(--panel-ink);
+  border-radius: 18px;
+  padding: clamp(2rem, 5vw, 3.5rem);
+}
+
+.panel h2,
+.panel h3 {
+  color: var(--panel-ink);
+}
+
+.panel .lead,
+.panel p {
+  color: var(--panel-ink);
+  opacity: 0.88;
+}
+
+/* ---------------------------------------------------------------------------
+   Prose
+   --------------------------------------------------------------------------- */
+
+.prose {
+  max-width: 68ch;
+}
+
+.prose h2 {
+  margin-top: 2.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line-soft);
+}
+
+.prose h2:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.94rem;
+  font-variant-numeric: tabular-nums;
+  margin-block: 1.5rem;
+}
+
+.prose th {
+  text-align: left;
+  font-size: 0.74rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--line);
+  padding: 0.7rem 0.85rem;
+}
+
+.prose td {
+  border-bottom: 1px solid var(--line-soft);
+  padding: 0.7rem 0.85rem;
+  vertical-align: top;
+}
+
+/* Wide content must scroll inside its own box rather than pushing the page
+   sideways on a narrow screen. */
+.prose .table-wrap,
+.prose pre {
+  overflow-x: auto;
+}
+
+.prose pre {
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+  background: var(--bg-soft);
+  font-size: 0.89rem;
+  line-height: 1.55;
+}
+
+.prose :not(pre) > code {
+  background: var(--bg-soft);
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  padding: 0.1em 0.36em;
+  font-size: 0.88em;
+}
+
+/* ---------------------------------------------------------------------------
+   Footer
+   --------------------------------------------------------------------------- */
+
+.site-footer {
+  border-top: 1px solid var(--line-soft);
+  background: var(--bg-soft);
+  padding-block: clamp(2.5rem, 5vw, 4rem);
+  color: var(--ink-muted);
+  font-size: 0.92rem;
+}
+
+/* ---------------------------------------------------------------------------
+   The mark
+
+   Drawn as a mask rather than an <img>. An SVG loaded through <img> is a
+   separate document, so `currentColor` inside it resolves against its own root
+   — black — and the mark disappears into a dark background. Masking makes the
+   shape a stencil that takes background-color from the page, so one file
+   serves both themes and the colour follows the token.
+   --------------------------------------------------------------------------- */
+
+.brand-mark,
+.hero-mark {
+  display: inline-block;
+  background-color: var(--accent);
+  -webkit-mask-image: var(--mark);
+  mask-image: var(--mark);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.brand-mark {
+  --mark: url("logo.svg");
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.hero-mark {
+  --mark: url("logo.svg");
+  width: min(20rem, 60vw);
+  aspect-ratio: 1;
+}
+
+/* The hero mark is decoration at this size; the card frame around it belongs
+   to a portrait, not to a logo. */
+.hero-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Metric grid
+
+   The theme's auto-fit grid leaves four cards as three-plus-an-orphan at
+   desktop width. Four evenly is the shape the content wants, dropping to two
+   before it drops to one.
+   --------------------------------------------------------------------------- */
+
+.grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+@media (max-width: 62rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 34rem) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Left-aligned: a centred paragraph inside a card reads as a marketing tile,
+   and these are data. */
+.card.metric {
+  text-align: left;
+}
+
+.card.metric .metric-value {
+  font-size: clamp(1.9rem, 3vw, 2.5rem);
+}

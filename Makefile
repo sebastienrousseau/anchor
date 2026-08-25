@@ -145,7 +145,7 @@ web:
 	go run ./scripts/gen-message-pages -out web/content/messages
 	ssg build -f web/ssg.toml
 	@$(MAKE) --no-print-directory wasm
-	@for a in styles.css main.js theme-init.js deadline.js logo.svg; do \
+	@for a in styles.css brand.css main.js theme-init.js deadline.js logo.svg; do \
 	  test -f "web/_layouts/$$a" && cp -f "web/_layouts/$$a" "$(WEB_OUT)/$$a"; \
 	done
 	@mkdir -p $(WEB_OUT)/playground

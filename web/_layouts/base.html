@@ -55,8 +55,8 @@
     <link rel="icon" href="{{site_path}}favicon.ico" sizes="any" />
 
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#fbfbfd" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a1014" media="(prefers-color-scheme: dark)" />
 
     <!-- Native cross-document View Transitions. Browsers without support
          ignore the hint and perform an ordinary navigation. -->
@@ -90,6 +90,9 @@
     </script>
 
     <link rel="stylesheet" href="{{site_path}}styles.css" />
+    <!-- Brand layer: overrides the theme tokens and adds the components
+         the theme has no opinion about. Order matters. -->
+    <link rel="stylesheet" href="{{site_path}}brand.css" />
     <script src="{{site_path}}theme-init.js"></script>
   </head>
 
