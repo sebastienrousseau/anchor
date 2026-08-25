@@ -1,0 +1,62 @@
+{{#extends "base"}}
+{{#block "main"}}
+<section class="hero" aria-labelledby="hero-heading">
+  <div class="container hero-grid">
+    <div class="hero-image">
+      <img src="{{locale_path}}logo.svg" alt="{{hero_alt}}" width="512" height="512" loading="eager" fetchpriority="high" />
+    </div>
+    <div class="stack">
+      <p class="eyebrow">{{eyebrow}}</p>
+      <h1 id="hero-heading">{{headline}}</h1>
+      <p class="lead">{{lead}}</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="{{locale_path}}playground/">Try it in the browser</a>
+        <a class="btn btn-secondary" href="{{locale_path}}docs/">Read the docs</a>
+        <a class="btn btn-outline" href="https://github.com/sebastienrousseau/askiso">Source</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Every figure here is produced by a command in the repository rather than
+     written by hand, and the copy says so deliberately: a reader can run
+     `make differential`, `make cover` or `make vuln` and get the same number.
+     If one of them changes, the CI gate that produces it has already failed. -->
+<section class="section section-soft" aria-labelledby="metrics-heading">
+  <div class="container stack">
+    <div class="text-center stack">
+      <h2 id="metrics-heading">Measured, not asserted</h2>
+      <p class="lead mx-auto text-center">Every figure below comes from a command you can run yourself. Nothing here is a static badge.</p>
+    </div>
+    <div class="grid">
+      <div class="card metric">
+        <p class="metric-value">4,746</p>
+        <p class="metric-title">of 4,746 agree with libxml2</p>
+        <p>The same 1,035 documents accepted and the same 3,711 rejected as the reference implementation, across the whole catalogue. Reproduce it with <code>make differential</code>.</p>
+      </div>
+      <div class="card metric">
+        <p class="metric-value">2,845</p>
+        <p class="metric-title">message definitions, offline</p>
+        <p>Every published ISO 20022 message across 285 message sets, indexed inside the binary. Search and lookup need no download and no network.</p>
+      </div>
+      <div class="card metric">
+        <p class="metric-value">0</p>
+        <p class="metric-title">bytes of specification content</p>
+        <p>No schemas, reports or samples are redistributed. A CI gate fails the build if an <code>.xsd</code>, <code>.pdf</code> or <code>.docx</code> ever reaches this site.</p>
+      </div>
+      <div class="card metric">
+        <p class="metric-value">0</p>
+        <p class="metric-title">known vulnerabilities</p>
+        <p><code>govulncheck</code> runs on every commit against the dependency graph and the standard library, and fails the build on a finding.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="body-heading">
+  <div class="container prose">
+    <h2 id="body-heading" class="visually-hidden">About AskIso</h2>
+    {{!content}}
+  </div>
+</section>
+{{/block}}

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 1200 1200" role="img" aria-label="AskIso">
+  <title>AskIso</title>
+  <defs>
+    <linearGradient id="cyanGradient" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="35%" stop-color="#06B6D4"/>
+      <stop offset="65%" stop-color="#0891B2"/>
+      <stop offset="100%" stop-color="#0E7490"/>
+    </linearGradient>
+  </defs>
+
+  <!-- The mark is a question mark: the product answers questions about a
+       standard, so the glyph says what it does without needing a caption. -->
+  <circle cx="600" cy="600" r="520" fill="none" stroke="url(#cyanGradient)" stroke-width="70"/>
+
+  <path d="M 420 455
+           a 180 180 0 1 1 300 158
+           q -60 48 -84 96
+           q -18 36 -18 86"
+        fill="none"
+        stroke="url(#cyanGradient)"
+        stroke-width="112"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <circle cx="618" cy="880" r="66" fill="#164E63"/>
+  <circle cx="618" cy="874" r="66" fill="url(#cyanGradient)"/>
+</svg>

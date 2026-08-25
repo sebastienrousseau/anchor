@@ -1,0 +1,39 @@
+# askiso.io — Shokunin SSG configuration.
+#
+# Paths are relative to the directory ssg is invoked from, which is the
+# repository root (see `make web`). The output directory is the artefact
+# GitHub Pages publishes; the WebAssembly bundle is copied in after the
+# content build, because ssg does not know about the Go toolchain.
+
+site_name = "AskIso"
+site_title = "AskIso — the developer's ISO 20022 toolchain"
+site_description = "Validate, convert, generate and remediate ISO 20022 financial messages from your terminal, your editor, your CI pipeline or your AI assistant. Open source, ships no specification content, runs entirely on your machine."
+base_url = "https://askiso.io"
+language = "en-GB"
+
+content_dir = "web/content"
+template_dir = "web/_layouts"
+output_dir = "web/public"
+
+# Agentic discovery. Emits /agents.txt, /.well-known/ai-plugin.json and
+# /.well-known/mcp.json.
+#
+# This matters more here than llms.txt does. An Ahrefs study of 137,000 sites
+# found 97% of llms.txt files were never requested, and Google's May 2026
+# guidance says no machine-readable file is needed to appear in AI Search —
+# crawlers read the HTML. What is worth declaring is the MCP endpoint, because
+# AskIso genuinely ships an MCP server and an assistant that finds it can use
+# it directly.
+[agents]
+agents_txt = true
+ai_plugin = true
+
+[agents.mcp]
+enabled = true
+
+# Security headers for platforms that read `_headers`. GitHub Pages ignores
+# the file, so it is inert today; it is kept because it carries
+# frame-ancestors, which a <meta> CSP cannot express, and because moving the
+# site behind Cloudflare or Netlify later should not mean rediscovering this.
+[edge_headers]
+targets = ["netlify", "cloudflare"]

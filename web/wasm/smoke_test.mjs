@@ -15,7 +15,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const siteDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "site");
+const siteDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "public");
 
 globalThis.performance ||= { now: () => Date.now() };
 

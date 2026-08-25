@@ -35,7 +35,23 @@ jobs:
           go-version: '1.26.6'
           cache: true
 
-      - name: Build WebAssembly bundle
+      # The content half of the site is built by ssg, which is a Rust binary.
+      # Installing it from crates.io is a couple of minutes on a cold cache and
+      # near-instant on a warm one, which is why the cargo registry is cached.
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/bin
+          key: cargo-ssg-${{ runner.os }}-0.0.56
+
+      - name: Install ssg
+        run: command -v ssg || cargo install ssg --version 0.0.56 --locked
+
+      - name: Build the site
         run: make web
 
       # The site is only as trustworthy as the bridge between Go and JavaScript.
@@ -44,19 +60,29 @@ jobs:
       - name: Smoke-test the bundle
         run: node web/wasm/smoke_test.mjs
 
+      # The premise of the project is that it redistributes no specification
+      # content. This is the gate that keeps that true rather than aspirational.
       - name: Verify no specification content is being published
         run: |
-          if find web/site -name '*.xsd' -o -name '*.pdf' -o -name '*.docx' | grep -q .; then
+          if find web/public -name '*.xsd' -o -name '*.pdf' -o -name '*.docx' | grep -q .; then
             echo "::error::the site must not ship ISO 20022 specification content"
-            find web/site -name '*.xsd' -o -name '*.pdf' -o -name '*.docx'
+            find web/public -name '*.xsd' -o -name '*.pdf' -o -name '*.docx'
             exit 1
           fi
-          echo "site contents:"; ls -lh web/site
+          echo "site contents:"; ls -lh web/public
+
+      # ssg runs an accessibility pass over every page it builds. Failing the
+      # deploy on it is what stops the WCAG 2.2 AA claim drifting out of date.
+      - name: Enforce the accessibility gate
+        run: |
+          issues="$(python3 -c 'import json;print(json.load(open("web/public/accessibility-report.json"))["total_issues"])')"
+          echo "WCAG 2.2 issues: $issues"
+          [ "$issues" = "0" ] || { echo "::error::accessibility gate failed"; exit 1; }
 
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: web/site
+          path: web/public
 
   deploy:
     name: Deploy

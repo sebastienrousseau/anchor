@@ -417,7 +417,7 @@
   </div>
 </footer>
 
-<script src="wasm_exec.js"></script>
+<script src="/wasm_exec.js"></script>
 <script>
 (function () {
   "use strict";
@@ -474,7 +474,7 @@
     statusEl.className = "error";
   } else {
     var go = new Go();
-    WebAssembly.instantiateStreaming(fetch("askiso.wasm"), go.importObject)
+    WebAssembly.instantiateStreaming(fetch("/askiso.wasm"), go.importObject)
       .then(function (res) { go.run(res.instance); })
       .catch(function (err) {
         statusEl.textContent = "Could not load the engine: " + err;

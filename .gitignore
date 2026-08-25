@@ -7,8 +7,8 @@ coverage.out
 coverage.html
 
 # Generated website assets (rebuild with `make web`)
-web/site/askiso.wasm
-web/site/wasm_exec.js
+web/public/
+
 
 # Local catalogue cache (catalogue lives outside the repo)
 .askiso.cache

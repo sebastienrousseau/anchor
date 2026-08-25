@@ -105,24 +105,54 @@ conformance:
 	ASKISO_CATALOG="$$askiso_catalog" go test ./internal/validator/ -run 'StreamingAgrees' -v
 
 # --- website ---------------------------------------------------------------
-# The site is pkg/iso20022 compiled to WebAssembly, so the browser runs exactly
-# the same engine as the CLI. It ships no schemas: light mode only.
-web:
-	GOOS=js GOARCH=wasm go build -o web/site/askiso.wasm ./web/wasm
-	@cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" web/site/ 2>/dev/null || \
-	 cp "$$(go env GOROOT)/misc/wasm/wasm_exec.js" web/site/ 2>/dev/null || \
-	 { echo "could not find wasm_exec.js in GOROOT"; exit 1; }
-	@printf 'wasm: %s (%s gzipped)\n' \
-	  "$$(du -h web/site/askiso.wasm | cut -f1)" \
-	  "$$(gzip -9 -c web/site/askiso.wasm | wc -c | awk '{printf "%.1fM", $$1/1048576}')"
+# askiso.io is content built by ssg plus pkg/iso20022 compiled to WebAssembly,
+# so the browser runs exactly the same engine as the CLI. It ships no schemas:
+# light mode only.
+#
+# `wasm` is the bundle alone — the smoke test needs only that, and building it
+# without ssg keeps `make ci` free of a Rust dependency.
+WEB_OUT = web/public
 
-web-test: web
+wasm:
+	@mkdir -p $(WEB_OUT)
+	GOOS=js GOARCH=wasm go build -o $(WEB_OUT)/askiso.wasm ./web/wasm
+	@# -f matters: the source lives in the read-only module cache, so the copy
+	@# it leaves behind is read-only too and a second build cannot overwrite it.
+	@cp -f "$$(go env GOROOT)/lib/wasm/wasm_exec.js" $(WEB_OUT)/ 2>/dev/null || \
+	 cp -f "$$(go env GOROOT)/misc/wasm/wasm_exec.js" $(WEB_OUT)/ 2>/dev/null || \
+	 { echo "could not find wasm_exec.js in GOROOT"; exit 1; }
+	@chmod u+w $(WEB_OUT)/wasm_exec.js
+	@printf 'wasm: %s (%s gzipped)\n' \
+	  "$$(du -h $(WEB_OUT)/askiso.wasm | cut -f1)" \
+	  "$$(gzip -9 -c $(WEB_OUT)/askiso.wasm | wc -c | awk '{printf "%.1fM", $$1/1048576}')"
+
+# ssg does not copy its template-directory assets into the output — the theme
+# suite's own build script copies them explicitly, and so must this one.
+#
+# ssg runs first and the WebAssembly bundle is built into the result afterwards:
+# the content build clears its output directory, so a bundle written before it
+# is deleted rather than published.
+web:
+	@command -v ssg >/dev/null || { echo "ssg is required: cargo install ssg"; exit 1; }
+	ssg build -f web/ssg.toml
+	@$(MAKE) --no-print-directory wasm
+	@for a in styles.css main.js theme-init.js logo.svg; do \
+	  test -f "web/_layouts/$$a" && cp -f "web/_layouts/$$a" "$(WEB_OUT)/$$a"; \
+	done
+	@mkdir -p $(WEB_OUT)/playground
+	@cp -f web/app/playground.html $(WEB_OUT)/playground/index.html
+	@printf 'askiso.io\n' > $(WEB_OUT)/CNAME
+	@printf 'site: %s page(s), %s\n' \
+	  "$$(find $(WEB_OUT) -name '*.html' | wc -l | xargs)" \
+	  "$$(du -sh $(WEB_OUT) | cut -f1)"
+
+web-test: wasm
 	@command -v node >/dev/null || { echo "node is required for the wasm smoke test"; exit 1; }
 	node web/wasm/smoke_test.mjs
 
 web-serve: web
 	@echo "http://127.0.0.1:8765"
-	@cd web/site && python3 -m http.server 8765
+	@cd $(WEB_OUT) && python3 -m http.server 8765
 
 fmt:
 	gofmt -s -w cmd/ internal/ pkg/ scripts/ web/
@@ -145,4 +175,5 @@ catalog-info:
 	@./$(BINARY_NAME) doctor || true
 
 clean:
-	rm -f $(BINARY_NAME) $(MCP_BINARY) $(LSP_BINARY) coverage.out coverage.html web/site/askiso.wasm web/site/wasm_exec.js
+	rm -f $(BINARY_NAME) $(MCP_BINARY) $(LSP_BINARY) coverage.out coverage.html
+	rm -rf $(WEB_OUT)
