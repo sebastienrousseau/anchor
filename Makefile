@@ -142,6 +142,11 @@ web:
 	@mkdir -p $(WEB_OUT)/playground
 	@cp -f web/app/playground.html $(WEB_OUT)/playground/index.html
 	@printf 'askiso.io\n' > $(WEB_OUT)/CNAME
+	@# Without this GitHub Pages runs its Jekyll filter over the artefact and
+	@# drops anything beginning with a dot or an underscore — which silently
+	@# removes /.well-known/mcp.json, the file that tells an assistant AskIso
+	@# has an MCP server it can use.
+	@touch $(WEB_OUT)/.nojekyll
 	@printf 'site: %s page(s), %s\n' \
 	  "$$(find $(WEB_OUT) -name '*.html' | wc -l | xargs)" \
 	  "$$(du -sh $(WEB_OUT) | cut -f1)"
