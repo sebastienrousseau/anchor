@@ -1097,17 +1097,19 @@ pre.highlight.language-console {
 
 /* ---------- footer signup ---------- */
 
+/* A band, not a card. Boxing it gave it 24px of inner padding, so its heading
+   started 24px right of every other heading in the footer — the last thing on
+   the page still sitting on its own axis. Ruled above and below instead, which
+   separates it just as clearly and keeps the alignment. */
 .footer-signup {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 1.25rem;
-  margin-block-start: 2.25rem;
-  padding: 1.4rem 1.5rem;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius);
-  background: var(--bg-soft);
+  margin-block-start: 2.5rem;
+  padding-block: 1.6rem;
+  border-block-start: 1px solid var(--line-soft);
 }
 
 .footer-signup h2 {
@@ -1326,3 +1328,33 @@ pre.highlight:focus-visible {
    into the page it resolves against the page instead, so `logo.svg` became
    /faq/logo.svg and 404ed on every entry page — a console error, and four
    points off best practices, from a mark that simply stopped loading. */
+
+/* ---------- one alignment axis ---------- */
+
+/* Two sections on the home page centred their heading and lead while the
+   masthead, the bands and every paragraph beneath them were left-aligned. The
+   page therefore alternated between two axes as you scrolled, which reads as
+   indecision rather than as rhythm.
+
+   Everything now begins at the same left edge. The lead keeps a measure so it
+   does not run the full width of a wide screen, but it starts where the title
+   above it starts. */
+.section-intro {
+  max-width: 100%;
+}
+
+.section-intro .lead {
+  max-width: 58ch;
+  margin-inline: 0;
+}
+
+/* Footer links sit under their heading, not indented from it.
+   
+   The lists kept a browser default of 40px start padding and disc markers, so
+   every link began 40 pixels right of the heading above it and the six columns
+   read as six indented lists rather than as a grid. */
+.footer-cols ul {
+  list-style: none;
+  padding-inline-start: 0;
+  margin: 0;
+}

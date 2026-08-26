@@ -78,3 +78,8 @@ Nothing. It is open source under Apache-2.0 or MIT, with no account, no API key
 and no licence server. The only thing you supply is the schemas, downloaded
 free from the Registration Authority, and only when you want full schema
 validation.
+
+## Where to start reading
+
+The [knowledge centre](/knowledge/) arranges everything published here by the
+question you arrived with, rather than by what each page is called.

@@ -43,9 +43,9 @@ To make correctness in ISO 20022 checkable by anyone, without a licence, a
 portal, or a support contract.
 
 The standard is published free of charge. The knowledge required to use it
-correctly is not: it sits in market practice guidelines, in scheme rulebooks,
-and in the experience of people who have watched payments fail. AskISO exists
-to put as much of that as can be verified into a tool that anybody can run.
+correctly is not, and that gap is what this project exists to close.
+[Vision and mission](/vision/) sets out what we are working towards and how we
+would know whether it worked.
 
 ## What we will not do
 

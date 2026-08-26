@@ -74,3 +74,8 @@ roadmap, and the reasoning behind a decision sits beside it.
 
 Anything that requires guesswork. Rewriting an unstructured address means deciding which line is the town and which the country, and a tool that decides wrongly on a payment has caused real harm. Where correctness cannot be
 established, AskISO reports the gap and stops.
+
+## Why any of this
+
+[Vision and mission](/vision/) sets out what this project is working towards,
+and the circumstances that would make it unnecessary.
