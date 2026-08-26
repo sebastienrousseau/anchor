@@ -17,9 +17,9 @@ nav_home: "true"
 banner: "getty-images-f9bcOaV5zbU"
 banner_alt: "Looking up between financial district towers against a clear blue sky."
 hero_alt: "The AskISO mark: a question mark inside a circle, in cyan."
-eyebrow: "Open source · Apache-2.0 or MIT"
+eyebrow: "ISO 20022 · 14 November 2026"
 headline: "Know your ISO 20022 messages will be accepted"
-lead: "Check a payment message against the schema, the scheme rules and the November 2026 requirements — and get told which rule failed, in which field, and what to change. Nothing is uploaded: the engine runs on your machine, or inside your browser tab."
+lead: "Paste one. See which rule failed, in which field, and what to change. Nothing is uploaded."
 ---
 
 ## Start with a single message

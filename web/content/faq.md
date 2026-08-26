@@ -18,7 +18,7 @@ banner: "corporate-finance"
 banner_alt: "Financial reports and a tablet on a meeting-room table."
 eyebrow: "Answers"
 headline: "Questions we get asked"
-lead: "From payments operations, compliance teams and the engineers who have to implement what they decide. If your question is not answered here, the developer documentation covers the technical detail, and you can report a problem or ask for something using the link at the bottom of this page."
+lead: "Straight answers for payments operations, compliance teams, and the engineers who have to implement what they decide."
 ---
 
 ## The November 2026 change

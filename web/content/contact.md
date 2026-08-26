@@ -17,8 +17,8 @@ nav_contact: "true"
 banner: "getty-images-LaU3HadwEeE-unsplash"
 banner_alt: "A financial chart drawn in blue over a dark background."
 eyebrow: "Get in touch"
-headline: "Ask a question, or tell us we are wrong"
-lead: "The most valuable message anyone sends is one AskISO handles incorrectly. If a payment was rejected that we accepted, or accepted that we rejected, that is worth knowing about more than anything else on this page."
+headline: "Tell us we are wrong"
+lead: "The most valuable message anyone sends is one AskISO handles incorrectly. Tell us when that happens."
 ---
 
 ### Report a defect

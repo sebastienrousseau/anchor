@@ -776,11 +776,19 @@ pre.highlight.language-console {
    underneath, and the accent stays the loudest colour on the page rather than
    competing with whatever the photograph happens to contain. */
 
+/* One height, everywhere.
+   
+   The masthead was sized with a viewport-relative clamp, so every page opened
+   at a slightly different height and the set never read as one publication.
+   A single fixed height is what makes a run of pages feel deliberate: the eye
+   learns where the title sits and stops re-finding it. The home page is the
+   one exception, and it is a deliberate one. */
 .page-banner {
   position: relative;
   isolation: isolate;
   display: grid;
-  min-height: clamp(16rem, 34vw, 26rem);
+  align-items: center;
+  min-height: 22rem;
   /* No bottom margin: the section that follows brings its own block padding,
      and stacking the two left a band of empty page between the masthead and
      the first heading. */
@@ -816,9 +824,9 @@ pre.highlight.language-console {
 }
 
 .page-banner-body {
-  align-self: end;
+  align-self: center;
   width: 100%;
-  padding-block: clamp(2rem, 5vw, 3.5rem);
+  padding-block: clamp(2rem, 5vw, 3.25rem);
 }
 
 /* Fixed light values, not tokens: the text sits on a dark scrim in both
@@ -882,11 +890,7 @@ pre.highlight.language-console {
   line-height: 1.4;
 }
 
-/* The banner is a masthead, not a cover: it should introduce the page, not
-   fill the screen before the page begins. */
-.page-banner {
-  min-height: clamp(14rem, 26vw, 20rem);
-}
+
 
 /* The section directly under a masthead starts closer to it. The full section
    padding was designed to separate two bands of content, and after a banner it
@@ -910,8 +914,12 @@ pre.highlight.language-console {
 
 /* The home masthead is taller than the rest: it is the first thing anyone
    sees, and it carries three calls to action rather than a lead alone. */
+/* The home masthead fills what the visitor can actually see, less the header
+   sitting above it. svh rather than vh: on a phone, vh is the height with the
+   browser chrome retracted, so a 100vh hero is taller than the screen until
+   you scroll, and the first thing anyone does is scroll past a cropped title. */
 .home-banner {
-  min-height: clamp(22rem, 44vw, 34rem);
+  min-height: calc(100svh - 4.5rem);
 }
 
 .home-banner h1 {
@@ -1104,4 +1112,86 @@ pre.highlight.language-console {
   line-height: 1.55;
   color: var(--ink-muted);
   max-width: 52ch;
+}
+
+/* ---------- countdown ---------- */
+
+.countdown-band {
+  padding-block: clamp(2rem, 4vw, 3rem);
+  background: var(--bg-soft);
+  border-block-end: 1px solid var(--line-soft);
+}
+
+/* Stacked, not side by side.
+   
+   deadline.js replaces the printed date with a day count, and the two strings
+   are very different widths. Beside each other that needed a reserved width,
+   which at display size left the label stranded a quarter of the way across
+   the page. Stacked, the number can change width without moving anything —
+   the label starts at the same left edge either way — so the reservation is
+   unnecessary and the pair reads as one figure. */
+.countdown {
+  display: grid;
+  justify-items: start;
+  gap: 0.35rem;
+}
+
+.countdown-value {
+  margin: 0;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-label {
+  margin: 0;
+  font-size: clamp(1.05rem, 1.7vw, 1.25rem);
+  color: var(--ink-soft);
+  max-width: 40ch;
+}
+
+/* The lead is a promise, not a paragraph. Holding it to a comfortable measure
+   is what keeps every masthead the same height without clipping anything. */
+.page-banner .lead {
+  max-width: 54ch;
+}
+
+/* Above the point where the copy has room to sit on two lines, the masthead is
+   a fixed height rather than a floor. A floor is only a promise that pages will
+   not be shorter than each other; this is the guarantee that they are the same.
+   Below that width the copy needs the room, so it reverts to a minimum. */
+@media (min-width: 48rem) {
+  .page-banner:not(.home-banner) {
+    height: 22rem;
+    min-height: 0;
+  }
+}
+
+/* ---------- one left edge ---------- */
+
+/* The masthead title and the first paragraph beneath it started at different
+   places. .prose narrows the whole container to a reading measure and .container
+   centres what is left, so the body column sat inboard of the title above it —
+   a misalignment of about a hundred pixels, repeated on every page.
+
+   The container keeps its own box; the measure applies to the children instead.
+   The column still reads at a comfortable width, and it begins where the title
+   begins. Tables and code are exempt: they carry structure rather than prose,
+   and cramping them to a text measure only forces them to scroll. */
+.container.prose {
+  max-width: 1140px;
+}
+
+.container.prose > * {
+  max-width: var(--measure);
+}
+
+.container.prose > pre,
+.container.prose > table,
+.container.prose > .tablewrap,
+.container.prose > .terminal {
+  max-width: none;
 }

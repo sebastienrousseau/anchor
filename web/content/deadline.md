@@ -18,7 +18,7 @@ banner: "freeman-zhou-oV9hp8wXkPE"
 banner_alt: "A financial district skyline at dawn, reflected in still water."
 eyebrow: "CBPR+ · cross-border payments"
 headline: "Unstructured addresses stop being accepted"
-lead: "From 14 November 2026, a cross-border payment carrying an unstructured postal address is rejected on the network. Not flagged, not downgraded — rejected."
+lead: "From 14 November 2026 an unstructured postal address is rejected on the network. Not flagged, not downgraded — rejected."
 ---
 
 ## What changes
