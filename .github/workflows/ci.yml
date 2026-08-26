@@ -84,7 +84,19 @@ jobs:
           cache: true
 
       - name: Test with race detector
-        run: go test -race -coverpkg=./... -coverprofile=coverage.out -covermode=atomic ./...
+        # Explicit shell: this step runs on the Windows runner too, where the
+        # default is PowerShell and the command substitution below would not
+        # parse.
+        shell: bash
+        # The examples are excluded from the coverage denominator, and only
+        # from it: they are demonstration mains proven by examples_test
+        # building and running each one, which statement coverage cannot see
+        # across a subprocess. This must stay in step with COVERPKG in the
+        # Makefile — they were out of step once, and CI failed on a floor the
+        # local build had already satisfied.
+        run: |
+          coverpkg="$(go list ./... | grep -v '/examples' | paste -sd, -)"
+          go test -race -coverpkg="$coverpkg" -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Build
         run: |

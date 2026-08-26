@@ -34,12 +34,12 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
+      # Delegated to the Makefile so the floor and the package list have one
+      # definition. This step had its own copy of both, and drifted: it still
+      # enforced 95 after the floor moved to 95.5, and it counted packages the
+      # Makefile had already excluded.
       - name: Test with the coverage floor
-        run: |
-          go test -coverpkg=./... -coverprofile=coverage.out -covermode=atomic ./...
-          pct="$(go tool cover -func=coverage.out | tail -1 | grep -oE '[0-9]+\.[0-9]+')"
-          echo "Total coverage: ${pct}% (floor 95%)"
-          awk -v p="$pct" 'BEGIN { if (p+0 < 95) { print "below the floor"; exit 1 } }'
+        run: make cover
 
       - name: Protocol handshakes
         run: |

@@ -12,9 +12,21 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
+
+// binaryName returns a name the host will actually execute. Windows refuses to
+// run a file without an executable extension, so a build to a bare name
+// produced a binary that could not be started -- which looked like every
+// example failing rather than like a test-harness bug.
+func binaryName(dir string) string {
+	if runtime.GOOS == "windows" {
+		return dir + ".exe"
+	}
+	return dir
+}
 
 // eachExample lists the example directories, so a new one is covered by every
 // test below the moment it is added rather than when somebody remembers.
@@ -39,7 +51,7 @@ func eachExample(t *testing.T) []string {
 func TestEveryExampleBuilds(t *testing.T) {
 	for _, dir := range eachExample(t) {
 		t.Run(dir, func(t *testing.T) {
-			out := filepath.Join(t.TempDir(), "bin")
+			out := filepath.Join(t.TempDir(), binaryName(dir))
 			cmd := exec.Command("go", "build", "-o", out, "./"+dir)
 			if b, err := cmd.CombinedOutput(); err != nil {
 				t.Fatalf("%s does not build: %v\n%s", dir, err, b)
@@ -53,14 +65,22 @@ func TestEveryExampleBuilds(t *testing.T) {
 func TestEveryExampleExplainsItself(t *testing.T) {
 	for _, dir := range eachExample(t) {
 		t.Run(dir, func(t *testing.T) {
-			bin := filepath.Join(t.TempDir(), "bin")
+			bin := filepath.Join(t.TempDir(), binaryName(dir))
 			if b, err := exec.Command("go", "build", "-o", bin, "./"+dir).CombinedOutput(); err != nil {
 				t.Fatalf("building: %v\n%s", err, b)
 			}
 
 			cmd := exec.Command(bin)
-			out, _ := cmd.CombinedOutput()
+			out, err := cmd.CombinedOutput()
 			text := string(out)
+			// An ExitError is expected -- these exit non-zero on bad input.
+			// Anything else means the binary could not be started at all, and
+			// reporting that as "no usage printed" hides the real cause.
+			if err != nil {
+				if _, isExit := err.(*exec.ExitError); !isExit {
+					t.Fatalf("%s could not be run: %v\n%s", dir, err, text)
+				}
+			}
 
 			if strings.Contains(text, "panic:") {
 				t.Fatalf("%s panicked on no arguments:\n%s", dir, text)
