@@ -408,13 +408,13 @@ h3 {
 }
 
 .brand-mark {
-  --mark: url("logo.svg");
+  --mark: url("/logo.svg");
   width: 1.75rem;
   height: 1.75rem;
 }
 
 .hero-mark {
-  --mark: url("logo.svg");
+  --mark: url("/logo.svg");
   width: min(20rem, 60vw);
   aspect-ratio: 1;
 }
@@ -1319,3 +1319,10 @@ pre.highlight:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* Absolute, not relative.
+   
+   A relative url() in a stylesheet resolves against the stylesheet. Inlined
+   into the page it resolves against the page instead, so `logo.svg` became
+   /faq/logo.svg and 404ed on every entry page — a console error, and four
+   points off best practices, from a mark that simply stopped loading. */

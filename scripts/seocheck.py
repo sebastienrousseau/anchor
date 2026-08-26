@@ -88,6 +88,19 @@ def check(path: Path, rel: str, referenced: set[str]) -> list[str]:
             problems.append("an <img> has no alt attribute")
             break
 
+    # A relative url() inside an inlined stylesheet resolves against the page,
+    # not against the stylesheet it came from. `logo.svg` became /faq/logo.svg
+    # and 404ed on every entry page.
+    for style in re.findall(r"<style>(.*?)</style>", page, re.S):
+        for ref in re.findall(r"url\(\s*['\"]?([^'\")]+)", style):
+            ref = ref.strip()
+            if ref.startswith(("/", "data:", "http://", "https://", "#")):
+                continue
+            problems.append(
+                f"inlined CSS has a relative url({ref!r}), which resolves "
+                f"against the page rather than the stylesheet")
+            break
+
     if rel == "faq/index.html" and "FAQPage" not in page:
         problems.append("the FAQ carries no FAQPage structured data")
 
