@@ -69,7 +69,10 @@ currency decimal precision, and RFC 4122 UUIDv4 UETR formats.`,
 			return nil
 		}
 
-		if lintJSON {
+		// --format json and --json mean the same thing. The flag advertised
+		// "text, json, or sarif" but only ever acted on sarif, so --format json
+		// silently produced the text report.
+		if lintJSON || lintFormat == "json" {
 			payload := struct {
 				*linter.Result
 				Profile *rules.Result `json:"profile,omitempty"`
@@ -111,11 +114,12 @@ currency decimal precision, and RFC 4122 UUIDv4 UETR formats.`,
 			switch issue.Severity {
 			case linter.SeverityError:
 				fmt.Printf("  ❌ [%s] %s\n", issue.Rule, issue.Message)
-				fmt.Printf("     Field: %s | Value: '%s'\n\n", issue.Field, issue.Value)
 			case linter.SeverityWarning:
 				fmt.Printf("  ⚠️  [%s] %s\n", issue.Rule, issue.Message)
-				fmt.Printf("     Field: %s | Value: '%s'\n\n", issue.Field, issue.Value)
+			default:
+				continue
 			}
+			printIssueDetail(issue)
 		}
 
 		printProfileFindings(ruleRes)
@@ -150,6 +154,50 @@ func runProfile(data []byte, filePath, profile string) (*rules.Result, error) {
 }
 
 // printProfileFindings renders scheme-level findings beneath the business rules.
+// printIssueDetail writes the parts of a finding that make it checkable and
+// fixable: where it is, what was expected, and what to do. The scheme rule
+// findings have printed this for as long as they have existed; lint findings
+// used to stop at the value.
+func printIssueDetail(issue linter.Issue) {
+	if issue.Path != "" {
+		fmt.Printf("     %s\n", issue.Path)
+	}
+	fmt.Printf("     Field: %s | Value: '%s'\n", issue.Field, issue.Value)
+	if issue.Expected != "" {
+		if issue.Actual != "" {
+			fmt.Printf("     Expected %s, found %s\n", issue.Expected, issue.Actual)
+		} else {
+			fmt.Printf("     Expected %s\n", issue.Expected)
+		}
+	}
+	if issue.Remediation != "" {
+		for _, line := range wrapAt(issue.Remediation, 72) {
+			fmt.Printf("     %s\n", line)
+		}
+	}
+	fmt.Println()
+}
+
+// wrapAt breaks text on word boundaries so a paragraph of remediation reads as
+// a paragraph in a terminal rather than one very long line.
+func wrapAt(text string, width int) []string {
+	words := strings.Fields(text)
+	if len(words) == 0 {
+		return nil
+	}
+	lines := []string{}
+	line := words[0]
+	for _, w := range words[1:] {
+		if len(line)+1+len(w) > width {
+			lines = append(lines, line)
+			line = w
+			continue
+		}
+		line += " " + w
+	}
+	return append(lines, line)
+}
+
 func printProfileFindings(res *rules.Result) {
 	if res == nil {
 		return

@@ -25,12 +25,30 @@ const (
 )
 
 // Issue represents a single rule violation or warning.
+//
+// Path and Remediation exist because a finding that states only what is wrong
+// leaves the reader to work out where it is and what to do about it. The scheme
+// rule findings have carried both from the start; lint findings render in the
+// same lists, and used to arrive with neither.
 type Issue struct {
 	Rule     string        `json:"rule"`
 	Severity IssueSeverity `json:"severity"`
 	Field    string        `json:"field"`
 	Value    string        `json:"value"`
 	Message  string        `json:"message"`
+
+	// Path is the XPath of the element that failed. It is the other half of
+	// the citation: the rule says what, the path says where.
+	Path string `json:"path,omitempty"`
+
+	// Expected and Actual are filled where the check has a definite right
+	// answer to compare against, and left empty where it does not.
+	Expected string `json:"expected,omitempty"`
+	Actual   string `json:"actual,omitempty"`
+
+	// Remediation says what to change. Where the fix is ambiguous it says so
+	// rather than picking one and sounding certain.
+	Remediation string `json:"remediation,omitempty"`
 }
 
 // Result holds the complete linting analysis for an XML instance.
@@ -55,50 +73,121 @@ var (
 	}
 )
 
-// ValidateIBAN verifies an IBAN string using the ISO 13616 Modulo-97 algorithm.
-func ValidateIBAN(iban string) (bool, string) {
-	clean := strings.ToUpper(strings.ReplaceAll(iban, " ", ""))
+// IBANReport is the outcome of inspecting one IBAN.
+//
+// It exists because "mod 97 = 59, expected 1" is a true statement that helps
+// nobody. ISO 13616 derives the two check digits from the country code and the
+// account number, which means that when the arithmetic fails there is exactly
+// one correct pair of check digits for the account number as written -- and it
+// can be computed, not guessed. Reporting it turns a failed sum into an
+// actionable instruction.
+type IBANReport struct {
+	Valid bool
+
+	// Problem is a short statement of what is wrong, in the reader's terms.
+	Problem string
+
+	// Country and CheckDigits are the parts as written.
+	Country     string
+	CheckDigits string
+
+	// WantCheckDigits is the pair ISO 13616 requires for this account number.
+	// Empty when the IBAN is malformed enough that the question is moot.
+	WantCheckDigits string
+
+	// Corrected is the whole IBAN with the required check digits substituted.
+	Corrected string
+
+	// Remainder is the mod-97 result. Kept because somebody reproducing the
+	// check by hand wants to compare against it.
+	Remainder int64
+}
+
+// InspectIBAN checks an IBAN under the ISO 13616 mod-97 algorithm and reports
+// what it found.
+func InspectIBAN(iban string) IBANReport {
+	clean := strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(iban), " ", ""))
+
 	if len(clean) < 14 || len(clean) > 34 {
-		return false, fmt.Sprintf("invalid IBAN length (%d chars; must be between 14 and 34)", len(clean))
+		return IBANReport{Problem: fmt.Sprintf(
+			"it is %d characters long; an IBAN is between 14 and 34", len(clean))}
 	}
 
-	countryCode := clean[:2]
-	for _, ch := range countryCode {
+	country := clean[:2]
+	for _, ch := range country {
 		if ch < 'A' || ch > 'Z' {
-			return false, "IBAN must begin with 2-letter country code"
+			return IBANReport{Problem: fmt.Sprintf(
+				"it starts with %q; an IBAN starts with a two-letter country code", clean[:2])}
 		}
 	}
 
-	checkDigits := clean[2:4]
-	if _, err := strconv.Atoi(checkDigits); err != nil {
-		return false, "IBAN check digits (chars 3-4) must be numeric"
+	check := clean[2:4]
+	if _, err := strconv.Atoi(check); err != nil {
+		return IBANReport{Country: country, Problem: fmt.Sprintf(
+			"its third and fourth characters are %q; those two are the check digits and must be numeric", check)}
 	}
 
-	// Rearrange: move first 4 chars to end
-	rearranged := clean[4:] + clean[:4]
+	rem, err := mod97(clean)
+	if err != nil {
+		return IBANReport{Country: country, CheckDigits: check, Problem: err.Error()}
+	}
+	if rem == 1 {
+		return IBANReport{Valid: true, Country: country, CheckDigits: check, Remainder: 1}
+	}
 
-	// Convert letters to numbers (A=10, B=11, ..., Z=35)
-	var numericStr strings.Builder
-	for _, ch := range rearranged {
-		if ch >= '0' && ch <= '9' {
-			numericStr.WriteRune(ch)
-		} else if ch >= 'A' && ch <= 'Z' {
-			numericStr.WriteString(strconv.Itoa(int(ch - 'A' + 10)))
-		} else {
-			return false, fmt.Sprintf("invalid character '%c' in IBAN", ch)
+	// The check digits that would satisfy the algorithm for this account
+	// number. Substituting "00" and taking 98 - (n mod 97) is the standard
+	// derivation, and it is exact -- there is no second candidate.
+	want := ""
+	corrected := ""
+	if zeroed, err := mod97(clean[:2] + "00" + clean[4:]); err == nil {
+		want = fmt.Sprintf("%02d", 98-zeroed)
+		corrected = clean[:2] + want + clean[4:]
+	}
+
+	return IBANReport{
+		Country:         country,
+		CheckDigits:     check,
+		WantCheckDigits: want,
+		Corrected:       corrected,
+		Remainder:       rem,
+		Problem: fmt.Sprintf(
+			"its check digits are %s, but this account number requires %s", check, want),
+	}
+}
+
+// mod97 applies the ISO 13616 transformation: move the first four characters to
+// the end, map letters to numbers (A=10 ... Z=35), and take the remainder
+// modulo 97. A valid IBAN leaves 1.
+func mod97(clean string) (int64, error) {
+	var b strings.Builder
+	for _, ch := range clean[4:] + clean[:4] {
+		switch {
+		case ch >= '0' && ch <= '9':
+			b.WriteRune(ch)
+		case ch >= 'A' && ch <= 'Z':
+			b.WriteString(strconv.Itoa(int(ch - 'A' + 10)))
+		default:
+			return 0, fmt.Errorf("it contains %q, and an IBAN holds only letters and digits", string(ch))
 		}
 	}
-
-	// Compute modulo 97
-	n := new(big.Int)
-	n.SetString(numericStr.String(), 10)
-	rem := new(big.Int).Mod(n, big.NewInt(97))
-
-	if rem.Int64() != 1 {
-		return false, fmt.Sprintf("IBAN checksum validation failed (mod 97 = %d, expected 1)", rem.Int64())
+	n, ok := new(big.Int).SetString(b.String(), 10)
+	if !ok {
+		return 0, fmt.Errorf("its characters could not be read as a number")
 	}
+	return new(big.Int).Mod(n, big.NewInt(97)).Int64(), nil
+}
 
-	return true, ""
+// ValidateIBAN verifies an IBAN string using the ISO 13616 Modulo-97 algorithm.
+//
+// It answers the old two-value shape that the public API and the browser build
+// use. InspectIBAN carries the detail the linter needs.
+func ValidateIBAN(iban string) (bool, string) {
+	r := InspectIBAN(iban)
+	if r.Valid {
+		return true, ""
+	}
+	return false, "this IBAN is not valid: " + r.Problem
 }
 
 // ValidateBIC verifies an ISO 9362 Business Identifier Code.
@@ -148,6 +237,56 @@ func ValidateCurrencyAmount(ccy, amtStr string) (bool, string) {
 	return true, ""
 }
 
+// elementStackItem is one open element in the walk: its name, and the Ccy
+// attribute if it carried one.
+type elementStackItem struct {
+	name string
+	ccy  string
+}
+
+// partyOf names the party an element belongs to, in the words somebody
+// reconciling a payment would use. An IBAN finding that says "the creditor's"
+// is found in seconds; one that says only "IBAN" has to be hunted for in a
+// message that may carry four of them.
+var partyOf = map[string]string{
+	"CdtrAcct":       "the creditor's",
+	"DbtrAcct":       "the debtor's",
+	"IntrmyAgt1Acct": "the first intermediary agent's",
+	"IntrmyAgt2Acct": "the second intermediary agent's",
+	"IntrmyAgt3Acct": "the third intermediary agent's",
+	"CdtrAgtAcct":    "the creditor agent's",
+	"DbtrAgtAcct":    "the debtor agent's",
+	"Cdtr":           "the creditor's",
+	"Dbtr":           "the debtor's",
+	"CdtrAgt":        "the creditor agent's",
+	"DbtrAgt":        "the debtor agent's",
+	"InstgAgt":       "the instructing agent's",
+	"InstdAgt":       "the instructed agent's",
+}
+
+// owner walks outwards from the current element to the nearest ancestor that
+// names a party, and returns a possessive for it. Empty when nothing on the
+// stack identifies one, which is better than inventing a label.
+func owner(stack []elementStackItem) string {
+	for i := len(stack) - 1; i >= 0; i-- {
+		if who, found := partyOf[stack[i].name]; found {
+			return who
+		}
+	}
+	return ""
+}
+
+// pathOf renders the element stack as an XPath, matching the form the scheme
+// rule findings use so both kinds of finding cite a location the same way.
+func pathOf(stack []elementStackItem) string {
+	var b strings.Builder
+	for _, item := range stack {
+		b.WriteByte('/')
+		b.WriteString(item.name)
+	}
+	return b.String()
+}
+
 // Lint inspects an ISO 20022 XML byte payload against semantic business rules.
 func Lint(data []byte, filename string) (*Result, error) {
 	res := &Result{
@@ -158,10 +297,6 @@ func Lint(data []byte, filename string) (*Result, error) {
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	var creDtTmStr, sttlmDtStr string
 
-	type elementStackItem struct {
-		name string
-		ccy  string
-	}
 	var stack []elementStackItem
 
 	for {
@@ -199,27 +334,65 @@ func Lint(data []byte, filename string) (*Result, error) {
 
 			switch elemName {
 			case "IBAN":
-				if ok, msg := ValidateIBAN(val); !ok {
-					res.Issues = append(res.Issues, Issue{
+				if r := InspectIBAN(val); !r.Valid {
+					who := owner(stack)
+					if who == "" {
+						who = "an"
+					}
+					issue := Issue{
 						Rule:     "ISO 13616 IBAN Checksum",
 						Severity: SeverityError,
 						Field:    "IBAN",
 						Value:    val,
-						Message:  msg,
-					})
+						Path:     pathOf(stack),
+						Message:  fmt.Sprintf("%s IBAN is not valid: %s", who, r.Problem),
+					}
+
+					// When the check digits are the only thing wrong there is a
+					// single correct answer, and saying it is the whole point.
+					// But the arithmetic cannot tell a mistyped check digit from
+					// a mistyped account number -- so the fix names both, rather
+					// than sounding certain about the one it happens to compute.
+					if r.WantCheckDigits != "" {
+						issue.Expected = r.WantCheckDigits
+						issue.Actual = r.CheckDigits
+						issue.Remediation = fmt.Sprintf(
+							"If the account number is right, the IBAN is %s. "+
+								"If the check digits are right, the account number has a typo instead. "+
+								"ISO 13616 derives the check digits from the country code and account "+
+								"number, so exactly one of the two is wrong — confirm the account "+
+								"with the beneficiary before changing it.",
+							r.Corrected)
+					} else {
+						issue.Remediation = "Correct the IBAN to the ISO 13616 form: " +
+							"two-letter country code, two check digits, then the national account number."
+					}
+
+					res.Issues = append(res.Issues, issue)
 					res.Errors++
 				} else {
 					res.Passed++
 				}
 
 			case "BICFI", "BIC", "AnyBIC":
-				if ok, msg := ValidateBIC(val); !ok {
+				if ok, _ := ValidateBIC(val); !ok {
+					who := owner(stack)
+					if who == "" {
+						who = "a"
+					}
 					res.Issues = append(res.Issues, Issue{
 						Rule:     "ISO 9362 BIC Format",
 						Severity: SeverityError,
 						Field:    elemName,
 						Value:    val,
-						Message:  msg,
+						Path:     pathOf(stack),
+						Expected: "8 or 11 characters",
+						Actual:   fmt.Sprintf("%d characters", len(strings.TrimSpace(val))),
+						Message: fmt.Sprintf(
+							"%s BIC %q is not an ISO 9362 code", who, strings.TrimSpace(val)),
+						Remediation: "A BIC is 4 letters for the institution, 2 for the country, " +
+							"2 for the location, and optionally 3 more for the branch — 8 or 11 " +
+							"characters, no spaces. Use XXX as the branch to name the head office.",
 					})
 					res.Errors++
 				} else {
@@ -227,13 +400,20 @@ func Lint(data []byte, filename string) (*Result, error) {
 				}
 
 			case "UETR":
-				if ok, msg := ValidateUETR(val); !ok {
+				if ok, _ := ValidateUETR(val); !ok {
 					res.Issues = append(res.Issues, Issue{
 						Rule:     "RFC 4122 UUIDv4 UETR",
 						Severity: SeverityError,
 						Field:    "UETR",
 						Value:    val,
-						Message:  msg,
+						Path:     pathOf(stack),
+						Expected: "an RFC 4122 version 4 UUID",
+						Message: fmt.Sprintf(
+							"the UETR %q is not a version 4 UUID", strings.TrimSpace(val)),
+						Remediation: "A UETR is 32 hexadecimal digits in 8-4-4-4-12 form. The first " +
+							"digit of the third group must be 4, and the first of the fourth group " +
+							"must be 8, 9, a or b. Generate it once at origination and carry it " +
+							"unchanged through every message in the payment.",
 					})
 					res.Errors++
 				} else {
@@ -243,13 +423,36 @@ func Lint(data []byte, filename string) (*Result, error) {
 			case "IntrBkSttlmAmt", "InstdAmt", "Amt", "TtlIntrBkSttlmAmt":
 				if currentElem.ccy != "" {
 					if ok, msg := ValidateCurrencyAmount(currentElem.ccy, val); !ok {
-						res.Issues = append(res.Issues, Issue{
+						ccy := strings.ToUpper(strings.TrimSpace(currentElem.ccy))
+						places, known := currencyDecimals[ccy]
+						issue := Issue{
 							Rule:     "ISO 4217 Currency Precision",
 							Severity: SeverityError,
 							Field:    elemName,
 							Value:    fmt.Sprintf("%s %s", currentElem.ccy, val),
+							Path:     pathOf(stack),
 							Message:  msg,
-						})
+						}
+						if known {
+							issue.Expected = fmt.Sprintf("at most %d decimal place(s)", places)
+							issue.Actual = val
+							issue.Message = fmt.Sprintf(
+								"the amount %s %s has more decimal places than %s has minor units",
+								ccy, val, ccy)
+							switch places {
+							case 0:
+								issue.Remediation = fmt.Sprintf(
+									"%s has no minor unit, so the amount is a whole number: write %s.",
+									ccy, strings.SplitN(val, ".", 2)[0])
+							default:
+								issue.Remediation = fmt.Sprintf(
+									"%s is quoted to %d decimal place(s). Round or truncate at the "+
+										"source that produced the amount rather than here — a value "+
+										"trimmed in the message no longer matches the ledger it came from.",
+									ccy, places)
+							}
+						}
+						res.Issues = append(res.Issues, issue)
 						res.Errors++
 					} else {
 						res.Passed++
@@ -279,7 +482,14 @@ func Lint(data []byte, filename string) (*Result, error) {
 					Severity: SeverityWarning,
 					Field:    "IntrBkSttlmDt",
 					Value:    sttlmDtStr,
-					Message:  fmt.Sprintf("Settlement date (%s) is prior to creation timestamp (%s)", sttlmDtStr, creDtTmStr),
+					Expected: "on or after the creation timestamp",
+					Actual:   sttlmDtStr,
+					Message: fmt.Sprintf(
+						"the settlement date %s is before the message was created (%s)",
+						sttlmDtStr, creDtTmStr),
+					Remediation: "A payment cannot settle before it was instructed. Either the " +
+						"settlement date is wrong, or <CreDtTm> carries the wrong timestamp — " +
+						"a stale clock on the originating system is the usual cause.",
 				})
 				res.Warnings++
 			} else {
