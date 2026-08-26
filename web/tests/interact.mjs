@@ -48,8 +48,11 @@ console.log('askiso page interaction test\n');
   check('workspace: engine not fetched on load', wasmRequests.length === 0,
     `${wasmRequests.length} wasm request(s)`);
   const status = await page.$eval('#ws-status', e => e.textContent.trim());
-  check('workspace: status explains the deferred load',
-    /loads when you start/i.test(status), status);
+  // The wording is free to change; what it must not do is claim the engine is
+  // ready before it has been fetched. Asserting the exact sentence made this
+  // fail on a copy edit that was perfectly correct.
+  check('workspace: status says the engine loads on use, not that it is ready',
+    /engine loads/i.test(status) && !/ready/i.test(status), status);
 
   // Act, exactly as a visitor would.
   await page.click('#ws-input');
