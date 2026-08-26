@@ -112,6 +112,17 @@ jobs:
       - name: Check search metadata
         run: make seo
 
+      # Drives the two interactive pages the way a visitor does. The engine
+      # loads on first interaction now, and an action taken while it is still
+      # arriving has to be queued and replayed -- a failure mode no static check
+      # sees, and one that shipped once.
+      - name: Drive the interactive pages
+        run: |
+          npm install --no-save puppeteer-core@23
+          make web-interact
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
       # The premise of the project is that it redistributes no specification
       # content. This is the gate that keeps that true rather than aspirational.
       - name: Verify no specification content is being published

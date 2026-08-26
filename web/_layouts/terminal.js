@@ -124,7 +124,44 @@
     shell.appendChild(transcript);
     pre.remove();
 
+    reserveHeight(screen);
+
     return shell;
+  }
+
+  // Hold the height the finished session will occupy, before any of it is
+  // typed.
+  //
+  // Commands appear a character at a time, so a command long enough to wrap
+  // starts one line tall and becomes two partway through. The screen grows with
+  // it and everything below moves down the page -- while somebody is reading
+  // it, which is the worst moment for the paragraph they are on to jump. This
+  // was the largest layout shift on the site.
+  //
+  // Measuring is exact where guessing is not: the text is written in, the
+  // height is read, and the text is taken out again, all within one frame so
+  // nothing is ever painted in the finished state.
+  function reserveHeight(screen) {
+    var cmds = screen.querySelectorAll(".term-cmd");
+    if (!cmds.length) {
+      return;
+    }
+
+    Array.prototype.forEach.call(cmds, function (cmd) {
+      cmd.querySelector(".term-typed").textContent = cmd.dataset.text;
+    });
+
+    var height = screen.getBoundingClientRect().height;
+
+    Array.prototype.forEach.call(cmds, function (cmd) {
+      cmd.querySelector(".term-typed").textContent = "";
+    });
+
+    if (height > 0) {
+      // Set through the CSSOM rather than a style attribute: the site's
+      // style-src is 'self', which blocks the attribute but not this.
+      screen.style.minHeight = height + "px";
+    }
   }
 
   // Everything typed, everything printed. Reduced motion starts here.
@@ -243,9 +280,12 @@
     });
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", run);
-  } else {
-    run();
-  }
+  // Run now, not on DOMContentLoaded.
+  //
+  // This script is the last thing in <body>, so every <pre> it transforms has
+  // already been parsed. Waiting meant the swap happened after the first paint:
+  // the browser drew the plain transcript, then replaced it with the taller
+  // terminal, and everything below jumped down the page while somebody was
+  // reading it. That was the largest layout shift on the site.
+  run();
 })();

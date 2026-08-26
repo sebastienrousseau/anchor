@@ -26,7 +26,7 @@ WASM_LDFLAGS = -s -w -X main.buildVersion=$(VERSION)
 # against regression rather than where it forces that work.
 COVERAGE_FLOOR = 95.5
 
-.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries readability seo vuln clean run catalog-info web web-test web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
+.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries readability seo vuln clean run catalog-info web web-test web-interact web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
 
 all: build
 
@@ -281,6 +281,29 @@ web:
 web-test: wasm
 	@command -v node >/dev/null || { echo "node is required for the wasm smoke test"; exit 1; }
 	node web/wasm/smoke_test.mjs
+
+# Drives the two interactive pages the way a visitor does. The engine now loads
+# on first interaction, and an action taken while it is still arriving has to be
+# queued and replayed -- a failure mode no static check can see, and one that
+# shipped once. Skips rather than fails without puppeteer-core and a Chrome, so
+# a contributor who has neither is not blocked.
+web-interact: web
+	@command -v node >/dev/null || { echo "node is required"; exit 1; }
+	@chrome="$${CHROME_PATH:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"; \
+	 if [ ! -x "$$chrome" ]; then chrome="$$(command -v google-chrome-stable || command -v google-chrome || true)"; fi; \
+	 if [ -z "$$chrome" ] || [ ! -x "$$chrome" ]; then \
+	   echo "web-interact: no Chrome found, skipping"; exit 0; \
+	 fi; \
+	 node -e "import('puppeteer-core')" >/dev/null 2>&1 || { \
+	   echo "web-interact: puppeteer-core is not installed, skipping"; \
+	   echo "  install it with: npm install --no-save puppeteer-core"; exit 0; \
+	 }; \
+	 (cd $(WEB_OUT) && python3 -m http.server 8899 >/dev/null 2>&1 & echo $$! > /tmp/askiso-interact.pid); \
+	 sleep 2; \
+	 CHROME_PATH="$$chrome" ASKISO_BASE_URL=http://127.0.0.1:8899 node web/tests/interact.mjs; \
+	 status=$$?; \
+	 kill "$$(cat /tmp/askiso-interact.pid)" 2>/dev/null; rm -f /tmp/askiso-interact.pid; \
+	 exit $$status
 
 web-serve: web
 	@echo "http://127.0.0.1:8765"

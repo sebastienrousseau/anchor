@@ -40,21 +40,84 @@ function applyBarWidths(root) {
   });
 
   // ---- engine bootstrap -------------------------------------------------
+  //
+  // The engine is a 5.7 MB WebAssembly module, and instantiating it blocks the
+  // main thread for a couple of hundred milliseconds. A visitor who came to
+  // read about the tools rather than run one should not pay either cost, so
+  // nothing is fetched until there is some sign they intend to use the page.
+  //
+  // First interaction of any kind starts it, which in practice means it is
+  // already loading before anyone reaches a button. If they beat it there, the
+  // action is queued rather than refused: "try again in a moment" is a worse
+  // answer than simply doing what was asked, slightly later.
   var statusEl = $("#status");
   var ready = false;
+  var starting = false;
+  // Every action blocked while the engine loads, in the order it was asked
+  // for. A single slot is not enough: pressing "Use a sample" and then "Lint"
+  // before the engine arrives would replay only the second, leaving the sample
+  // unfilled and the lint reporting an empty message.
+  var replayQueue = [];
+
+  // Recorded in the capture phase, so the button is known before the handler
+  // that will be blocked has run.
+  var lastAction = null;
+  document.addEventListener("click", function (e) {
+    var b = e.target && e.target.closest && e.target.closest(".playground button");
+    if (b) {
+      lastAction = b;
+    }
+  }, true);
 
   window.askisoReady = function () {
     ready = true;
     statusEl.textContent = "Engine ready — light mode (embedded index of the standard; no schemas installed)";
     statusEl.className = "ready";
+    var pending = replayQueue;
+    replayQueue = [];
+    pending.forEach(function (b) { b.click(); });
   };
 
-  function requireEngine() {
-    if (!ready) {
-      statusEl.textContent = "Engine still loading — try again in a moment.";
-      return false;
+  function startEngine() {
+    if (starting || ready) {
+      return;
     }
-    return true;
+    starting = true;
+
+    if (!window.WebAssembly || !WebAssembly.instantiateStreaming) {
+      statusEl.textContent = "This browser does not support WebAssembly streaming.";
+      statusEl.className = "error";
+      return;
+    }
+
+    statusEl.textContent = "Loading the engine…";
+    statusEl.className = "";
+
+    var go = new Go();
+    WebAssembly.instantiateStreaming(fetch("/askiso.wasm"), go.importObject)
+      .then(function (res) { go.run(res.instance); })
+      .catch(function (err) {
+        starting = false;
+        statusEl.textContent = "Could not load the engine: " + err;
+        statusEl.className = "error";
+      });
+  }
+
+  ["pointerdown", "keydown", "focusin"].forEach(function (evt) {
+    document.addEventListener(evt, startEngine, { once: true, passive: true });
+  });
+
+  function requireEngine() {
+    if (ready) {
+      return true;
+    }
+    startEngine();
+    if (lastAction && replayQueue.indexOf(lastAction) === -1) {
+      replayQueue.push(lastAction);
+    }
+    statusEl.textContent = "Loading the engine — this will run as soon as it is ready.";
+    statusEl.className = "";
+    return false;
   }
 
   function call(fn) {
@@ -64,19 +127,6 @@ function applyBarWidths(root) {
     } catch (e) {
       return { ok: false, error: String(e && e.message ? e.message : e) };
     }
-  }
-
-  if (!WebAssembly || !WebAssembly.instantiateStreaming) {
-    statusEl.textContent = "This browser does not support WebAssembly streaming.";
-    statusEl.className = "error";
-  } else {
-    var go = new Go();
-    WebAssembly.instantiateStreaming(fetch("/askiso.wasm"), go.importObject)
-      .then(function (res) { go.run(res.instance); })
-      .catch(function (err) {
-        statusEl.textContent = "Could not load the engine: " + err;
-        statusEl.className = "error";
-      });
   }
 
   // ---- shared renderers -------------------------------------------------

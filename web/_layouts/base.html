@@ -124,7 +124,12 @@
 
     <script src="{{site_path}}main.js" defer></script>
     <!-- Wraps shell blocks in terminal chrome and types them out. Purely
-         additive: the commands are in the HTML with or without it. -->
-    <script src="{{site_path}}terminal.js" defer></script>
+         additive: the commands are in the HTML with or without it.
+
+         Not deferred, deliberately. It is the last element in the body, so
+         everything it transforms is already parsed, and running before the
+         first paint is what stops the page shifting under the reader when a
+         transcript becomes a terminal. -->
+    <script src="{{site_path}}terminal.js"></script>
   </body>
 </html>

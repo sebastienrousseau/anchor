@@ -510,8 +510,22 @@
 
   // ---------------------------------------------------------------------
 
+  // Set when somebody asks before the engine has finished loading, so the
+  // request runs the moment it can rather than being dropped on the floor.
+  var pendingSubmit = false;
+
   function submit() {
-    if (!engineReady) return;
+    if (!engineReady) {
+      pendingSubmit = true;
+      if (typeof window.askisoStartEngine === "function") {
+        window.askisoStartEngine();
+      }
+      var loading = $("#ws-intent");
+      if (loading) {
+        loading.textContent = "Loading the engine — this will run as soon as it is ready.";
+      }
+      return;
+    }
 
     var intent = classify($("#ws-input").value);
     var hint = $("#ws-intent");
@@ -574,6 +588,11 @@
       s.className = "ws-status is-ready";
     }
     renderSources(null);
+
+    if (pendingSubmit) {
+      pendingSubmit = false;
+      submit();
+    }
   };
 
   if (document.readyState === "loading") {
