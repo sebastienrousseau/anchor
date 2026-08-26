@@ -1,6 +1,6 @@
 ---
 name: "AskISO"
-short_name: "AI"
+short_name: "AskISO"
 title: "Contact AskISO — ask a question, report a problem"
 description: "Reach the people behind AskISO. Report a message it gets wrong, ask about November 2026 readiness, or request the release notes. Replies come by email."
 keywords: "contact AskISO, ISO 20022 support, report ISO 20022 validation bug, CBPR+ November 2026 help, ISO 20022 consulting"

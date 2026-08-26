@@ -1,6 +1,6 @@
 ---
 name: "AskISO"
-short_name: "AI"
+short_name: "AskISO"
 title: "November 2026: the CBPR+ structured address mandate"
 description: "From 14 November 2026, CBPR+ rejects unstructured postal addresses on cross-border payments. Find out what changes, and check your own messages free."
 keywords: "CBPR+ structured address, November 2026 deadline, ISO 20022 structured address mandate, unstructured address rejected, hybrid address pacs.008, SWIFT 2026 address requirement, structured address migration"

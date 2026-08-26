@@ -26,7 +26,7 @@ WASM_LDFLAGS = -s -w -X main.buildVersion=$(VERSION)
 # against regression rather than where it forces that work.
 COVERAGE_FLOOR = 95.5
 
-.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries readability a11y seo vuln clean run catalog-info web web-test web-interact a11y-axe web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
+.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries readability a11y seo vuln clean run catalog-info web web-test web-interact a11y-axe web-console web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
 
 all: build
 
@@ -252,6 +252,9 @@ web:
 	@for a in main.js theme-init.js deadline.js playground.js catalogue.js evidence.js workspace.js workspace-boot.js terminal.js logo.svg favicon.ico; do \
 	  test -f "web/_layouts/$$a" && cp -f "web/_layouts/$$a" "$(WEB_OUT)/$$a"; \
 	done
+	@# The generator leaves theme_color null, which browsers reject with a
+	@# console error on every page load.
+	@python3 scripts/fix-manifest.py $(WEB_OUT)/manifest.json
 	@# A fenced block scrolls, which makes it a scroll region, which WCAG 2.1.1
 	@# requires to be reachable from a keyboard.
 	@python3 scripts/focusable-code.py $(WEB_OUT)
@@ -355,6 +358,24 @@ a11y-axe: web
 	 CHROME_PATH="$$chrome" ASKISO_BASE_URL=http://127.0.0.1:8899 node web/tests/a11y.mjs; \
 	 status=$$?; \
 	 kill "$$(cat /tmp/askiso-axe.pid)" 2>/dev/null; rm -f /tmp/askiso-axe.pid; \
+	 exit $$status
+
+# Loads every page and fails on anything the browser complains about: errors,
+# warnings, failed requests, and any response of 400 or above.
+web-console: web
+	@command -v node >/dev/null || { echo "node is required"; exit 1; }
+	@chrome="$${CHROME_PATH:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"; \
+	 if [ ! -x "$$chrome" ]; then chrome="$$(command -v google-chrome-stable || command -v google-chrome || true)"; fi; \
+	 if [ -z "$$chrome" ] || [ ! -x "$$chrome" ]; then \
+	   echo "web-console: no Chrome found, skipping"; exit 0; \
+	 fi; \
+	 node -e "import('puppeteer-core')" >/dev/null 2>&1 || { \
+	   echo "web-console: puppeteer-core is not installed, skipping"; exit 0; }; \
+	 (cd $(WEB_OUT) && python3 -m http.server 8899 >/dev/null 2>&1 & echo $$! > /tmp/askiso-console.pid); \
+	 sleep 2; \
+	 CHROME_PATH="$$chrome" ASKISO_BASE_URL=http://127.0.0.1:8899 node web/tests/console.mjs; \
+	 status=$$?; \
+	 kill "$$(cat /tmp/askiso-console.pid)" 2>/dev/null; rm -f /tmp/askiso-console.pid; \
 	 exit $$status
 
 web-serve: web

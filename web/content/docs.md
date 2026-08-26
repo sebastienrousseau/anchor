@@ -1,6 +1,6 @@
 ---
 name: "AskISO"
-short_name: "AI"
+short_name: "AskISO"
 title: "AskISO documentation — commands, profiles and integrations"
 description: "Every AskISO command, which ones need a catalogue, the scheme rule profiles, and how to wire it into your editor, your build or an AI assistant."
 keywords: "askiso documentation, ISO 20022 CLI reference, askiso commands, ISO 20022 MCP server, ISO 20022 language server, askiso lint, askiso validate, askiso translate"

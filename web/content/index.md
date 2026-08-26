@@ -1,6 +1,7 @@
 ---
 name: "AskISO"
-short_name: "AI"
+short_name: "AskISO"
+theme_color: "#ffffff"
 title: "AskISO — ISO 20022 validator and CBPR+ 2026 checker"
 description: "Validate, lint and convert ISO 20022 and SWIFT MT messages, and check them against the CBPR+ November 2026 address rules. Free, open source, nothing uploaded."
 keywords: "ISO 20022, pacs.008, pain.001, camt.053, CBPR+, structured address, SWIFT MT to MX, ISO 20022 validator, ISO 20022 CLI, MT103 converter, November 2026 deadline"

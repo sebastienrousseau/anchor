@@ -488,8 +488,8 @@ next, listed so the gaps are visible rather than implied.
 
 ## Releases and packages
 
-AskISO has not been tagged yet, so there is no release to install from and the package
-managers below carry nothing. Until the first tag, `go install` is the way in:
+`v0.0.1` is released, with signed binaries and packages for Linux, macOS and Windows
+attached to it. `go install` builds from source and is the quickest way in:
 
 ```bash
 go install github.com/sebastienrousseau/askiso/cmd/askiso@latest
@@ -497,7 +497,11 @@ go install github.com/sebastienrousseau/askiso/cmd/askiso-mcp@latest
 go install github.com/sebastienrousseau/askiso/cmd/askiso-lsp@latest
 ```
 
-The release pipeline is wired and will publish to these on the first tag:
+Homebrew and Scoop carry nothing yet: publishing to a tap writes to a second
+repository, and the token for it is not configured. The cask and the manifest are
+built and attached to each release, so adding that token starts publishing them
+without any other change. Until then, the archives on the release page and
+`go install` are the routes in:
 
 ```bash
 # macOS and Linux

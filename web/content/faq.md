@@ -1,6 +1,6 @@
 ---
 name: "AskISO"
-short_name: "AI"
+short_name: "AskISO"
 title: "ISO 20022 questions, answered — AskISO FAQ"
 description: "What changes in November 2026, whether your payment data is uploaded, what AskISO costs, and where to get ISO 20022 schemas. Straight answers, no jargon."
 keywords: "ISO 20022 FAQ, CBPR+ November 2026, structured address deadline, ISO 20022 validation, MT to MX migration, ISO 20022 schema download, ISO 20022 free validator"

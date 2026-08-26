@@ -1,6 +1,6 @@
 ---
 name: "AskISO"
-short_name: "AI"
+short_name: "AskISO"
 title: "Conformance evidence — what AskISO is measured against"
 description: "AskISO agrees with libxml2 on all 4,746 documents tested. Every figure here names the command that reproduces it, so you can check the claim yourself."
 keywords: "ISO 20022 validator conformance, libxml2 differential testing, XML schema validator correctness, askiso conformance, ISO 20022 validation evidence"

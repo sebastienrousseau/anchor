@@ -1,6 +1,6 @@
 ---
 name: "AskISO"
-short_name: "AI"
+short_name: "AskISO"
 title: "Generate ISO 20022 samples and look up code sets"
 description: "Generate a valid ISO 20022 sample message, look up an external code set, and see what the standard actually contains. Runs in your browser."
 keywords: "generate ISO 20022 sample, pacs.008 sample XML, ISO 20022 external code sets, ISO 20022 message statistics, ISO 20022 tools browser"

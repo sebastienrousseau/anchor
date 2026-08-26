@@ -1,6 +1,6 @@
 ---
 name: "AskISO"
-short_name: "AI"
+short_name: "AskISO"
 title: "ISO 20022 solutions for banks, corporates and fintechs"
 description: "Check a message before it is sent, migrate from SWIFT MT, meet the November 2026 address mandate, and embed validation in your pipeline, editor or AI assistant."
 keywords: "ISO 20022 solutions, payment message validation, SWIFT MT migration, CBPR+ compliance, ISO 20022 CI pipeline, ISO 20022 API"

@@ -1,6 +1,6 @@
 ---
 name: "AskISO"
-short_name: "AI"
+short_name: "AskISO"
 title: "About AskISO — who builds it and why"
 description: "AskISO is an independent open-source project for ISO 20022 messaging. Who maintains it, what it will and will not do, and how it is funded."
 keywords: "about AskISO, ISO 20022 open source, independent ISO 20022 tooling, AskISO maintainer"

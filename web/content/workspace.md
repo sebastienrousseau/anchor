@@ -1,6 +1,6 @@
 ---
 name: "AskISO"
-short_name: "AI"
+short_name: "AskISO"
 title: "Workspace — check an ISO 20022 message online"
 description: "Check ISO 20022 and SWIFT MT messages, identifiers, IBANs, BICs and UETRs. Every finding names its rule and path. Runs in your browser; nothing is uploaded."
 keywords: "ISO 20022 workspace, validate ISO 20022 online, MT to MX converter, IBAN checker, BIC checker, pacs.008 lint, ISO 20022 message lookup"

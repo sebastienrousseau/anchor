@@ -1,6 +1,6 @@
 ---
 name: "AskISO"
-short_name: "AI"
+short_name: "AskISO"
 title: "AskISO news and releases"
 description: "Release notes, changes that affect the messages you send, and where to follow along. Every release is published with what changed and why."
 keywords: "AskISO releases, ISO 20022 tooling news, AskISO changelog, November 2026 updates"

@@ -125,7 +125,7 @@ func writeIndex(reg *registry.Registry, outDir, date string) error {
 	var b strings.Builder
 	fmt.Fprintf(&b, "---\n")
 	fmt.Fprintf(&b, "name: %q\n", "AskISO")
-	fmt.Fprintf(&b, "short_name: %q\n", "AI")
+	fmt.Fprintf(&b, "short_name: %q\n", "AskISO")
 	fmt.Fprintf(&b, "title: %q\n", "ISO 20022 message reference")
 	fmt.Fprintf(&b, "description: %q\n",
 		fmt.Sprintf("Browse all %s ISO 20022 message definitions by business area: "+
@@ -286,7 +286,7 @@ func buildPage(reg *registry.Registry, m registry.Message, versions []string,
 	var b strings.Builder
 	fmt.Fprintf(&b, "---\n")
 	fmt.Fprintf(&b, "name: %q\n", "AskISO")
-	fmt.Fprintf(&b, "short_name: %q\n", "AI")
+	fmt.Fprintf(&b, "short_name: %q\n", "AskISO")
 	fmt.Fprintf(&b, "title: %q\n", title)
 	fmt.Fprintf(&b, "description: %q\n", desc)
 	fmt.Fprintf(&b, "keywords: %q\n", strings.Join([]string{

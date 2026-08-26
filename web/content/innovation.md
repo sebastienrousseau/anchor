@@ -1,6 +1,6 @@
 ---
 name: "AskISO"
-short_name: "AI"
+short_name: "AskISO"
 title: "What we are building — the AskISO roadmap"
 description: "The message families AskISO covers today, what is being built next, and the constraints that decide what gets built at all."
 keywords: "AskISO roadmap, ISO 20022 tooling roadmap, pacs.008 support, CBPR+ rule profiles, ISO 20022 open source development"

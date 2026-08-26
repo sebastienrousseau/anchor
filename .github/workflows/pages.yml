@@ -131,6 +131,12 @@ jobs:
         env:
           CHROME_PATH: /usr/bin/google-chrome
 
+      # Anything the browser complains about, on every page.
+      - name: Check the browser console
+        run: make web-console
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
       # The premise of the project is that it redistributes no specification
       # content. This is the gate that keeps that true rather than aspirational.
       - name: Verify no specification content is being published
