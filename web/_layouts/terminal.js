@@ -33,8 +33,13 @@
   "use strict";
 
   var CHAR_MS = 20; // per character of a typed command
-  var AFTER_COMMAND_MS = 260; // pause between the command and its output
-  var BETWEEN_MS = 420; // pause before the next command starts
+  // The pauses are dead time: nothing is being typed and nothing is being
+  // read, but the page is still visually settling, which is what Speed Index
+  // measures. Trimmed to the shortest that still reads as a beat between
+  // commands rather than as one continuous dump. The typing rate itself is
+  // unchanged, because that is the part anyone actually watches.
+  var AFTER_COMMAND_MS = 150; // pause between the command and its output
+  var BETWEEN_MS = 240; // pause before the next command starts
 
   function reduced() {
     return window.matchMedia &&
