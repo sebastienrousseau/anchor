@@ -1,17 +1,29 @@
 {{#extends "base"}}
 {{#block "main"}}
-<section class="hero" aria-labelledby="deadline-heading">
-  <div class="container stack">
-    <p class="eyebrow">{{eyebrow}}</p>
-    <h1 id="deadline-heading">{{headline}}</h1>
-    <p class="lead">{{lead}}</p>
+<section class="page-banner" aria-labelledby="deadline-heading">
+  {{#if banner}}
+  <img class="page-banner-image"
+       src="https://cloudcdn.pro/stocks/images/{{banner}}-1200.webp"
+       srcset="https://cloudcdn.pro/stocks/images/{{banner}}-640.webp 640w,
+               https://cloudcdn.pro/stocks/images/{{banner}}-1200.webp 1200w"
+       sizes="100vw"
+       width="1200" height="800"
+       alt="{{banner_alt}}"
+       fetchpriority="high" decoding="async" />
+  {{/if}}
+  <div class="page-banner-body">
+    <div class="container stack">
+      <p class="eyebrow">{{eyebrow}}</p>
+      <h1 id="deadline-heading">{{headline}}</h1>
+      <p class="lead">{{lead}}</p>
 
-    <!-- The number is filled in by deadline.js. The markup ships a correct
-         statement of the date so a reader without scripting sees the fact
-         rather than an empty box. -->
-    <div class="card metric" role="status">
-      <p class="metric-value"><span id="days-remaining">14 November 2026</span></p>
-      <p class="metric-title"><span id="days-label">is when unstructured addresses stop being accepted</span></p>
+      <!-- The number is filled in by deadline.js. The markup ships a correct
+           statement of the date so a reader without scripting sees the fact
+           rather than an empty box. -->
+      <div class="card metric banner-metric" role="status">
+        <p class="metric-value"><span id="days-remaining">14 November 2026</span></p>
+        <p class="metric-title"><span id="days-label">is when unstructured addresses stop being accepted</span></p>
+      </div>
     </div>
   </div>
 </section>

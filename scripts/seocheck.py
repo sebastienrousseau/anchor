@@ -37,6 +37,10 @@ def attr(markup: str, pattern: str) -> str | None:
 
 def check(path: Path, rel: str, referenced: set[str]) -> list[str]:
     page = path.read_text(encoding="utf-8", errors="replace")
+    # Comments are not rendered, so nothing in them is a defect. Without this a
+    # comment explaining why the banner <img> is preloaded was itself reported
+    # as an <img> with no alt text.
+    page = re.sub(r"<!--.*?-->", " ", page, flags=re.S)
     head = page[: page.find("</head>") if "</head>" in page else len(page)]
     problems = []
 

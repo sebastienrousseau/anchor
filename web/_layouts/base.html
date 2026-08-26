@@ -23,7 +23,7 @@
                object-src 'none';
                script-src 'self' 'wasm-unsafe-eval';
                style-src 'self';
-               img-src 'self' data:;
+               img-src 'self' data: https://cloudcdn.pro;
                font-src 'self';
                connect-src 'self';
                manifest-src 'self';
@@ -113,6 +113,23 @@
          transcripts, waits a round trip for the script, and then replaces them
          with taller terminals -- a layout shift that only appears over a real
          network, which is why it did not show up locally. -->
+    <!-- The banner is the largest thing on the page and therefore what Largest
+         Contentful Paint measures. Left to be discovered when the parser reaches
+         the <img>, it starts only after the stylesheets, and the whole page waits
+         on it. Preloading with the same srcset and sizes lets it begin with the
+         first bytes of the document and still pick the right candidate. -->
+    {{#if banner}}
+    <link rel="preload" as="image"
+          href="https://cloudcdn.pro/stocks/images/{{banner}}-1200.webp"
+          imagesrcset="https://cloudcdn.pro/stocks/images/{{banner}}-640.webp 640w,
+                       https://cloudcdn.pro/stocks/images/{{banner}}-1200.webp 1200w"
+          imagesizes="100vw"
+          fetchpriority="high" />
+    {{/if}}
+    <!-- Banner photography is served from the project's own CDN. Preconnect so
+         the first one does not pay for DNS and TLS before it can start. -->
+    <link rel="preconnect" href="https://cloudcdn.pro" crossorigin />
+    <link rel="dns-prefetch" href="https://cloudcdn.pro" />
     <link rel="preload" href="{{site_path}}terminal.js" as="script" />
     <script src="{{site_path}}theme-init.js"></script>
   </head>

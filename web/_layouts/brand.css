@@ -766,3 +766,186 @@ pre.highlight.language-console {
   border-radius: var(--radius-sm);
   overflow-x: auto;
 }
+
+/* ---------- page banner ---------- */
+
+/* A photograph behind the page title, with a scrim over it.
+
+   The scrim does the work. Photographs vary in brightness and colour; the
+   gradient does not, so the title has the same contrast whichever image sits
+   underneath, and the accent stays the loudest colour on the page rather than
+   competing with whatever the photograph happens to contain. */
+
+.page-banner {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  min-height: clamp(16rem, 34vw, 26rem);
+  /* No bottom margin: the section that follows brings its own block padding,
+     and stacking the two left a band of empty page between the masthead and
+     the first heading. */
+  margin-block-end: 0;
+  background: #05202a;
+  overflow: hidden;
+}
+
+.page-banner-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+
+/* Two layers: a vertical gradient that anchors the text, and a flat accent
+   wash that pulls any photograph towards the brand rather than away from it. */
+.page-banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(
+      100deg,
+      rgb(4 26 34 / 92%) 0%,
+      rgb(4 26 34 / 78%) 42%,
+      rgb(4 26 34 / 38%) 100%
+    ),
+    linear-gradient(rgb(11 107 128 / 22%), rgb(11 107 128 / 22%));
+}
+
+.page-banner-body {
+  align-self: end;
+  width: 100%;
+  padding-block: clamp(2rem, 5vw, 3.5rem);
+}
+
+/* Fixed light values, not tokens: the text sits on a dark scrim in both
+   themes, so it must not follow the page's ink colour into black. */
+.page-banner .eyebrow {
+  color: #7fdcec;
+}
+
+.page-banner h1 {
+  color: #f4fbfd;
+  max-width: 20ch;
+  margin-block: 0.4rem 0.7rem;
+}
+
+.page-banner .lead {
+  color: #cfe4ea;
+  max-width: 58ch;
+  margin: 0;
+}
+
+@media (max-width: 40rem) {
+  .page-banner {
+    min-height: 0;
+  }
+  .page-banner::before {
+    background: linear-gradient(rgb(4 26 34 / 88%), rgb(4 26 34 / 88%));
+  }
+}
+
+/* The countdown sits on the banner scrim, so it cannot use the card's own
+   surface colour without disappearing into it. */
+.page-banner .banner-metric {
+  background: rgb(4 26 34 / 55%);
+  border: 1px solid rgb(127 220 236 / 28%);
+  color: #f4fbfd;
+  margin-block-start: 0.75rem;
+  /* Laid out along the line rather than down it. `width: fit-content` on a
+     stack child shrank the card to the widest word, which set the label
+     one word per line. */
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  width: auto;
+  max-width: 32rem;
+  padding: 0.85rem 1.2rem;
+  text-align: left;
+}
+
+.page-banner .banner-metric .metric-value {
+  color: #7fdcec;
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.page-banner .banner-metric .metric-title {
+  color: #cfe4ea;
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+/* The banner is a masthead, not a cover: it should introduce the page, not
+   fill the screen before the page begins. */
+.page-banner {
+  min-height: clamp(14rem, 26vw, 20rem);
+}
+
+/* The section directly under a masthead starts closer to it. The full section
+   padding was designed to separate two bands of content, and after a banner it
+   read as the page having forgotten to begin. */
+.page-banner + .section {
+  padding-block-start: clamp(1.75rem, 3.5vw, 2.75rem);
+}
+
+/* Questions in the FAQ, and sub-headings generally, were set only slightly
+   larger than body text with no space above them, so a question read as a bold
+   sentence in the middle of a paragraph rather than as the start of an answer. */
+.prose h3 {
+  font-size: 1.22rem;
+  line-height: 1.3;
+  margin-block: 2rem 0.5rem;
+}
+
+.prose h2 + h3 {
+  margin-block-start: 1.25rem;
+}
+
+/* The home masthead is taller than the rest: it is the first thing anyone
+   sees, and it carries three calls to action rather than a lead alone. */
+.home-banner {
+  min-height: clamp(22rem, 44vw, 34rem);
+}
+
+.home-banner h1 {
+  max-width: 17ch;
+}
+
+.home-banner .cta-row {
+  margin-block-start: 1.4rem;
+}
+
+/* On the scrim the outline button needs its own border and ink; the token
+   versions are drawn for a light page. */
+.page-banner .btn-secondary,
+.page-banner .btn-outline {
+  border-color: rgb(207 228 234 / 45%);
+  color: #eaf6f9;
+  background: rgb(4 26 34 / 30%);
+}
+
+.page-banner .btn-secondary:hover,
+.page-banner .btn-outline:hover {
+  border-color: #7fdcec;
+  color: #ffffff;
+}
+
+/* deadline.js replaces the printed date with a day count once it knows today.
+   The two strings are different widths, so the card resized after first paint
+   and the banner shifted under the reader. Reserving the width means the swap
+   changes the text and nothing else. */
+.page-banner .banner-metric .metric-value {
+  min-width: 4.5ch;
+  display: inline-block;
+}
+
+.page-banner .banner-metric {
+  min-width: min(24rem, 100%);
+}

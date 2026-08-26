@@ -144,6 +144,9 @@ func writeIndex(reg *registry.Registry, outDir, date string) error {
 	fmt.Fprintf(&b, "form_origin: %q\n", "https://askiso.io")
 	fmt.Fprintf(&b, "news_publication_date: %q\n", date)
 	fmt.Fprintf(&b, "nav_messages: %q\n", "true")
+	fmt.Fprintf(&b, "banner: %q\n", "digital-constellation")
+	fmt.Fprintf(&b, "banner_alt: %q\n",
+		"A network of connected points, drawn in blue and cyan.")
 	fmt.Fprintf(&b, "eyebrow: %q\n", "Reference")
 	fmt.Fprintf(&b, "headline: %q\n", "Every ISO 20022 message")
 	fmt.Fprintf(&b, "lead: %q\n", fmt.Sprintf(
