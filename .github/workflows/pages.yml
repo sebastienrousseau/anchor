@@ -118,8 +118,16 @@ jobs:
       # sees, and one that shipped once.
       - name: Drive the interactive pages
         run: |
-          npm install --no-save puppeteer-core@23
+          npm install --no-save puppeteer-core@23 axe-core@4
           make web-interact
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
+      # WCAG 2.2 AA in a rendered page, both themes. The generator's checker
+      # reads the markup; contrast and focus order only exist once the cascade
+      # has resolved, and this is what WAVE and the other auditors are built on.
+      - name: Audit WCAG 2.2 AA with axe-core
+        run: make a11y-axe
         env:
           CHROME_PATH: /usr/bin/google-chrome
 

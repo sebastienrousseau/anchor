@@ -26,32 +26,31 @@
         </svg>
       </button>
 
-      <!-- Labels name what a visitor is trying to do, not what the page is
-           called internally. "Workspace" and "Playground" gave a first-time
-           visitor no way to tell which one to open; "Nov 2026" and
-           "Conformance" were insider shorthand for a deadline and for
-           evidence. -->
+      <!-- Five categories, not a list of pages.
+           
+           The nav was every page the site had, flat: Check a message, Message
+           reference, November 2026, Developers, FAQ, Why trust it, Contact.
+           That is a sitemap, and it grows by one every time a page is written.
+           A commercial site instead offers a small number of things a visitor
+           might want — what it does, where it is going, what has changed, who
+           is behind it — and lets each of those carry the pages beneath it.
+           The one action worth pulling out of that hierarchy sits beside it as
+           a button, because it is what most people came to do. -->
       <ul class="nav-menu" id="navMenu">
         <li>
-          <a class="nav-link" href="{{locale_path}}workspace/" {{#if nav_workspace}}aria-current="page"{{/if}}>Check a message</a>
+          <a class="nav-link" href="{{locale_path}}solutions/" {{#if nav_solutions}}aria-current="page"{{/if}}>Solutions</a>
         </li>
         <li>
-          <a class="nav-link" href="{{locale_path}}messages/" {{#if nav_messages}}aria-current="page"{{/if}}>Message reference</a>
+          <a class="nav-link" href="{{locale_path}}innovation/" {{#if nav_innovation}}aria-current="page"{{/if}}>Innovation</a>
         </li>
         <li>
-          <a class="nav-link" href="{{locale_path}}deadline/" {{#if nav_deadline}}aria-current="page"{{/if}}>November 2026</a>
+          <a class="nav-link" href="{{locale_path}}news/" {{#if nav_news}}aria-current="page"{{/if}}>News</a>
         </li>
         <li>
-          <a class="nav-link" href="{{locale_path}}docs/" {{#if nav_docs}}aria-current="page"{{/if}}>Developers</a>
+          <a class="nav-link" href="{{locale_path}}about/" {{#if nav_about}}aria-current="page"{{/if}}>About us</a>
         </li>
         <li>
-          <a class="nav-link" href="{{locale_path}}faq/" {{#if nav_faq}}aria-current="page"{{/if}}>FAQ</a>
-        </li>
-        <li>
-          <a class="nav-link" href="{{locale_path}}conformance/" {{#if nav_conformance}}aria-current="page"{{/if}}>Why trust it</a>
-        </li>
-        <li>
-          <a class="nav-link" href="{{locale_path}}contact/" {{#if nav_contact}}aria-current="page"{{/if}}>Contact</a>
+          <a class="nav-link nav-cta" href="{{locale_path}}workspace/" {{#if nav_workspace}}aria-current="page"{{/if}}>Check a message</a>
         </li>
       </ul>
 

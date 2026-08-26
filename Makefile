@@ -26,7 +26,7 @@ WASM_LDFLAGS = -s -w -X main.buildVersion=$(VERSION)
 # against regression rather than where it forces that work.
 COVERAGE_FLOOR = 95.5
 
-.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries readability a11y seo vuln clean run catalog-info web web-test web-interact web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
+.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries readability a11y seo vuln clean run catalog-info web web-test web-interact a11y-axe web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
 
 all: build
 
@@ -330,6 +330,28 @@ web-interact: web
 	 CHROME_PATH="$$chrome" ASKISO_BASE_URL=http://127.0.0.1:8899 node web/tests/interact.mjs; \
 	 status=$$?; \
 	 kill "$$(cat /tmp/askiso-interact.pid)" 2>/dev/null; rm -f /tmp/askiso-interact.pid; \
+	 exit $$status
+
+# WCAG 2.2 AA in a real browser, with axe-core. The generator's checker reads
+# the markup; this renders the page, which is the only way to see a contrast
+# failure, and it runs both themes because the palettes are independent.
+a11y-axe: web
+	@command -v node >/dev/null || { echo "node is required"; exit 1; }
+	@chrome="$${CHROME_PATH:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"; \
+	 if [ ! -x "$$chrome" ]; then chrome="$$(command -v google-chrome-stable || command -v google-chrome || true)"; fi; \
+	 if [ -z "$$chrome" ] || [ ! -x "$$chrome" ]; then \
+	   echo "a11y-axe: no Chrome found, skipping"; exit 0; \
+	 fi; \
+	 node -e "import('puppeteer-core')" >/dev/null 2>&1 || { \
+	   echo "a11y-axe: puppeteer-core is not installed, skipping"; exit 0; }; \
+	 test -f node_modules/axe-core/axe.min.js || { \
+	   echo "a11y-axe: axe-core is not installed, skipping"; \
+	   echo "  install both with: npm install --no-save puppeteer-core axe-core"; exit 0; }; \
+	 (cd $(WEB_OUT) && python3 -m http.server 8899 >/dev/null 2>&1 & echo $$! > /tmp/askiso-axe.pid); \
+	 sleep 2; \
+	 CHROME_PATH="$$chrome" ASKISO_BASE_URL=http://127.0.0.1:8899 node web/tests/a11y.mjs; \
+	 status=$$?; \
+	 kill "$$(cat /tmp/askiso-axe.pid)" 2>/dev/null; rm -f /tmp/askiso-axe.pid; \
 	 exit $$status
 
 web-serve: web

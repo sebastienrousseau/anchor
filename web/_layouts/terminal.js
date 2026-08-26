@@ -101,7 +101,12 @@
     screen.setAttribute("aria-hidden", "true");
 
     var transcript = document.createElement("pre");
-    transcript.className = "visually-hidden";
+    // Its own class as well as the utility one. The utility lives in a layer,
+    // and something unlayered was winning the box back: the transcript kept a
+    // pre's padding and overflow, which made it a scrollable region with no
+    // keyboard access — a WCAG 2.2 AA failure axe reports as serious, on every
+    // page carrying a session.
+    transcript.className = "visually-hidden terminal-transcript";
     transcript.textContent = text;
 
     var steps = session ? parse(text) : parseCommands(text);

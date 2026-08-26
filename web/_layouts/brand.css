@@ -551,8 +551,14 @@ h3 {
 
 /* The block sits on its own dark ground regardless of theme: a terminal that
    turns white in light mode stops reading as a terminal. */
-.terminal pre,
-.terminal pre.highlight {
+/* Not the transcript. It is the accessible text behind the animation, sized to
+   a single pixel and hidden; giving it a terminal's padding and horizontal
+   overflow turned it into a scroll region with no keyboard access, which
+   axe-core reports as a serious AA failure on every page carrying a session.
+   This selector is more specific than the transcript's own class, so excluding
+   it here is what actually settles the cascade. */
+.terminal pre:not(.terminal-transcript),
+.terminal pre.highlight:not(.terminal-transcript) {
   margin: 0;
   border: 0;
   border-radius: 0;
@@ -1238,4 +1244,50 @@ pre.highlight.language-console {
 .grid .card > p:last-child {
   margin-block-start: auto;
   padding-block-start: 0.75rem;
+}
+
+/* The one action in the navigation, distinguished from the four categories
+   beside it. It is what most visitors came to do, and a link that looks like
+   its neighbours does not read as a thing you can press. */
+.nav-cta {
+  background: var(--accent);
+  color: var(--accent-ink, #fff);
+  border-radius: 999px;
+  padding-inline: 0.95rem;
+  padding-block: 0.4rem;
+  font-weight: 600;
+}
+
+.nav-cta:hover,
+.nav-cta:focus-visible {
+  filter: brightness(1.08);
+  color: var(--accent-ink, #fff);
+}
+
+/* The underline the other links carry would sit under a filled pill. */
+.nav-cta[aria-current="page"] {
+  text-decoration: none;
+}
+
+/* The replayed session's transcript: the accessible text behind the animation.
+
+   It must be reachable by a screen reader and invisible to everyone else, and
+   it must not become a scroll region. A `pre` scrolls horizontally by design,
+   and a scrollable region a keyboard user cannot focus holds content they
+   cannot reach — which is what axe-core reports, correctly, as a serious AA
+   failure. Unlayered, so nothing else can win the box back. */
+/* Specific enough to win outright. Several unlayered rules address `.prose pre`
+   and `.terminal pre` at two components each, and a single class loses to all
+   of them; excluding the transcript from each in turn would mean revisiting
+   this every time another `pre` rule is written. */
+.terminal pre.terminal-transcript {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
