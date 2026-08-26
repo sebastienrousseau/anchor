@@ -615,7 +615,11 @@ h3 {
   color: #9fb4bd;
   opacity: 0;
   transform: translateY(2px);
-  margin: 0.15rem 0 0.85rem;
+  /* Each output block adds this to the terminal's height and nothing to the
+     transcript it replaces, so on a session with several commands the margins
+     were most of the remaining difference between the two boxes. Trimmed to
+     the least that still separates an output from the command after it. */
+  margin: 0.1rem 0 0.5rem;
 }
 
 .term-out.is-shown {
@@ -749,8 +753,11 @@ h3 {
    It also means the fallback looks deliberate rather than like an unstyled
    remnant, which is what somebody with JavaScript off actually sees. */
 
-pre.language-bash,
-pre.language-console {
+/* .highlight is on the same element, and ssg's highlight.css sets pre.highlight
+   with the same specificity but loads later, so it won. Naming both classes
+   raises the specificity enough to take the padding back. */
+pre.highlight.language-bash,
+pre.highlight.language-console {
   font-family: var(--font-mono);
   font-size: 0.86rem;
   line-height: 1.6;
