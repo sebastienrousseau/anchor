@@ -106,13 +106,19 @@ sboms:
 #   cosign verify-blob --signature <artifact>.sig --certificate <artifact>.pem \
 #     --certificate-identity-regexp 'https://github.com/sebastienrousseau/askiso/.*' \
 #     --certificate-oidc-issuer https://token.actions.githubusercontent.com <artifact>
+# Sigstore keyless signing over the checksum file, which transitively covers
+# every artifact listed in it.
+#
+# cosign now defaults to the Sigstore bundle format: --output-signature and
+# --output-certificate are accepted but ignored, and it writes to --bundle
+# instead. Passing the old flags without --bundle made it try to create a
+# bundle at the empty path and fail after every binary had already been built.
 signs:
   - cmd: cosign
-    certificate: '${artifact}.pem'
+    signature: '${artifact}.sigstore.json'
     args:
       - sign-blob
-      - '--output-certificate=${certificate}'
-      - '--output-signature=${signature}'
+      - '--bundle=${signature}'
       - '${artifact}'
       - '--yes'
     artifacts: checksum
@@ -197,11 +203,13 @@ release:
 
     ```
     cosign verify-blob checksums.txt \
-      --signature checksums.txt.sig \
-      --certificate checksums.txt.pem \
+      --bundle checksums.txt.sigstore.json \
       --certificate-identity-regexp 'https://github.com/sebastienrousseau/askiso/.*' \
       --certificate-oidc-issuer https://token.actions.githubusercontent.com
     ```
+
+    The bundle carries both the signature and the certificate; it replaces the
+    separate `.sig` and `.pem` files that older cosign releases produced.
 
     ## What is in the archive
 
