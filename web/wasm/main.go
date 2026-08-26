@@ -31,6 +31,7 @@ func main() {
 		"validate":   js.FuncOf(validate),
 		"profiles":   js.FuncOf(listProfiles),
 		"checkRules": js.FuncOf(checkRules),
+		"sarif":      js.FuncOf(sarif),
 		"addresses":  js.FuncOf(addresses),
 		"generate":   js.FuncOf(generate),
 		"toJSON":     js.FuncOf(toJSON),
@@ -84,10 +85,17 @@ func arg(args []js.Value, i int) string {
 	return args[i].String()
 }
 
+// buildVersion is stamped by the Makefile. It matters beyond vanity: a report
+// downloaded from the site names the engine that produced it, and a finding
+// nobody can reproduce against a known version is a finding nobody can argue
+// with.
+var buildVersion = "dev"
+
 func version(this js.Value, args []js.Value) any {
 	return ok(map[string]any{
-		"mode": "light",
-		"note": "Runs entirely in your browser. Nothing is uploaded.",
+		"version": buildVersion,
+		"mode":    "light",
+		"note":    "Runs entirely in your browser. Nothing is uploaded.",
 	})
 }
 
@@ -195,6 +203,35 @@ func checkRules(this js.Value, args []js.Value) any {
 		return fail(err.Error())
 	}
 	return ok(res)
+}
+
+// sarif runs a profile and returns the SARIF 2.1.0 log for it, so a finding
+// seen in the browser can be attached to a pipeline unchanged. It is a separate
+// entry point rather than a field on checkRules because most callers want the
+// findings, not the report, and rendering one costs nothing until it is asked
+// for.
+func sarif(this js.Value, args []js.Value) any {
+	payload := arg(args, 0)
+	if strings.TrimSpace(payload) == "" {
+		return fail("paste an ISO 20022 XML message to check")
+	}
+	profile := arg(args, 1)
+	if profile == "" {
+		profile = "cbpr-2026"
+	}
+	name := arg(args, 2)
+	if name == "" {
+		name = "message.xml"
+	}
+	res, err := iso20022.CheckProfile([]byte(payload), profile, name)
+	if err != nil {
+		return fail(err.Error())
+	}
+	log, err := iso20022.SARIF(res)
+	if err != nil {
+		return fail(err.Error())
+	}
+	return ok(log)
 }
 
 // addresses classifies every postal address in a message.

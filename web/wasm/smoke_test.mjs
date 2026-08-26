@@ -56,7 +56,7 @@ check("global askiso object exists", typeof A === "object");
 const expected = [
   "checkBIC", "checkIBAN", "checkUETR", "codes", "diagram", "generate",
   "info", "lifecycle", "lint", "search", "sets", "stats", "toJSON",
-  "addresses", "checkRules", "profiles", "translate", "validate", "version",
+  "addresses", "checkRules", "profiles", "sarif", "translate", "validate", "version",
 ];
 const missing = expected.filter((k) => typeof A?.[k] !== "function");
 check(`all ${expected.length} API functions exported`, missing.length === 0, `missing: ${missing}`);
@@ -283,6 +283,123 @@ check("non-v4 UUID rejected", !A.checkUETR("e1b2c3d4-5678-1abc-8def-1234567890ab
 check("empty search is a friendly error", !A.search("").ok);
 check("empty lint is a friendly error", !A.lint("", "x.xml").ok);
 check("malformed XML is a friendly error", !A.lint("<not xml", "x.xml").ok);
+
+// The version is stamped by the Makefile. An unstamped build still works, but
+// every report it produces is unattributable, so the smoke test catches a
+// wasm target that has quietly lost its -ldflags.
+const ver = A.version();
+check("version reports a build version", ver.ok && typeof ver.data.version === "string" && ver.data.version !== "",
+  JSON.stringify(ver.data));
+check("version is stamped, not the 'dev' default", ver.data?.version !== "dev", ver.data?.version);
+check("version still states nothing is uploaded", (ver.data?.note || "").includes("Nothing is uploaded"));
+
+// --- SARIF -------------------------------------------------------------------
+//
+// The website offers this file as a download and says it is the report a
+// pipeline can ingest. That is only true if it is actually SARIF, so the shape
+// is checked rather than assumed.
+const ADDR_MSG = `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.10">
+  <FIToFICstmrCdtTrf><GrpHdr><MsgId>MSG-1</MsgId></GrpHdr>
+    <CdtTrfTxInf><IntrBkSttlmAmt Ccy="EUR">1000.00</IntrBkSttlmAmt>
+      <Cdtr><Nm>Beispiel GmbH</Nm>
+        <PstlAdr><AdrLine>Musterstrasse 1</AdrLine><AdrLine>Berlin</AdrLine></PstlAdr>
+      </Cdtr></CdtTrfTxInf></FIToFICstmrCdtTrf></Document>`;
+
+const sarifRes = A.sarif(ADDR_MSG, "cbpr-2026");
+check("sarif returns a report", sarifRes.ok, sarifRes.error);
+
+let sarifDoc = null;
+try {
+  sarifDoc = JSON.parse(sarifRes.data);
+} catch (e) {
+  check("sarif output is JSON", false, e.message);
+}
+
+if (sarifDoc) {
+  check("sarif declares version 2.1.0", sarifDoc.version === "2.1.0", sarifDoc.version);
+  check("sarif names askiso as the driver",
+    sarifDoc.runs?.[0]?.tool?.driver?.name === "askiso");
+
+  const sarifResults = sarifDoc.runs?.[0]?.results ?? [];
+  check("sarif carries the findings", sarifResults.length > 0);
+
+  // A ruleId with no matching rule in the driver renders as a bare string in
+  // every viewer that reads these files, so the two must agree.
+  const described = new Set((sarifDoc.runs?.[0]?.tool?.driver?.rules ?? []).map((r) => r.id));
+  check("every sarif result cites a described rule",
+    sarifResults.every((r) => r.ruleId && described.has(r.ruleId)),
+    sarifResults.map((r) => r.ruleId).join(", "));
+
+  // The XPath is the citation. Losing it would leave a finding that names a
+  // rule but not the place it fired -- unactionable, and not obviously broken.
+  check("sarif keeps the path to each finding",
+    sarifResults.every((r) =>
+      r.locations?.[0]?.logicalLocations?.[0]?.fullyQualifiedName?.startsWith("/Document")),
+    JSON.stringify(sarifResults[0]?.locations ?? null));
+
+  // The finding count must match what checkRules reports. A report that drops
+  // one is worse than no report.
+  const viaRules = A.checkRules(ADDR_MSG, "cbpr-2026");
+  check("sarif result count matches checkRules",
+    viaRules.ok && viaRules.data.findings.length === sarifResults.length,
+    `${viaRules.data?.findings?.length} findings vs ${sarifResults.length} results`);
+}
+
+check("sarif on an empty message is a friendly error", !A.sarif("").ok);
+
+// --- evidence pack -----------------------------------------------------------
+//
+// The pack is what somebody pastes into a ticket, so the wording is the
+// feature. In particular it has to say when schema validation did NOT run:
+// "clean" without a catalogue means "nothing contradicted it".
+new Function(
+  fs.readFileSync(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "_layouts", "evidence.js"),
+    "utf8",
+  ),
+)();
+
+const E = globalThis.askisoEvidence;
+check("evidence module loads", typeof E?.pack === "function");
+
+if (typeof E?.pack === "function") {
+  const rulesRes = A.checkRules(ADDR_MSG, "cbpr-2026");
+  const run = {
+    messageID: "pacs.008.001.10",
+    profile: rulesRes.data.profile,
+    checked: rulesRes.data.rules_checked,
+    skipped: rulesRes.data.rules_skipped,
+    issues: [],
+    rules: rulesRes.data.findings,
+  };
+
+  const md = E.pack(run, "0.0.1", false);
+  check("pack names the message", md.includes("pacs.008.001.10"));
+  check("pack names the profile", md.includes(rulesRes.data.profile));
+  check("pack states the message was not uploaded", md.includes("not uploaded"));
+  check("pack warns that schema validation did not run",
+    md.includes("Schema validation: NOT run"));
+  check("pack cites every rule identifier",
+    rulesRes.data.findings.every((f) => md.includes(f.rule_id)),
+    md.slice(0, 400));
+  check("pack cites every path",
+    rulesRes.data.findings.every((f) => !f.path || md.includes(f.path)));
+  check("pack carries the remediation",
+    rulesRes.data.findings.every((f) => !f.remediation || md.includes(f.remediation)));
+
+  const withCat = E.pack(run, "0.0.1", true);
+  check("pack reports schema validation when a catalogue is open",
+    withCat.includes("run against the catalogue") && !withCat.includes("NOT run"));
+
+  const clean = E.pack(
+    { messageID: "pacs.008.001.10", profile: "cbpr-2026", issues: [], rules: [] },
+    "0.0.1",
+    true,
+  );
+  check("a clean run still produces a pack", clean.includes("No findings"));
+  check("a clean pack does not claim findings", !clean.includes("finding(s)"));
+}
 
 console.log(failures === 0 ? "\nall checks passed" : `\n${failures} check(s) failed`);
 process.exit(failures === 0 ? 0 : 1);

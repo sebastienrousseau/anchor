@@ -1,0 +1,66 @@
+{{#extends "base"}}
+{{#block "main"}}
+<section class="hero ws-hero" aria-labelledby="ws-heading">
+  <div class="container stack">
+    <p class="eyebrow">{{eyebrow}}</p>
+    <h1 id="ws-heading">{{headline}}</h1>
+    <p class="lead">{{lead}}</p>
+    <p class="ws-status" id="ws-status" role="status">Loading the engine…</p>
+  </div>
+</section>
+
+<div class="workspace">
+  <div class="ws-grid">
+
+    <!-- Sources: what an answer is grounded in. Naming them is what makes the
+         no-redistribution model legible — the visitor sees their own files
+         listed, not ours. -->
+    <aside class="ws-col ws-col-sources" aria-labelledby="ws-sources-h">
+      <h2 id="ws-sources-h" class="ws-col-title">Sources</h2>
+      <div id="ws-sources"></div>
+      <p class="ws-note">
+        Schema validation reads the catalogue you downloaded from
+        <a href="https://www.iso20022.org/" rel="noopener">iso20022.org</a>.
+        Choose it on the <a href="{{locale_path}}playground/">playground</a>.
+      </p>
+    </aside>
+
+    <!-- Ask: one input, dispatched by what it is. -->
+    <section class="ws-col ws-col-ask" aria-labelledby="ws-ask-h">
+      <h2 id="ws-ask-h" class="ws-col-title">Ask</h2>
+
+      <label class="sr" for="ws-input">A message, a message identifier, or a question</label>
+      <textarea id="ws-input" spellcheck="false" rows="6"
+        placeholder="Paste an ISO 20022 message or a SWIFT MT message. Or type pacs.008, an IBAN, a BIC, or what you are looking for."></textarea>
+
+      <p class="ws-intent" id="ws-intent" aria-live="polite"></p>
+
+      <div class="row">
+        <button class="act" id="ws-go" type="button">Ask</button>
+        <button class="act ghost" type="button" data-ws-example="pacs.008">pacs.008</button>
+        <button class="act ghost" type="button" data-ws-example="GB29NWBK60161331926819">An IBAN</button>
+        <button class="act ghost" type="button" data-ws-example="structured address">A question</button>
+      </div>
+
+      <div class="ws-answer" id="ws-answer" aria-live="polite">
+        <p class="ws-note">Answers appear here. Every finding names the rule it
+        came from and the path in the document, so it can be checked rather
+        than taken on trust.</p>
+      </div>
+    </section>
+
+    <!-- Studio: what leaves the page. -->
+    <aside class="ws-col ws-col-studio" aria-labelledby="ws-studio-h">
+      <h2 id="ws-studio-h" class="ws-col-title">Studio</h2>
+      <div id="ws-studio"></div>
+    </aside>
+
+  </div>
+</div>
+
+<script src="{{site_path}}wasm_exec.js"></script>
+<script src="{{site_path}}catalogue.js" defer></script>
+<script src="{{site_path}}evidence.js" defer></script>
+<script src="{{site_path}}workspace.js" defer></script>
+<script src="{{site_path}}workspace-boot.js" defer></script>
+{{/block}}

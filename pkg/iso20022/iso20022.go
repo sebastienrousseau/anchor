@@ -684,6 +684,22 @@ func CheckProfile(instance []byte, profile, filename string) (*RuleResult, error
 	return rules.Run(p, root, msgID, filename), nil
 }
 
+// SARIF renders rule results as a SARIF 2.1.0 log.
+//
+// SARIF is what a code-scanning pipeline reads, so this is the shape a rule
+// finding takes when it leaves AskIso for GitHub, GitLab or a build server.
+// The browser build calls it too, through the same code, so a report downloaded
+// from the website matches `askiso lint --format sarif` on the same message --
+// byte for byte, apart from the artifact URI, which names whatever file the
+// caller passed.
+func SARIF(results ...*RuleResult) (string, error) {
+	var buf bytes.Buffer
+	if err := rules.WriteSARIF(&buf, results...); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
 // ClassifyAddresses reports the shape of every postal address in a message,
 // which is the question the November 2026 CBPR+ change turns on.
 func ClassifyAddresses(instance []byte) (map[string]string, error) {
