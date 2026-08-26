@@ -26,7 +26,7 @@ WASM_LDFLAGS = -s -w -X main.buildVersion=$(VERSION)
 # against regression rather than where it forces that work.
 COVERAGE_FLOOR = 95.5
 
-.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries readability seo vuln clean run catalog-info web web-test web-interact web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
+.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries readability a11y seo vuln clean run catalog-info web web-test web-interact web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
 
 all: build
 
@@ -108,6 +108,20 @@ COVERPKG = $(shell go list ./... | grep -v '/examples' | paste -sd, -)
 readability:
 	@command -v python3 >/dev/null || { echo "python3 is required"; exit 1; }
 	python3 scripts/readability.py $(WEB_OUT)
+
+# The accessibility gate existed only in CI, so a regression was not visible
+# until after a push. `make web` prints the plugin's summary, but a line of build
+# output scrolling past is not a gate — this reads the report and fails on it,
+# the same way the workflow does.
+a11y:
+	@test -f $(WEB_OUT)/accessibility-report.json || { \
+	  echo "no accessibility report; run make web first"; exit 1; }
+	@python3 -c "import json,sys; \
+r=json.load(open('$(WEB_OUT)/accessibility-report.json')); \
+n=r.get('total_issues',0); \
+print(f\"WCAG {r.get('wcag_version')}: {r.get('pages_scanned')} page(s), {n} issue(s)\"); \
+[print('  ', p['path'], i['criterion'], i['message']) for p in r.get('pages',[])[:10] for i in p.get('issues',[])[:2]]; \
+sys.exit(1 if n else 0)"
 
 # Search defects are easy to ship and hard to notice: a social image that was
 # never built, a description the results truncate, two pages competing under one

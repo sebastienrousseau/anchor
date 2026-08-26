@@ -115,8 +115,8 @@
          network, which is why it did not show up locally. -->
     <!-- The banner is the largest thing on the page and therefore what Largest
          Contentful Paint measures. Left to be discovered when the parser reaches
-         the <img>, it starts only after the stylesheets, and the whole page waits
-         on it. Preloading with the same srcset and sizes lets it begin with the
+         the image element, it starts only after the stylesheets, and the whole
+         page waits on it. Preloading with the same srcset and sizes lets it begin with the
          first bytes of the document and still pick the right candidate. -->
     {{#if banner}}
     <link rel="preload" as="image"
