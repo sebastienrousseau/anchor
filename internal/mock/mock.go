@@ -131,7 +131,7 @@ func (s *Server) Shutdown(ctx context.Context) error { return s.Srv.Shutdown(ctx
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":   "UP",
-		"service":  "AskIso ISO 20022 Mock Clearing Rail",
+		"service":  "AskISO ISO 20022 Mock Clearing Rail",
 		"scenario": scenarioName(s.scenario),
 		"time":     time.Now().UTC().Format(time.RFC3339),
 	})

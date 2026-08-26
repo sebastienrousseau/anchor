@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Command askiso-mcp serves AskIso over the Model Context Protocol.
+// Command askiso-mcp serves AskISO over the Model Context Protocol.
 //
 // It speaks newline-delimited JSON-RPC 2.0 on stdin and stdout, which is what
 // the protocol's stdio transport specifies. Point an MCP client at this binary:
@@ -44,7 +44,7 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	listTools := fs.Bool("tools", false, "list the tools this server exposes and exit")
 
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, `askiso-mcp serves AskIso over the Model Context Protocol.
+		_, _ = fmt.Fprintf(stderr, `askiso-mcp serves AskISO over the Model Context Protocol.
 
 It reads JSON-RPC requests from stdin and writes replies to stdout, one per
 line. Run it from an MCP client rather than by hand.

@@ -39,7 +39,7 @@ var askCmd = &cobra.Command{
 	Use:     "ask [prompt]",
 	Aliases: []string{"chat", "a"},
 	Short:   "Ask the ISO 20022 AI Assistant a question or enter interactive REPL",
-	Long: `AskIso provides an interactive REPL and CLI interface for querying the 
+	Long: `AskISO provides an interactive REPL and CLI interface for querying the 
 ISO 20022 knowledge base, comparing messages, inspecting schemas, and interacting
 with local or connected AI models.`,
 	RunE: runAsk,
@@ -91,7 +91,7 @@ func runAsk(cmd *cobra.Command, args []string) error {
 	if !quiet {
 		fmt.Print(tui.GetStyledLogo())
 	}
-	fmt.Println(lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22D3EE")).Render("=== AskIso Ask AI (REPL) ==="))
+	fmt.Println(lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22D3EE")).Render("=== AskISO Ask AI (REPL) ==="))
 	fmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color("244")).Render("Type your question in natural language (e.g. 'what is pacs008', 'compare pacs.008 vs pacs.009')."))
 	fmt.Println(lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("Commands: /help, /info <id>, /xml <id>, /xsd <id>, /clear, /exit"))
 	fmt.Println()
@@ -112,7 +112,7 @@ func askLoop(eng *ai.Engine, idx *catalog.Index, in io.Reader, suggestions []str
 
 	for {
 		bar := lipgloss.NewStyle().Foreground(lipgloss.Color("#06B6D4")).Render("┃")
-		promptLabel := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22D3EE")).Render("AskIso > ")
+		promptLabel := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22D3EE")).Render("AskISO > ")
 		fmt.Print(" " + bar + "  " + promptLabel)
 
 		if !scanner.Scan() {

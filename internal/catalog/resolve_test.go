@@ -92,7 +92,7 @@ func TestResolveIgnoresBadEnvAndKeepsSearching(t *testing.T) {
 	// DefaultDir appends "askiso/catalog", so XDG_DATA_HOME is two levels up.
 	t.Setenv("XDG_DATA_HOME", filepath.Dir(filepath.Dir(root)))
 
-	// AskIso is a source checkout with no catalogue, so the cwd walk-up cannot
+	// AskISO is a source checkout with no catalogue, so the cwd walk-up cannot
 	// mask a failure to consult XDG_DATA_HOME.
 	got, err := Resolve("")
 	if err != nil {

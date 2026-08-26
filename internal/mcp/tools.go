@@ -235,7 +235,7 @@ func infoTool(open CatalogueFunc) Tool {
 	return Tool{
 		Name:  "askiso_info",
 		Title: "Look up one message definition",
-		Description: "Return everything AskIso knows about one message identifier: its name, " +
+		Description: "Return everything AskISO knows about one message identifier: its name, " +
 			"the message sets that publish it, the download location at the Registration " +
 			"Authority, and whether the schema is installed locally.",
 		Schema: object(map[string]any{
@@ -256,7 +256,7 @@ func lintTool() Tool {
 	return Tool{
 		Name:  "askiso_lint",
 		Title: "Check a message's business rules",
-		Description: "Run AskIso's semantic linter over an ISO 20022 XML message. It verifies " +
+		Description: "Run AskISO's semantic linter over an ISO 20022 XML message. It verifies " +
 			"IBAN mod-97 checksums, BIC structure against ISO 9362, currency precision " +
 			"against ISO 4217, UETR format against RFC 4122, and date sanity. " +
 			"Call this before telling anyone a message is correct; it needs no schemas.",
@@ -472,7 +472,7 @@ func codeTool(open CatalogueFunc) Tool {
 		Name:  "askiso_code",
 		Title: "Look up an ISO 20022 code",
 		Description: "Look up a code such as AC04 or SALA: what it means, which set it belongs " +
-			"to, and which messages use it. Codes come from AskIso's curated dictionary, from " +
+			"to, and which messages use it. Codes come from AskISO's curated dictionary, from " +
 			"the enumerations in the user's own schemas, and from the Registration Authority's " +
 			"external code set publication where the user has imported one.",
 		Schema: object(map[string]any{

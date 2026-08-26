@@ -42,7 +42,7 @@ from templates with rail-aware defaults, so a payment comes out looking like a
 payment: real parties, a real amount, the right clearing system for the preset.
 Those need no catalogue.
 
-Every other message is built from its schema. AskIso walks the XSD, emits every
+Every other message is built from its schema. AskISO walks the XSD, emits every
 mandatory element in the order the content model declares, takes the first
 branch of each choice, and generates values that satisfy the type -- codes from
 enumerations, strings that match their patterns, numbers within their digit

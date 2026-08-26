@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Package registry holds AskIso's embedded knowledge of the ISO 20022 message
+// Package registry holds AskISO's embedded knowledge of the ISO 20022 message
 // catalogue: which message identifiers exist, which message set publishes each
 // one, and where the Registration Authority hosts the download.
 //
-// It contains no schema, report, or specification text. That means AskIso's
+// It contains no schema, report, or specification text. That means AskISO's
 // search, lookup, and guidance work with no setup at all, while anything
 // needing the actual XSDs uses a catalogue the user supplies.
 //
@@ -53,7 +53,7 @@ type Set struct {
 	URL string `json:"url"`
 }
 
-// DownloadURL is where the RA hosts this set. AskIso never mirrors it.
+// DownloadURL is where the RA hosts this set. AskISO never mirrors it.
 func (s Set) DownloadURL() string {
 	return "https://www.iso20022.org/message-set/" + s.ID + "/download"
 }

@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-// Uses a fixture rather than an installed catalogue: AskIso no longer ships one,
+// Uses a fixture rather than an installed catalogue: AskISO no longer ships one,
 // and a test that silently depends on the developer's own copy is a test that
 // passes for the wrong reason.
 func TestCatalogLoadAndSearch(t *testing.T) {

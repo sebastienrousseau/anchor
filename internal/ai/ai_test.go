@@ -35,7 +35,7 @@ func TestAIEngine(t *testing.T) {
 	}
 }
 
-// fixtureIndex builds a small in-memory catalogue. AskIso no longer ships
+// fixtureIndex builds a small in-memory catalogue. AskISO no longer ships
 // specifications, so tests must not depend on one being installed.
 func fixtureIndex(t *testing.T) *catalog.Index {
 	t.Helper()

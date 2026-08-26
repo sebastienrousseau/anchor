@@ -83,7 +83,7 @@ func (e *Engine) Query(prompt string) MessageAnswer {
 	rawPrompt := strings.TrimSpace(prompt)
 	if rawPrompt == "" {
 		return MessageAnswer{
-			Summary: "AskIso Ask AI",
+			Summary: "AskISO Ask AI",
 			Details: "Please enter a question, message identifier (e.g. `pacs008`, `pain001`, `camt053`), or business topic.",
 			Suggestions: []string{
 				"What is pacs.008?",
@@ -100,7 +100,7 @@ func (e *Engine) Query(prompt string) MessageAnswer {
 	// 1. Check for external / local LLMs (OpenAI / Ollama / Gemini / Claude)
 	if llmResp, ok := e.queryExternalLLM(rawPrompt); ok && len(llmResp) > 15 {
 		return MessageAnswer{
-			Summary: "AskIso Ask AI (Connected LLM)",
+			Summary: "AskISO Ask AI (Connected LLM)",
 			Details: llmResp,
 		}
 	}
@@ -440,7 +440,7 @@ The **Business Application Header (BAH)** is a standardized header defined in ` 
 
 	// 7. General Knowledge Assistant Help
 	return MessageAnswer{
-		Summary: "AskIso Ask AI — ISO 20022 Assistant",
+		Summary: "AskISO Ask AI — ISO 20022 Assistant",
 		Details: fmt.Sprintf("I could not find a specific message matching **%q**.\n\n"+
 			"**Try asking:**\n"+
 			"- **By Code**: `pacs.008`, `pain.001`, `camt.053`, `seev.031`, `head.001`\n"+
@@ -547,7 +547,7 @@ func (e *Engine) callOpenAI(apiKey, baseURL, prompt string) (string, bool) {
 	payload := map[string]interface{}{
 		"model": "gpt-4o-mini",
 		"messages": []map[string]string{
-			{"role": "system", "content": "You are AskIso Ask AI, an expert ISO 20022 financial messaging assistant. Answer accurately with clear markdown formatting."},
+			{"role": "system", "content": "You are AskISO Ask AI, an expert ISO 20022 financial messaging assistant. Answer accurately with clear markdown formatting."},
 			{"role": "user", "content": prompt},
 		},
 		"temperature": 0.2,

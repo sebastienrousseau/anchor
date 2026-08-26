@@ -3,7 +3,7 @@
 
 //go:build js && wasm
 
-// Command askiso-wasm exposes AskIso's core to the browser.
+// Command askiso-wasm exposes AskISO's core to the browser.
 //
 // It is the same pkg/iso20022 the CLI uses, compiled to WebAssembly, so a
 // message linted on the website gets the identical verdict to one linted in a
@@ -143,7 +143,7 @@ func lint(this js.Value, args []js.Value) any {
 	return ok(res)
 }
 
-// validate checks a pasted message against a pasted schema. AskIso ships no
+// validate checks a pasted message against a pasted schema. AskISO ships no
 // specification content, so the browser can only validate against an XSD the
 // user supplies -- downloaded from iso20022.org and dropped in alongside.
 func validate(this js.Value, args []js.Value) any {

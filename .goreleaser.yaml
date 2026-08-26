@@ -118,7 +118,7 @@ signs:
     artifacts: checksum
     output: true
 
-# Linux packages. A payments team running AskIso in a pipeline installs from a
+# Linux packages. A payments team running AskISO in a pipeline installs from a
 # package manager, not by unpacking a tarball into /usr/local/bin.
 nfpms:
   - id: askiso
@@ -162,7 +162,7 @@ homebrew_casks:
       - askiso-mcp
       - askiso-lsp
     caveats: |
-      AskIso ships no ISO 20022 specification content. Download the message sets
+      AskISO ships no ISO 20022 specification content. Download the message sets
       you need from https://www.iso20022.org/ then:
 
         askiso catalog add <downloaded.zip>
@@ -198,5 +198,5 @@ release:
     ## What is in the archive
 
     `askiso` (CLI and TUI), `askiso-mcp` (Model Context Protocol server) and
-    `askiso-lsp` (language server). AskIso redistributes no ISO 20022
+    `askiso-lsp` (language server). AskISO redistributes no ISO 20022
     specification content.

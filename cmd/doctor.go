@@ -19,12 +19,12 @@ import (
 var doctorCmd = &cobra.Command{
 	Use:   "doctor",
 	Short: "Run system diagnostics, catalog health checks, and toolchain verification",
-	Long: `Doctor performs a comprehensive diagnostic audit of AskIso including 
+	Long: `Doctor performs a comprehensive diagnostic audit of AskISO including 
 catalog index integrity, binary cache status, system toolchain dependencies 
 (xmllint, clipboard), and local AI LLM connectivity.`,
 	Example: `  askiso doctor`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		fmt.Printf("\n%s AskIso Environment & System Diagnostics\n\n", headStyle.Render(" ASKISO DOCTOR "))
+		fmt.Printf("\n%s AskISO Environment & System Diagnostics\n\n", headStyle.Render(" ASKISO DOCTOR "))
 
 		var problems int
 

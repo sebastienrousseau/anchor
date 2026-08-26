@@ -1,8 +1,8 @@
 ---
-name: "AskIso"
+name: "AskISO"
 short_name: "AI"
 title: "The 14 November 2026 structured address mandate — what it requires and how to check"
-description: "From 14 November 2026, CBPR+ rejects unstructured postal addresses on cross-border payments. 44% of banks are not on track and 65% of messages are still non-compliant. Check your own messages with AskIso."
+description: "From 14 November 2026, CBPR+ rejects unstructured postal addresses on cross-border payments. 44% of banks are not on track and 65% of messages are still non-compliant. Check your own messages with AskISO."
 keywords: "CBPR+ structured address, November 2026 deadline, ISO 20022 structured address mandate, unstructured address rejected, hybrid address pacs.008, SWIFT 2026 address requirement, structured address migration"
 author: "Sebastien Rousseau"
 date: "2026-08-25"
@@ -61,7 +61,7 @@ prose — is what 2027 and 2028 also require.
 
 ## Check your own messages
 
-AskIso checks the address rules without needing a schema installed, so this
+AskISO checks the address rules without needing a schema installed, so this
 takes about a minute:
 
 ```bash
@@ -163,7 +163,7 @@ $ askiso batch ./messages --profile cbpr-2026 --format sarif > findings.sarif
 The SARIF output drops into GitHub code scanning or any tool that reads it, so
 the check can sit in a pipeline rather than in someone's terminal.
 
-Nothing is uploaded. AskIso runs locally, which matters when the input is a real
+Nothing is uploaded. AskISO runs locally, which matters when the input is a real
 payment instruction.
 
 ## The rules behind it
@@ -180,7 +180,7 @@ later, and `--profile all` runs everything.
 
 MT addresses are unstructured by nature — that is what fields 50K and 59 carry.
 A message converted from MT will therefore **not** satisfy the mandate until the
-addresses are enriched from another source. AskIso says so rather than handing
+addresses are enriched from another source. AskISO says so rather than handing
 you a message that looks compliant:
 
 ```console
@@ -240,7 +240,7 @@ validating tells you the size of the gap, remediation closes it.
 
 ---
 
-*AskIso is a developer tool, not regulatory advice. A clean result is not an
+*AskISO is a developer tool, not regulatory advice. A clean result is not an
 assurance that a scheme or correspondent will accept a message. The authoritative
 sources are [iso20022.org](https://www.iso20022.org/), your scheme operator, and
 Swift's own CBPR+ documentation.*

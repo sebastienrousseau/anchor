@@ -30,17 +30,17 @@ func (e *NotFoundError) Error() string {
 	for _, p := range e.Searched {
 		sb.WriteString("  " + p + "\n")
 	}
-	sb.WriteString("\nAskIso does not redistribute ISO 20022 specifications. Download them\n")
+	sb.WriteString("\nAskISO does not redistribute ISO 20022 specifications. Download them\n")
 	sb.WriteString("from https://www.iso20022.org/ and import them:\n\n")
 	sb.WriteString("  askiso catalog add ~/Downloads/<message-set>.zip\n\n")
-	sb.WriteString("Or point AskIso at an existing copy:\n\n")
+	sb.WriteString("Or point AskISO at an existing copy:\n\n")
 	sb.WriteString("  export " + EnvCatalog + "=/path/to/catalogue\n")
 	return sb.String()
 }
 
 func (e *NotFoundError) Is(target error) bool { return target == ErrNotFound }
 
-// DefaultDir is where AskIso installs a catalogue when the user does not say.
+// DefaultDir is where AskISO installs a catalogue when the user does not say.
 //
 // If any conventional location already holds one, that wins, so importing a new
 // message set extends the existing catalogue instead of quietly starting a
@@ -62,7 +62,7 @@ func DefaultDir() string {
 //
 // os.UserHomeDir reads USERPROFILE on Windows and ignores HOME entirely, so a
 // caller that sets HOME — a test isolating itself, or a shell environment that
-// defines it — would silently get the real profile instead. AskIso writes a
+// defines it — would silently get the real profile instead. AskISO writes a
 // catalogue into this directory, so that difference is the gap between an
 // isolated run and one that scribbles on the actual user account.
 func HomeDir() string {
@@ -198,7 +198,7 @@ func IsCatalog(dir string) bool {
 }
 
 // EvictedError reports a file that iCloud Drive has evicted to a placeholder.
-// Reading it would either block on a network fetch or yield a stub, so AskIso
+// Reading it would either block on a network fetch or yield a stub, so AskISO
 // fails loudly instead of mis-parsing.
 type EvictedError struct {
 	Path string

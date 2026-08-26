@@ -29,13 +29,13 @@ var codeCmd = &cobra.Command{
 	Short:   "Lookup and explain ISO 20022 external codes (reasons, purpose, charges, status)",
 	Long: `Code looks up ISO 20022 code values.
 
-AskIso carries a curated dictionary of the codes that come up most often. With a
+AskISO carries a curated dictionary of the codes that come up most often. With a
 catalogue installed it also reads every code set enumerated in your schemas --
 several thousand values across the whole standard -- so a lookup covers far more
 than the curated set.
 
 Codes maintained separately by the Registration Authority as "external code
-sets" are referenced by name in the schemas rather than enumerated. AskIso
+sets" are referenced by name in the schemas rather than enumerated. AskISO
 redistributes that publication no more than it redistributes the schemas:
 download it from iso20022.org and import it with --import, and every lookup
 searches it thereafter.`,
@@ -222,7 +222,7 @@ func noCodeMatch(query string, schemaIdx *codes.SchemaIndex, external *codes.Ext
 
 	var missing []string
 	if schemaIdx == nil {
-		missing = append(missing, "  Install a message set so AskIso can read the code sets your schemas enumerate:\n"+
+		missing = append(missing, "  Install a message set so AskISO can read the code sets your schemas enumerate:\n"+
 			"    askiso catalog add <downloaded.zip>")
 	}
 	if external.Total() == 0 {
@@ -293,7 +293,7 @@ func capExternal(list []codes.ExternalCode, limit int) []codes.ExternalCode {
 	return list[:limit]
 }
 
-// listCodeSets prints every code set AskIso can see: those enumerated in the
+// listCodeSets prints every code set AskISO can see: those enumerated in the
 // installed schemas, and those from an imported publication.
 func listCodeSets(idx *codes.SchemaIndex, external *codes.ExternalSets) error {
 	if idx == nil && external.Total() == 0 {

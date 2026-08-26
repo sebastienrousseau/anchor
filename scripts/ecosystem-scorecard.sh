@@ -10,7 +10,7 @@ TOTAL_PROBES=8
 
 echo ""
 echo "=========================================================================="
-echo "                   AskIso ISO 20022 Ecosystem Scorecard                   "
+echo "                   AskISO ISO 20022 Ecosystem Scorecard                   "
 echo "=========================================================================="
 echo "Host: $(uname -s) $(uname -m) | Go: $(go version | awk '{print $3}')"
 echo "Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"

@@ -6,7 +6,7 @@
 //
 // The registry holds facts about the standard -- which message identifiers
 // exist, which message set publishes each one, and where the RA hosts the
-// download. It contains no schema, report, or specification text, so AskIso
+// download. It contains no schema, report, or specification text, so AskISO
 // ships it without redistributing ISO 20022 content.
 package registrygen
 

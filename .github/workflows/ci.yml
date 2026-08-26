@@ -71,7 +71,7 @@ jobs:
         # 1.26.6 is the floor, not a preference: it carries the standard library
         # fixes for GO-2026-6218/6090/6089/6088/5972/5026 that go.mod requires.
         # An older release cannot build the module, and testing on one would
-        # exercise a standard library AskIso does not ship against.
+        # exercise a standard library AskISO does not ship against.
         go: ['1.26.6']
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -116,7 +116,7 @@ jobs:
             *) echo "::error::tools/list did not return the tool set"; exit 1 ;;
           esac
 
-      # AskIso no longer ships the ISO 20022 catalogue, so a clean runner has
+      # AskISO no longer ships the ISO 20022 catalogue, so a clean runner has
       # none. Two properties must hold, and both have regressed before:
       #   1. Commands needing the XSDs fail loudly instead of printing nothing.
       #   2. Discovery still works from the embedded registry, so a fresh

@@ -4,7 +4,7 @@
 // Package schemagen builds a valid instance of any ISO 20022 message from its
 // schema.
 //
-// AskIso's template generator covers four message types. There are 2,845. The
+// AskISO's template generator covers four message types. There are 2,845. The
 // difference matters to anyone working on a message that is not a payment: a
 // securities settlement instruction, a corporate action notification, a
 // collateral claim. For those, "here is what one looks like" has meant reading
@@ -18,7 +18,7 @@
 //
 // The result is verified, not asserted: TestEveryInstalledMessageGenerates runs
 // this over every schema the user has installed and validates each result with
-// AskIso's own validator.
+// AskISO's own validator.
 package schemagen
 
 import (
@@ -291,7 +291,7 @@ func (g *generator) value(el *xsd.Element, path string) string {
 }
 
 // simpleValue generates a value for a simple type, honouring an override first,
-// then a name AskIso recognises, then the type's own facets.
+// then a name AskISO recognises, then the type's own facets.
 func (g *generator) simpleValue(typeName, elementName, path string) string {
 	if v, ok := g.opts.Values[elementName]; ok {
 		return v
@@ -305,7 +305,7 @@ func (g *generator) simpleValue(typeName, elementName, path string) string {
 		return preferredCode(facets.Enumeration)
 	}
 
-	// A name AskIso recognises gets a value that is not merely valid but
+	// A name AskISO recognises gets a value that is not merely valid but
 	// correct: a real BIC, an IBAN whose checksum works, a UUIDv4.
 	if v, ok := semanticValue(elementName, base, facets); ok {
 		return v

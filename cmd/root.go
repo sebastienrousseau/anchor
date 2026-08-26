@@ -22,7 +22,7 @@ var (
 
 // loadCatalog resolves and loads the ISO 20022 catalogue.
 //
-// AskIso does not ship the catalogue; the user supplies it. Resolution order is
+// AskISO does not ship the catalogue; the user supplies it. Resolution order is
 // --catalog, $ASKISO_CATALOG, the platform data directory, then the working
 // directory and its parents. A missing catalogue is a hard error carrying the
 // command that fixes it -- never an empty result set.
@@ -33,11 +33,11 @@ func loadCatalog() (*catalog.Index, error) {
 // RootCmd represents the base command when called without any subcommands.
 var RootCmd = &cobra.Command{
 	Use:   "askiso",
-	Short: "AskIso — High-performance ISO 20022 Message Explorer & Assistant",
+	Short: "AskISO — High-performance ISO 20022 Message Explorer & Assistant",
 	// Execute prints the error; usage on a runtime failure is noise.
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	Long: `AskIso provides a full-featured Bubble Tea interactive terminal UI,
+	Long: `AskISO provides a full-featured Bubble Tea interactive terminal UI,
 fuzzy search engine, and local AI assistant for exploring, inspecting, and
 validating all 4,746+ ISO 20022 Message Definition Reports (MDRs), Schemas (XSD),
 and XML Sample Messages.
@@ -49,7 +49,7 @@ line — no quoting needed:
   askiso compare pacs.008 and pacs.009     ask the assistant
   askiso validate payment.xml              run a command
 
-AskIso is a developer tool, not regulatory advice. The Registration Authority
+AskISO is a developer tool, not regulatory advice. The Registration Authority
 at iso20022.org and your scheme operator are the authoritative sources for what
 a message must contain; a clean result here is not an assurance of acceptance.`,
 
@@ -97,7 +97,7 @@ func Run(errOut io.Writer) int {
 
 func init() {
 	RootCmd.PersistentFlags().StringVar(&catalogPath, "catalog", "", "Path to the ISO 20022 catalogue (overrides $ASKISO_CATALOG)")
-	RootCmd.PersistentFlags().BoolVar(&showLogo, "logo", true, "Display ASCII AskIso logo banner")
+	RootCmd.PersistentFlags().BoolVar(&showLogo, "logo", true, "Display ASCII AskISO logo banner")
 	RootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppress banner and non-essential output")
 
 	helpTemplate := tui.GetStyledLogo() + `{{.Long}}

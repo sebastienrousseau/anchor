@@ -28,10 +28,10 @@ var (
 var catalogCmd = &cobra.Command{
 	Use:   "catalog",
 	Short: "Manage your local ISO 20022 catalogue",
-	Long: `AskIso does not redistribute ISO 20022 specifications. Download the message
+	Long: `AskISO does not redistribute ISO 20022 specifications. Download the message
 sets you need from https://www.iso20022.org/ and import them with 'catalog add'.
 
-Use 'catalog where' to see which locations AskIso searches, and 'catalog status'
+Use 'catalog where' to see which locations AskISO searches, and 'catalog status'
 to see what is installed against the full published standard.`,
 }
 
@@ -43,7 +43,7 @@ var catalogAddCmd = &cobra.Command{
 The Registration Authority ships message sets as zip archives, frequently with
 more archives nested inside. Add unpacks them recursively, sorts each file into
 Schemas, Sample Messages, Message Definition Reports, Message Usage Guidelines
-or Documentation, and writes them under the catalogue layout AskIso reads.`,
+or Documentation, and writes them under the catalogue layout AskISO reads.`,
 	Example: `  askiso catalog add ~/Downloads/PaymentsClearingAndSettlement_v11.zip
   askiso catalog add ~/Downloads/*.zip
   askiso catalog add ~/Downloads --dry-run
@@ -158,7 +158,7 @@ func printImport(r *importer.Result) {
 
 var catalogWhereCmd = &cobra.Command{
 	Use:   "where",
-	Short: "Show the locations AskIso searches for a catalogue",
+	Short: "Show the locations AskISO searches for a catalogue",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Printf("\n%s\n\n", headStyle.Render(" CATALOGUE RESOLUTION "))
 

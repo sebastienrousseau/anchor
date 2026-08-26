@@ -12,12 +12,12 @@ import (
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "Print the version number of AskIso",
+	Short: "Print the version number of AskISO",
 	Run: func(cmd *cobra.Command, args []string) {
 		if !quiet {
 			fmt.Print(tui.GetStyledLogo())
 		}
-		fmt.Printf("AskIso version %s\n", tui.Version)
+		fmt.Printf("AskISO version %s\n", tui.Version)
 	},
 }
 

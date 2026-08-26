@@ -1,8 +1,8 @@
 ---
-name: "AskIso"
+name: "AskISO"
 short_name: "AI"
-title: "AskIso documentation — commands, profiles and integrations"
-description: "Every AskIso command, which need a catalogue and which do not, the scheme rule profiles, and how to wire the MCP server into an AI assistant or the language server into an editor."
+title: "AskISO documentation — commands, profiles and integrations"
+description: "Every AskISO command, which need a catalogue and which do not, the scheme rule profiles, and how to wire the MCP server into an AI assistant or the language server into an editor."
 keywords: "askiso documentation, ISO 20022 CLI reference, askiso commands, ISO 20022 MCP server, ISO 20022 language server, askiso lint, askiso validate, askiso translate"
 author: "Sebastien Rousseau"
 date: "2026-08-25"
@@ -16,7 +16,7 @@ form_origin: "https://askiso.io"
 nav_docs: "true"
 eyebrow: "Reference"
 headline: "Documentation"
-lead: "Every command, what it needs, and how AskIso fits into an editor, a pipeline or an AI assistant."
+lead: "Every command, what it needs, and how AskISO fits into an editor, a pipeline or an AI assistant."
 ---
 
 ## Install
@@ -37,12 +37,12 @@ go install github.com/sebastienrousseau/askiso/cmd/askiso-lsp@latest
 ```
 
 Building from source needs **Go 1.26.6 or newer** — that release carries the
-standard library security fixes AskIso builds against.
+standard library security fixes AskISO builds against.
 
 ## See it work
 
 Every session on this site is replayed against the binary on each commit, so
-what follows is what AskIso actually prints — not a transcription of it.
+what follows is what AskISO actually prints — not a transcription of it.
 
 Converting a SWIFT MT message, with the fidelity report that says what survived
 the trip:
@@ -128,7 +128,7 @@ any of them drops into a pipeline.
 
 ## Getting a catalogue
 
-AskIso ships no ISO 20022 specification content. Download the message sets you
+AskISO ships no ISO 20022 specification content. Download the message sets you
 need from the Registration Authority and import them:
 
 ```bash
@@ -214,5 +214,5 @@ realistic.
 
 ---
 
-*AskIso is a developer tool, not regulatory advice. The authoritative source for
+*AskISO is a developer tool, not regulatory advice. The authoritative source for
 ISO 20022 is [iso20022.org](https://www.iso20022.org/).*

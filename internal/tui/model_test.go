@@ -432,7 +432,7 @@ func TestUpdateTableRowsAndFilter(t *testing.T) {
 
 func TestStyledLogoCarriesName(t *testing.T) {
 	logo := GetStyledLogo()
-	if !strings.Contains(logo, "AskIso") {
+	if !strings.Contains(logo, "AskISO") {
 		t.Error("the logo should carry the product name")
 	}
 }

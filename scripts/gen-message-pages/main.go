@@ -12,8 +12,8 @@
 // Every fact on a generated page is derived from the embedded registry or from
 // this codebase: which business area the message belongs to, which message sets
 // publish it, which other versions exist, where the Registration Authority
-// hosts the download, and what AskIso itself can do with it. Nothing describes
-// what the message *means* — that is specification content, AskIso does not
+// hosts the download, and what AskISO itself can do with it. Nothing describes
+// what the message *means* — that is specification content, AskISO does not
 // redistribute it, and inventing a plausible-sounding summary for 2,845
 // messages would be the single fastest way to make the project untrustworthy.
 package main
@@ -121,12 +121,12 @@ func buildPage(reg *registry.Registry, m registry.Message, versions []string,
 	title := fmt.Sprintf("%s — ISO 20022 %s message", m.ID, domain)
 	desc := fmt.Sprintf(
 		"%s is an ISO 20022 message definition in the %s business area. "+
-			"Validate, lint and generate it with AskIso, and download the schema from the Registration Authority.",
+			"Validate, lint and generate it with AskISO, and download the schema from the Registration Authority.",
 		m.ID, domain)
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "---\n")
-	fmt.Fprintf(&b, "name: %q\n", "AskIso")
+	fmt.Fprintf(&b, "name: %q\n", "AskISO")
 	fmt.Fprintf(&b, "short_name: %q\n", "AI")
 	fmt.Fprintf(&b, "title: %q\n", title)
 	fmt.Fprintf(&b, "description: %q\n", desc)
@@ -157,7 +157,7 @@ func buildPage(reg *registry.Registry, m registry.Message, versions []string,
 	fmt.Fprintf(&b, "`%s` is an ISO 20022 message definition. Its business area is "+
 		"**%s** (`%s`), and `%s` is the definition it versions.\n\n",
 		m.ID, domain, m.Domain, m.BaseCode)
-	fmt.Fprintf(&b, "AskIso does not reproduce the specification. The message definition "+
+	fmt.Fprintf(&b, "AskISO does not reproduce the specification. The message definition "+
 		"report and schema are published by the Registration Authority, free of charge, "+
 		"and the links below go there.\n\n")
 
@@ -195,7 +195,7 @@ func buildPage(reg *registry.Registry, m registry.Message, versions []string,
 	}
 
 	// --- what askiso does with it ----------------------------------------
-	fmt.Fprintf(&b, "## What AskIso does with %s\n\n", m.ID)
+	fmt.Fprintf(&b, "## What AskISO does with %s\n\n", m.ID)
 	fmt.Fprintf(&b, "```bash\n")
 	// The comment column is aligned on the longest command so the block reads
 	// as a table rather than as ragged output.
@@ -261,8 +261,8 @@ func buildPage(reg *registry.Registry, m registry.Message, versions []string,
 		"document's own namespace, so you do not pass it. Validation needs the schema "+
 		"installed; `askiso lint` checks business rules without one.\n\n")
 
-	fmt.Fprintf(&b, "### Does AskIso include the %s schema?\n\n", m.ID)
-	fmt.Fprintf(&b, "No. AskIso redistributes no ISO 20022 specification content. "+
+	fmt.Fprintf(&b, "### Does AskISO include the %s schema?\n\n", m.ID)
+	fmt.Fprintf(&b, "No. AskISO redistributes no ISO 20022 specification content. "+
 		"You download the message set from the Registration Authority and import it with "+
 		"`askiso catalog add`. What ships in the binary is the index of what exists and "+
 		"where to get it.\n\n")
@@ -276,7 +276,7 @@ func buildPage(reg *registry.Registry, m registry.Message, versions []string,
 	}
 
 	fmt.Fprintf(&b, "---\n\n")
-	fmt.Fprintf(&b, "*This page is generated from AskIso's embedded index of the standard. "+
+	fmt.Fprintf(&b, "*This page is generated from AskISO's embedded index of the standard. "+
 		"The authoritative source for ISO 20022 is "+
 		"[iso20022.org](https://www.iso20022.org/).*\n")
 

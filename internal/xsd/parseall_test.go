@@ -15,7 +15,7 @@ import (
 )
 
 // Every schema in an installed catalogue must parse, and every type the root
-// element references must resolve inside the same document. AskIso's validator
+// element references must resolve inside the same document. AskISO's validator
 // is only as good as this, so it is the acceptance test for the parser.
 //
 // It needs a catalogue, so it skips on a clean CI runner.

@@ -49,7 +49,7 @@ var profiles = map[string]Profile{
 	},
 	"all": {
 		Name: "all",
-		Description: "Every rule AskIso knows. Findings from dates that have not " +
+		Description: "Every rule AskISO knows. Findings from dates that have not " +
 			"arrived yet are warnings, so this is usable as a readiness report.",
 		Rules: allRules(),
 	},

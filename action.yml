@@ -1,11 +1,11 @@
 # SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-name: 'AskIso ISO 20022 check'
+name: 'AskISO ISO 20022 check'
 description: >-
   Lint ISO 20022 messages and check them against a scheme rule profile, then
   upload the findings to GitHub code scanning. Needs no ISO 20022 download:
-  linting and the rule profiles run from AskIso's embedded index.
+  linting and the rule profiles run from AskISO's embedded index.
 author: 'Sebastien Rousseau'
 
 branding:
@@ -24,7 +24,7 @@ inputs:
     required: false
     default: 'cbpr-2026'
   version:
-    description: 'AskIso version to install, or "latest".'
+    description: 'AskISO version to install, or "latest".'
     required: false
     default: 'latest'
   sarif-file:
@@ -54,7 +54,7 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Install AskIso
+    - name: Install AskISO
       shell: bash
       env:
         ASKISO_VERSION: ${{ inputs.version }}

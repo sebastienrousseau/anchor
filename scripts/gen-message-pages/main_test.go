@@ -61,7 +61,7 @@ func TestPagePointsAtTheRegistrationAuthorityRatherThanReproducingIt(t *testing.
 
 	page := buildPage(reg, m, []string{"pacs.008.001.10"}, nil, false, true, "2026-08-25")
 
-	if !strings.Contains(page, "AskIso does not reproduce the specification") {
+	if !strings.Contains(page, "AskISO does not reproduce the specification") {
 		t.Error("the page does not state that the specification is not reproduced")
 	}
 	if !strings.Contains(page, "iso20022.org") {

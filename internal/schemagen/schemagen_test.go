@@ -14,7 +14,7 @@ import (
 )
 
 // A generated message is only worth anything if it validates, so every test
-// here generates and then validates with AskIso's own validator rather than
+// here generates and then validates with AskISO's own validator rather than
 // asserting on the text alone.
 
 func parse(t *testing.T, body string) *xsd.Schema {

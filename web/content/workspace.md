@@ -1,5 +1,5 @@
 ---
-name: "AskIso"
+name: "AskISO"
 short_name: "AI"
 title: "Workspace — paste a message, get an answer that cites its source"
 description: "One input for ISO 20022 and SWIFT MT messages, message identifiers, IBANs, BICs and UETRs. Every finding names the rule and the path it came from. Runs in the browser; nothing is uploaded."
@@ -15,6 +15,6 @@ copyright_year: "2026"
 form_origin: "https://askiso.io"
 nav_workspace: "true"
 eyebrow: "One input · nothing uploaded"
-headline: "Paste it. AskIso works out what it is."
+headline: "Paste it. AskISO works out what it is."
 lead: "A message, an identifier, an IBAN or a question — one box, and the tool decides what to do with it. Every finding names the rule it came from and the path in the document, so it can be checked rather than taken on trust."
 ---

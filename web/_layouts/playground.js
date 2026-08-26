@@ -370,7 +370,7 @@ function applyBarWidths(root) {
     if (lintRes.ok) {
       var d = lintRes.data;
       banner = d.error_count > 0
-        ? '<div class="verdict fail">Generated, but AskIso’s own linter reports ' + d.error_count + ' error(s) — a known defect for this preset.</div>'
+        ? '<div class="verdict fail">Generated, but AskISO’s own linter reports ' + d.error_count + ' error(s) — a known defect for this preset.</div>'
         : '<div class="verdict pass">Generated and passes all ' + d.passed_count + " business-rule checks</div>";
     }
     out.innerHTML = banner + '<pre class="code">' + esc(r.data.xml) + "</pre>";

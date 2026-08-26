@@ -16,12 +16,12 @@ import (
 	"strings"
 )
 
-// Most ISO 20022 code sets are enumerated in the schemas, and AskIso reads them
+// Most ISO 20022 code sets are enumerated in the schemas, and AskISO reads them
 // from the user's own copy. The rest are "external": the Registration Authority
 // maintains them separately on a quarterly cycle, the schemas reference them by
 // name only, and there are several thousand of them.
 //
-// AskIso does not redistribute that publication any more than it redistributes
+// AskISO does not redistribute that publication any more than it redistributes
 // the schemas. It imports the file the user downloaded, exactly as `catalog
 // add` imports a message set, and stores a normalised copy alongside their
 // catalogue.
@@ -179,7 +179,7 @@ func ImportExternalSets(path string) (*ExternalSets, error) {
 	}
 
 	if len(sets.Codes) == 0 {
-		return nil, fmt.Errorf("%s holds no external code sets AskIso recognises",
+		return nil, fmt.Errorf("%s holds no external code sets AskISO recognises",
 			filepath.Base(path))
 	}
 	sets.Source = path
@@ -230,7 +230,7 @@ func importExternalJSON(path string) (*ExternalSets, error) {
 		Definition string `json:"definition"`
 	}
 	if err := json.Unmarshal(data, &grouped); err != nil {
-		return nil, fmt.Errorf("%s is not a shape AskIso recognises: %w", filepath.Base(path), err)
+		return nil, fmt.Errorf("%s is not a shape AskISO recognises: %w", filepath.Base(path), err)
 	}
 
 	out := &ExternalSets{}

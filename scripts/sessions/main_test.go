@@ -60,7 +60,7 @@ Some prose.
 
 `+"```console"+`
 $ askiso version
-AskIso version 0.0.1
+AskISO version 0.0.1
 `+"```"+`
 
 More prose.
@@ -170,7 +170,7 @@ func TestDiffHandlesDifferentLengths(t *testing.T) {
 // Only askiso commands run. A `go install` line is instruction for the reader
 // and a redirect belongs to the shell; executing either would be wrong, and
 // silently trusting them would defeat the point of the check.
-func TestReplayExecutesOnlyAskisoCommands(t *testing.T) {
+func TestReplayExecutesOnlyAskISOCommands(t *testing.T) {
 	dir := t.TempDir()
 
 	got, skipped, err := replay("/nonexistent-binary", dir, []string{

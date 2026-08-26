@@ -13,7 +13,7 @@ import (
 // camt.110/111 pair replace them with something a machine can route.
 //
 // The conversion is honest about what that costs. An MT query carries prose
-// where the new messages want a coded reason, and AskIso will not invent a code
+// where the new messages want a coded reason, and AskISO will not invent a code
 // it cannot verify: the reason goes into the proprietary branch of the choice,
 // naming the MT field it came from, and the prose goes into the narrative.
 

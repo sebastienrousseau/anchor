@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
    SPDX-License-Identifier: Apache-2.0 OR MIT
 
-   AskIso brand layer.
+   AskISO brand layer.
 
    Loaded after the theme stylesheet, so it only redefines tokens and adds the
    components the theme has no opinion about. Overriding rather than forking
@@ -10,7 +10,7 @@
 
    The register is institutional: generous whitespace, a single accent used
    sparingly, plain declarative type. What it deliberately does not do is
-   reproduce another organisation's identity. AskIso operates in the market
+   reproduce another organisation's identity. AskISO operates in the market
    Swift governs, so looking like Swift would invite exactly the confusion the
    README spends a paragraph disclaiming.
 
@@ -31,7 +31,7 @@
   --surface: #ffffff;
   --surface-soft: #f4f7f9;
 
-  /* The accent carries the AskIso mark. #0b6b80 is the darkest cyan that still
+  /* The accent carries the AskISO mark. #0b6b80 is the darkest cyan that still
      reads as cyan and clears 4.5:1 on white for body-size text. The bright
      token is for large type and marks only, where the contrast floor is 3:1. */
   --accent: #0b6b80;

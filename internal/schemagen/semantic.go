@@ -15,7 +15,7 @@ import (
 // full of those validates against the schema and fails the linter, which makes
 // it useless as an example of a correct message.
 //
-// So elements AskIso recognises get values that are correct as well as valid:
+// So elements AskISO recognises get values that are correct as well as valid:
 // an IBAN whose mod-97 works, a BIC with a real country code, a UUIDv4 that
 // passes the version and variant checks. Everything else falls through to the
 // facets.
@@ -53,7 +53,7 @@ var knownValues = map[string]string{
 	"SfkpgAcct":           "SAFE-0001",
 	"AcctId":              "ACCT-ASKISO-0001",
 	"Id":                  "ASKISO-0001",
-	"Desc":                "AskIso sample value",
+	"Desc":                "AskISO sample value",
 	"ShrtNm":              "ACME",
 	"ClssfctnTp":          "ESVUFR",
 	"PlcOfListg":          "XLON",

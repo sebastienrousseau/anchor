@@ -70,7 +70,7 @@ var searchCmd = &cobra.Command{
 	},
 }
 
-// searchRegistry answers from AskIso's embedded index of the standard. Results
+// searchRegistry answers from AskISO's embedded index of the standard. Results
 // carry no file paths, because nothing is installed -- they carry the message
 // set to download instead.
 func searchRegistry(query string, haveCatalogue bool) error {
@@ -119,7 +119,7 @@ func searchRegistry(query string, haveCatalogue bool) error {
 	}
 
 	if haveCatalogue {
-		fmt.Printf("\n%s nothing installed matched, so these come from AskIso's index of the\n",
+		fmt.Printf("\n%s nothing installed matched, so these come from AskISO's index of the\n",
 			subtleStyle.Render("note:"))
 		fmt.Printf("      whole standard and have no local schema paths.\n")
 	} else {

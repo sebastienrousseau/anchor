@@ -196,7 +196,7 @@ func TestVersionCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("version: %v", err)
 	}
-	wantContains(t, out, "AskIso")
+	wantContains(t, out, "AskISO")
 }
 
 func TestGenerateCommand(t *testing.T) {

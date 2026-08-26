@@ -20,12 +20,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// AskIso does not download specifications on the user's behalf. The
+// AskISO does not download specifications on the user's behalf. The
 // Registration Authority publishes them under terms the person downloading
 // accepts, and a tool that clicks through that on their behalf is a tool that
 // accepts terms nobody read.
 //
-// What AskIso can do is remove every other step: find the right message set,
+// What AskISO can do is remove every other step: find the right message set,
 // open the exact download page, then watch for the file to land and import it.
 // The user does the part that is theirs to do, and nothing else.
 
@@ -48,10 +48,10 @@ downloading anything on your behalf.
 
 Given a message identifier or a set name it finds the right message set, opens
 the Registration Authority's download page for it, then watches your downloads
-folder. When the archive appears it is imported and verified, and AskIso tells
+folder. When the archive appears it is imported and verified, and AskISO tells
 you what it installed.
 
-AskIso does not download the archive itself. The Registration Authority
+AskISO does not download the archive itself. The Registration Authority
 publishes these files under terms the person downloading them accepts, and a
 tool that clicks through those terms is a tool that accepts them for someone who
 never read them.`,
@@ -97,7 +97,7 @@ never read them.`,
 
 		fmt.Printf("  %s Accept the Registration Authority's terms and download the archive.\n",
 			subtleStyle.Render("1."))
-		fmt.Printf("  %s AskIso is watching %s and will import it when it lands.\n\n",
+		fmt.Printf("  %s AskISO is watching %s and will import it when it lands.\n\n",
 			subtleStyle.Render("2."), watchDir)
 		fmt.Printf("  waiting up to %s   (ctrl-c to stop; you can always run: askiso catalog add <file>)\n\n",
 			fetchTimeout)

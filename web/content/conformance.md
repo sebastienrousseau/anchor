@@ -1,7 +1,7 @@
 ---
-name: "AskIso"
+name: "AskISO"
 short_name: "AI"
-title: "Conformance evidence — what AskIso is measured against"
+title: "Conformance evidence — what AskISO is measured against"
 description: "Differential agreement with libxml2 across all 4,746 schemas, streaming and buffered validation agreement, coverage enforced at 95% on a catalogue-free runner, and zero known vulnerabilities. Every figure names the command that reproduces it."
 keywords: "ISO 20022 validator conformance, libxml2 differential testing, XML schema validator correctness, askiso conformance, ISO 20022 validation evidence"
 author: "Sebastien Rousseau"
@@ -32,7 +32,7 @@ commands are in the repository, and three of the four run on every commit.
 
 ### Differential agreement with libxml2
 
-Across every schema in the ISO 20022 catalogue, AskIso and libxml2 return the
+Across every schema in the ISO 20022 catalogue, AskISO and libxml2 return the
 same verdict on **4,746 of 4,746 documents** — accepting the same 1,035 and
 rejecting the same 3,711.
 
@@ -64,7 +64,7 @@ make conformance
 
 ### Generated messages validate and lint clean
 
-Every message AskIso can generate from a schema — all **4,746** — is generated,
+Every message AskISO can generate from a schema — all **4,746** — is generated,
 validated against the schema it came from, and linted. All pass.
 
 ```bash
@@ -132,9 +132,9 @@ on every deploy. It fails the deploy rather than the claim going stale.
 
 The figures above cover correctness against schemas and rules. They say nothing
 about whether a given scheme, correspondent or market infrastructure will accept
-a message — that depends on agreements AskIso has no visibility of.
+a message — that depends on agreements AskISO has no visibility of.
 
-Where a mapping cannot be verified against a published source, AskIso reports
+Where a mapping cannot be verified against a published source, AskISO reports
 the gap rather than guessing. MT940 transaction types fall back to `NMSC` and
 name what was lost; camt.110 investigation types use the proprietary branch
 rather than inventing a code. The

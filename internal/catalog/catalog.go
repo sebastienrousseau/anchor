@@ -56,7 +56,7 @@ type Index struct {
 
 // Load scans a catalogue root directory and builds the message index.
 //
-// The catalogue is not redistributed with AskIso; rootDir is normally produced
+// The catalogue is not redistributed with AskISO; rootDir is normally produced
 // by Resolve. A directory that yields no messages is an error, never an empty
 // index -- silently returning zero results is how a broken install goes
 // unnoticed.

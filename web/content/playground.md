@@ -1,5 +1,5 @@
 ---
-name: "AskIso"
+name: "AskISO"
 short_name: "AI"
 title: "ISO 20022 playground — lint, validate and convert in the browser"
 description: "Lint payment messages, generate compliant samples, search 2,845 message definitions and convert XML to JSON — in the browser, running the same engine as the askiso command line. Nothing is uploaded."

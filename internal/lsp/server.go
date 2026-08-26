@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Package lsp serves AskIso as a language server for ISO 20022 XML.
+// Package lsp serves AskISO as a language server for ISO 20022 XML.
 //
 // Someone editing a payment message wants the same answers the CLI gives, at
 // the moment they type: is this IBAN's checksum right, does this element belong
@@ -300,7 +300,7 @@ func (s *Server) didClose(params json.RawMessage) {
 func (s *Server) didChangeConfiguration(params json.RawMessage) {
 	var p struct {
 		Settings struct {
-			AskIso struct {
+			AskISO struct {
 				Profile string `json:"profile"`
 			} `json:"askiso"`
 		} `json:"settings"`
@@ -308,15 +308,15 @@ func (s *Server) didChangeConfiguration(params json.RawMessage) {
 	if err := json.Unmarshal(params, &p); err != nil {
 		return
 	}
-	if p.Settings.AskIso.Profile == "" {
+	if p.Settings.AskISO.Profile == "" {
 		return
 	}
-	if _, err := iso20022.CheckProfile([]byte("<Document/>"), p.Settings.AskIso.Profile, ""); err != nil {
-		s.logf("ignoring unknown rule profile %q", p.Settings.AskIso.Profile)
+	if _, err := iso20022.CheckProfile([]byte("<Document/>"), p.Settings.AskISO.Profile, ""); err != nil {
+		s.logf("ignoring unknown rule profile %q", p.Settings.AskISO.Profile)
 		return
 	}
 
-	s.Profile = p.Settings.AskIso.Profile
+	s.Profile = p.Settings.AskISO.Profile
 
 	// The setting changes every verdict, so every open document is rechecked.
 	s.mu.RLock()

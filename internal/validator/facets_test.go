@@ -98,7 +98,7 @@ func TestLengthCountsRunesNotBytes(t *testing.T) {
 }
 
 // A pattern the engine cannot compile must not fail an otherwise valid
-// document. Refusing a message because AskIso could not read the rule would be
+// document. Refusing a message because AskISO could not read the rule would be
 // the worst possible failure mode for a validator.
 func TestAnUnusablePatternDoesNotFailTheDocument(t *testing.T) {
 	s := schemaFrom(t, wrap(

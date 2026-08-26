@@ -119,7 +119,7 @@ func TestSchemaCommandsErrorWithoutCatalogue(t *testing.T) {
 	}
 }
 
-// Light mode: with no catalogue AskIso still knows what exists, what it is
+// Light mode: with no catalogue AskISO still knows what exists, what it is
 // called, and where the RA publishes it. These commands must answer usefully
 // rather than fail, so a fresh install is a starting point, not a dead end.
 func TestDiscoveryCommandsFallBackToRegistry(t *testing.T) {

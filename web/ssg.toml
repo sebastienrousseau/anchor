@@ -5,8 +5,8 @@
 # GitHub Pages publishes; the WebAssembly bundle is copied in after the
 # content build, because ssg does not know about the Go toolchain.
 
-site_name = "AskIso"
-site_title = "AskIso — the developer's ISO 20022 toolchain"
+site_name = "AskISO"
+site_title = "AskISO — the developer's ISO 20022 toolchain"
 site_description = "Validate, convert, generate and remediate ISO 20022 financial messages from your terminal, your editor, your CI pipeline or your AI assistant. Open source, ships no specification content, runs entirely on your machine."
 base_url = "https://askiso.io"
 language = "en-GB"
@@ -22,7 +22,7 @@ output_dir = "web/public"
 # found 97% of llms.txt files were never requested, and Google's May 2026
 # guidance says no machine-readable file is needed to appear in AI Search —
 # crawlers read the HTML. What is worth declaring is the MCP endpoint, because
-# AskIso genuinely ships an MCP server and an assistant that finds it can use
+# AskISO genuinely ships an MCP server and an assistant that finds it can use
 # it directly.
 [agents]
 agents_txt = true

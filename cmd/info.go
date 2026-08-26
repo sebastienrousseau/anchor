@@ -27,7 +27,7 @@ var infoCmd = &cobra.Command{
 
 		idx, err := loadCatalog()
 		if err != nil {
-			// Without a catalogue AskIso still knows the message exists and
+			// Without a catalogue AskISO still knows the message exists and
 			// which set publishes it, which is exactly what the user needs in
 			// order to install it.
 			return infoFromRegistry(id)

@@ -16,7 +16,7 @@ import (
 	"github.com/sebastienrousseau/askiso/internal/linter"
 )
 
-// AskIso generates synthetic messages and claims they are compliant. This
+// AskISO generates synthetic messages and claims they are compliant. This
 // checks that against the real schemas, which means it needs a catalogue and
 // xmllint. Both are absent on a clean CI runner, so it skips there and runs for
 // anyone who has installed a catalogue.
@@ -87,7 +87,7 @@ func TestGeneratedMessagesMatchTheirSchema(t *testing.T) {
 	}
 }
 
-// AskIso must not emit payloads its own linter rejects. The FedNow preset does
+// AskISO must not emit payloads its own linter rejects. The FedNow preset does
 // exactly that today: the US has no IBAN scheme, and the placeholder values fail
 // the mod-97 check (F-04b).
 func TestGeneratedMessagesPassOwnLinter(t *testing.T) {

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Package mcp serves AskIso over the Model Context Protocol.
+// Package mcp serves AskISO over the Model Context Protocol.
 //
 // An assistant asked about an ISO 20022 message has two options: recall what it
 // read about the standard, or check. This server is the second option. It
@@ -266,7 +266,7 @@ func (s *Server) initialize(params json.RawMessage) (any, *rpcError) {
 	}, nil
 }
 
-const instructions = `AskIso answers questions about ISO 20022 from the specification rather than from memory.
+const instructions = `AskISO answers questions about ISO 20022 from the specification rather than from memory.
 
 Use askiso_lint and askiso_check_profile before telling anyone a message is correct: the
 linter checks IBAN checksums, BIC structure, currency precision and UETR format, and the
@@ -276,7 +276,7 @@ askiso_validate and askiso_diff read the user's own downloaded schemas and repor
 Installed=false rather than guessing when a schema is absent. Everything else works with
 no files on disk.
 
-AskIso redistributes no specification content. Schemas come from the user's own download
+AskISO redistributes no specification content. Schemas come from the user's own download
 from iso20022.org.`
 
 func (s *Server) write(resp response) {

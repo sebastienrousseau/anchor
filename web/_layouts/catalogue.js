@@ -4,7 +4,7 @@
 // Reads the visitor's own ISO 20022 catalogue from their own disk.
 //
 // This is the one honest way to offer full schema validation in a browser on a
-// site that redistributes no specification content. AskIso does not host the
+// site that redistributes no specification content. AskISO does not host the
 // schemas and will not; the File System Access API lets the page read the copy
 // the user already downloaded from the Registration Authority. Nothing is
 // uploaded, nothing is cached on a server, and the handle is dropped when the

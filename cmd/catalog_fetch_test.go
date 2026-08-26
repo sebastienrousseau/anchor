@@ -73,7 +73,7 @@ func TestFetchImportsAnArchiveThatArrives(t *testing.T) {
 
 	wantContains(t, out, "FETCH", "iso20022.org/message-set", "INSTALLED", "schemas")
 
-	// And the schema really is where AskIso said it put it.
+	// And the schema really is where AskISO said it put it.
 	found := false
 	err = filepath.Walk(dest, func(p string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() && strings.HasSuffix(p, "pacs.008.001.10.xsd") {
@@ -235,7 +235,7 @@ func TestFetchExpandsATildeInTheWatchPath(t *testing.T) {
 }
 
 func TestFetchReportsAnUnusableArchive(t *testing.T) {
-	// A zip that holds nothing AskIso recognises has to say so, and say what to
+	// A zip that holds nothing AskISO recognises has to say so, and say what to
 	// try instead.
 	watch := t.TempDir()
 
@@ -246,7 +246,7 @@ func TestFetchReportsAnUnusableArchive(t *testing.T) {
 			return
 		}
 		zw := zip.NewWriter(f)
-		// A file type AskIso does not classify, so the archive holds nothing.
+		// A file type AskISO does not classify, so the archive holds nothing.
 		w, err := zw.Create("installer.bin")
 		if err == nil {
 			_, _ = w.Write([]byte("nothing useful here"))

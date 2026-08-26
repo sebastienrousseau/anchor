@@ -19,7 +19,7 @@ import (
 
 // Most ISO 20022 code sets are enumerated inside the schemas themselves. Reading
 // them from the catalogue the user downloaded gives exact, complete coverage
-// without AskIso redistributing anything: the codes come from their own copy of
+// without AskISO redistributing anything: the codes come from their own copy of
 // the specification.
 //
 // The remaining sets are "external" -- maintained separately by the Registration

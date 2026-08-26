@@ -46,8 +46,8 @@ func TestLogoIsAWellFormedBlock(t *testing.T) {
 
 func TestStyledLogo(t *testing.T) {
 	logo := GetStyledLogo()
-	if !strings.Contains(logo, "AskIso") {
-		t.Errorf("expected logo to contain 'AskIso', got:\n%s", logo)
+	if !strings.Contains(logo, "AskISO") {
+		t.Errorf("expected logo to contain 'AskISO', got:\n%s", logo)
 	}
 }
 
@@ -90,8 +90,8 @@ func TestAskViewRendering(t *testing.T) {
 	m.height = 24
 
 	view := m.View()
-	if !strings.Contains(view, "AskIso") {
-		t.Errorf("Expected logo 'AskIso' in Ask view, got:\n%s", view)
+	if !strings.Contains(view, "AskISO") {
+		t.Errorf("Expected logo 'AskISO' in Ask view, got:\n%s", view)
 	}
 	if !strings.Contains(view, "┃") {
 		t.Errorf("Expected vertical delimiter '┃' in Ask view, got:\n%s", view)

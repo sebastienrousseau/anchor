@@ -1,21 +1,21 @@
 // SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Package iso20022 is AskIso's public API for working with ISO 20022 financial
+// Package iso20022 is AskISO's public API for working with ISO 20022 financial
 // messages. The CLI, the WebAssembly build, and any Go service that imports this
 // package all run exactly the same code, so a message linted in the browser gets
 // the same verdict as one linted in a terminal or a CI pipeline.
 //
 // # Light mode and full mode
 //
-// Everything here works with no setup. AskIso embeds an index of the published
+// Everything here works with no setup. AskISO embeds an index of the published
 // standard -- every message identifier, the message set that publishes it, and
 // the Registration Authority's download location -- so lookup, search,
 // generation, linting, conversion, code lookup and MT/MX cross-reference need no
 // files on disk. That is light mode, and it is what the browser build runs.
 //
 // Reading schema text needs a catalogue the user downloaded from
-// https://www.iso20022.org/. AskIso redistributes no specification content.
+// https://www.iso20022.org/. AskISO redistributes no specification content.
 // Open one with OpenCatalogue; the API reports Installed=false rather than
 // failing when a schema is absent, and names the download that would supply it.
 package iso20022
@@ -373,7 +373,7 @@ func JSONToXML(jsonData []byte) ([]byte, error) { return converter.JSONToXML(jso
 // LookupCode searches the external code sets by code, name, or description.
 func LookupCode(query string) []CodeItem { return codes.Lookup(query) }
 
-// AllCodes returns every external code AskIso knows.
+// AllCodes returns every external code AskISO knows.
 func AllCodes() []CodeItem { return codes.GetAllCodes() }
 
 // ExternalCode is one code from the Registration Authority's external code set
@@ -385,7 +385,7 @@ type ExternalCode = codes.ExternalCode
 //
 // Most ISO 20022 code sets are enumerated in the schemas. The rest are
 // maintained separately on a quarterly cycle and referenced by name only.
-// AskIso redistributes that publication no more than it redistributes the
+// AskISO redistributes that publication no more than it redistributes the
 // schemas: ImportExternalCodes reads the file the user downloaded.
 func (c *Catalogue) ExternalCodes() []ExternalCode {
 	if c == nil || c.idx == nil {
@@ -687,7 +687,7 @@ func CheckProfile(instance []byte, profile, filename string) (*RuleResult, error
 // SARIF renders rule results as a SARIF 2.1.0 log.
 //
 // SARIF is what a code-scanning pipeline reads, so this is the shape a rule
-// finding takes when it leaves AskIso for GitHub, GitLab or a build server.
+// finding takes when it leaves AskISO for GitHub, GitLab or a build server.
 // The browser build calls it too, through the same code, so a report downloaded
 // from the website matches `askiso lint --format sarif` on the same message --
 // byte for byte, apart from the artifact URI, which names whatever file the

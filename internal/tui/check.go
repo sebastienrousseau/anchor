@@ -19,7 +19,7 @@ import (
 // still be accepted after 14 November 2026. Both answers are one keystroke away
 // here, from the same engine the CLI runs.
 
-// checkMessage runs every check AskIso has against a message's sample and puts
+// checkMessage runs every check AskISO has against a message's sample and puts
 // the report in the viewer.
 func (m *Model) checkMessage(msg catalog.Message) {
 	m.viewingTitle = msg.ID + " (check)"
@@ -216,7 +216,7 @@ func (m *Model) renderCatalogue() string {
 
 	b.WriteString("CATALOGUE\n──────────\n\n")
 	if root == "" {
-		b.WriteString("Nothing is installed. AskIso still knows the whole standard from its\n")
+		b.WriteString("Nothing is installed. AskISO still knows the whole standard from its\n")
 		b.WriteString("embedded index, but reading schema text needs the files.\n\n")
 	} else {
 		fmt.Fprintf(&b, "root      %s\n", root)

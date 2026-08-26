@@ -110,7 +110,7 @@ func convertQuery(m *Message) (*Conversion, error) {
 	in := camt110Input{
 		MsgID: ref.Value,
 		// An MT query carries prose where camt.110 wants a coded type and a
-		// coded reason. AskIso will not invent a code it cannot verify, so the
+		// coded reason. AskISO will not invent a code it cannot verify, so the
 		// proprietary branch names the message the query came from.
 		Type:      "MT" + m.Type,
 		Reason:    "MT" + m.Type,

@@ -17,7 +17,7 @@ import (
 )
 
 // The correctness bar for a validator written from scratch is agreement with
-// the reference implementation. This runs AskIso and xmllint over every sample
+// the reference implementation. This runs AskISO and xmllint over every sample
 // message in an installed catalogue and reports where they disagree.
 //
 // It needs both a catalogue and xmllint, so it skips on a clean CI runner. Run
@@ -55,7 +55,7 @@ func TestDifferentialAgainstXmllint(t *testing.T) {
 		agree         int
 		bothValid     int
 		bothInvalid   int
-		falseReject   []string // AskIso rejects, xmllint accepts -- the serious kind
+		falseReject   []string // AskISO rejects, xmllint accepts -- the serious kind
 		falseAccept   []string
 		parseFailures []string
 	)
@@ -114,7 +114,7 @@ func TestDifferentialAgainstXmllint(t *testing.T) {
 		t.Errorf("schema failed to parse: %s", f)
 	}
 
-	// A false reject means AskIso calls a valid message invalid. That is the
+	// A false reject means AskISO calls a valid message invalid. That is the
 	// failure mode that breaks a user's pipeline, so it is an error.
 	for _, f := range head(falseReject, 10) {
 		t.Errorf("false reject: %s", f)

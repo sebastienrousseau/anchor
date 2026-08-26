@@ -17,7 +17,7 @@
 // Every schema is self-contained: no import, include, group, attributeGroup,
 // union, list, key, or complexContent appears anywhere in the catalogue, and
 // elementFormDefault is always "qualified". That is what makes a focused parser
-// practical, and it is why AskIso can validate without linking libxml2.
+// practical, and it is why AskISO can validate without linking libxml2.
 package xsd
 
 import (

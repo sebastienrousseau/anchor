@@ -267,7 +267,7 @@
     nodes.push(dl);
 
     nodes.push(el("p", "ws-note",
-      "AskIso holds the index, not the specification. The message definition " +
+      "AskISO holds the index, not the specification. The message definition " +
       "and schema are published by the Registration Authority."));
 
     lastResult = { kind: "info", info: res2 };

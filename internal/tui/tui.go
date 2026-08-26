@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// Package tui provides an interactive Bubble Tea terminal user interface for AskIso.
+// Package tui provides an interactive Bubble Tea terminal user interface for AskISO.
 package tui
 
 import (
@@ -34,7 +34,7 @@ import (
 	"github.com/sebastienrousseau/askiso/internal/graph"
 )
 
-// Version is the build version of AskIso, rendered in the TUI footer.
+// Version is the build version of AskISO, rendered in the TUI footer.
 var Version = "0.0.1"
 
 var logoLines = []string{
@@ -99,7 +99,7 @@ func GetStyledLogo() string {
 	for i, line := range logoLines {
 		sb.WriteString(" " + lipgloss.NewStyle().Foreground(lipgloss.Color(colors[i])).Render(line) + "\n")
 	}
-	sb.WriteString(" " + lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22D3EE")).Render("AskIso") + "  " + lipgloss.NewStyle().Foreground(lipgloss.Color("#94A3B8")).Render("Every ISO 20022 message. Just ask.") + "\n\n")
+	sb.WriteString(" " + lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22D3EE")).Render("AskISO") + "  " + lipgloss.NewStyle().Foreground(lipgloss.Color("#94A3B8")).Render("Every ISO 20022 message. Just ask.") + "\n\n")
 	return sb.String()
 }
 
@@ -138,7 +138,7 @@ type Model struct {
 	height          int
 }
 
-// NewModel creates a new AskIso TUI model.
+// NewModel creates a new AskISO TUI model.
 func NewModel(idx *catalog.Index) Model {
 	columns := []table.Column{
 		{Title: " ", Width: 3},
@@ -192,8 +192,8 @@ func NewModel(idx *catalog.Index) Model {
 		filteredMsgs: idx.Messages,
 		askHistory: []askMsg{
 			{
-				sender:  "AskIso Assistant",
-				content: "TL;DR: Welcome to AskIso Ask AI! Query any ISO 20022 message, comparison, or payment workflow.\n\n💡 **Suggested follow-ups (Type 1-3 to run):**\n• [1] What is pacs.008?\n• [2] Compare pacs.008 vs pacs.009\n• [3] How does camt.053 work?",
+				sender:  "AskISO Assistant",
+				content: "TL;DR: Welcome to AskISO Ask AI! Query any ISO 20022 message, comparison, or payment workflow.\n\n💡 **Suggested follow-ups (Type 1-3 to run):**\n• [1] What is pacs.008?\n• [2] Compare pacs.008 vs pacs.009\n• [3] How does camt.053 work?",
 			},
 		},
 		lastSuggestions: []string{
@@ -514,7 +514,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						}
 					}
 
-					m.askHistory = append(m.askHistory, askMsg{sender: "AskIso Assistant", content: renderedReply})
+					m.askHistory = append(m.askHistory, askMsg{sender: "AskISO Assistant", content: renderedReply})
 				}
 				m.textInput, cmd = m.textInput.Update(msg)
 				cmds = append(cmds, cmd)
@@ -726,7 +726,7 @@ func (m *Model) executeSlashCommand(cmdStr string) tea.Cmd {
 
 	case "/doctor":
 		var sb strings.Builder
-		sb.WriteString("# AskIso Environment & System Diagnostics\n\n")
+		sb.WriteString("# AskISO Environment & System Diagnostics\n\n")
 		fmt.Fprintf(&sb, "• ✅ **Catalog Index**: %d message definitions loaded across %d categories\n", len(m.idx.Messages), len(m.idx.Categories))
 		if xmllintPath, err := exec.LookPath("xmllint"); err == nil {
 			fmt.Fprintf(&sb, "• ✅ **XML Schema Validator**: `xmllint` active at `%s`\n", xmllintPath)
@@ -780,7 +780,7 @@ func (m Model) View() string {
 	if os.Getenv("ASKISO_SHOW_LOGO") != "0" {
 		header = GetStyledLogo()
 	} else {
-		header = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22D3EE")).Render("AskIso — ISO 20022 Explorer") + "\n\n"
+		header = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22D3EE")).Render("AskISO — ISO 20022 Explorer") + "\n\n"
 	}
 
 	out := header
@@ -835,7 +835,7 @@ func (m Model) renderAsk() string {
 		sb.WriteString(GetStyledLogo())
 	}
 
-	badge := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FFFFFF")).Background(lipgloss.Color("#06B6D4")).Padding(0, 1).Render(" AskIso ISO 20022 Ask AI ")
+	badge := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#FFFFFF")).Background(lipgloss.Color("#06B6D4")).Padding(0, 1).Render(" AskISO ISO 20022 Ask AI ")
 	hint := lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Render("[Press 'esc' to return to table]")
 	sb.WriteString(" " + badge + " " + hint + "\n\n")
 
@@ -853,7 +853,7 @@ func (m Model) renderAsk() string {
 		}
 	}
 
-	promptLabel := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22D3EE")).Render("AskIso > ")
+	promptLabel := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#22D3EE")).Render("AskISO > ")
 	bar := lipgloss.NewStyle().Foreground(lipgloss.Color("#06B6D4")).Render("┃")
 	sb.WriteString(" " + bar + "  " + promptLabel + m.textInput.View() + "\n\n")
 	sb.WriteString(m.renderFooter())
@@ -883,7 +883,7 @@ func (m Model) renderHelpPanel() string {
 		{"/all, /none", "Select or deselect all messages"},
 		{"/clear", "Clear search filter or reset Ask AI conversation"},
 		{"/help, /?", "Show this universal in-session help menu"},
-		{"/exit, /quit, /q", "Exit AskIso CLI immediately"},
+		{"/exit, /quit, /q", "Exit AskISO CLI immediately"},
 		{"[q] / [esc]", "Universal single-key shortcut to exit or return"},
 	}
 
@@ -947,7 +947,7 @@ func (m Model) renderFooter() string {
 	return lipgloss.NewStyle().Foreground(lipgloss.Color("243")).Render(footerText) + "\n"
 }
 
-// RunSelector starts the interactive AskIso Bubble Tea program.
+// RunSelector starts the interactive AskISO Bubble Tea program.
 func RunSelector(ctx context.Context, idx *catalog.Index) error {
 	p := tea.NewProgram(NewModel(idx), tea.WithAltScreen(), tea.WithContext(ctx))
 	_, err := p.Run()

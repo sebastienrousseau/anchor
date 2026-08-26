@@ -11,7 +11,7 @@ import (
 	"github.com/sebastienrousseau/askiso/internal/registry"
 )
 
-// AskIso runs in two modes.
+// AskISO runs in two modes.
 //
 // Light mode is the default on a fresh install: the embedded registry answers
 // what exists, what it is called, and where the Registration Authority
@@ -24,7 +24,7 @@ import (
 // which message set to download and which command installs it, so light mode is
 // a starting point rather than a dead end.
 
-// NotInstalledError reports a message AskIso knows about but has no schema for.
+// NotInstalledError reports a message AskISO knows about but has no schema for.
 type NotInstalledError struct {
 	Query   string
 	Known   bool
@@ -38,7 +38,7 @@ func (e *NotInstalledError) Error() string {
 
 	if !e.Known {
 		fmt.Fprintf(&b, "no ISO 20022 message matches %q\n\n", e.Query)
-		b.WriteString("AskIso knows every message identifier in the published standard,\n")
+		b.WriteString("AskISO knows every message identifier in the published standard,\n")
 		b.WriteString("so this is probably a typo. Try: askiso search " + firstToken(e.Query) + "\n")
 		return b.String()
 	}
@@ -82,7 +82,7 @@ func resolveMessage(query, purpose string) (catalog.Message, *catalog.Index, err
 	return catalog.Message{}, idx, notInstalled(query, purpose, loadErr)
 }
 
-// notInstalled builds the guidance for a message AskIso cannot open.
+// notInstalled builds the guidance for a message AskISO cannot open.
 func notInstalled(query, purpose string, reason error) error {
 	e := &NotInstalledError{Query: query, Purpose: purpose, Reason: reason}
 
@@ -111,7 +111,7 @@ func notInstalled(query, purpose string, reason error) error {
 // catalogue, so the reduced scope is never mistaken for the whole picture.
 func lightModeNotice(what string) string {
 	return fmt.Sprintf(
-		"\n%s %s from AskIso's embedded index of the standard.\n"+
+		"\n%s %s from AskISO's embedded index of the standard.\n"+
 			"      Install schemas for full detail: askiso catalog add <zip>  (see: askiso catalog where)\n",
 		subtleStyle.Render("light mode:"), what)
 }

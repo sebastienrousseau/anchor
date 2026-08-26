@@ -26,7 +26,7 @@
     var findings = (r.issues || []).concat(r.rules || []);
     var out = [];
 
-    out.push("# AskIso findings");
+    out.push("# AskISO findings");
     out.push("");
     if (r.messageID) {
       out.push("- Message: `" + r.messageID + "`");

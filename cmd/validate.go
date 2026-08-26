@@ -62,7 +62,7 @@ var validateCmd = &cobra.Command{
 	Long: `Validate checks an ISO 20022 message against its XML Schema.
 
 Validation is pure Go: no libxml2, no cgo, and identical results on every
-platform. When the schema is not given, AskIso resolves it from the document's
+platform. When the schema is not given, AskISO resolves it from the document's
 namespace against your installed catalogue.
 
 Diagnostics carry the element path, the schema rule that fired, and what was

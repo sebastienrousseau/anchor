@@ -1,10 +1,10 @@
 <!-- SPDX-License-Identifier: Apache-2.0 OR MIT -->
 
 <p align="center">
-  <img src="logo.svg" alt="AskIso" width="128" />
+  <img src="logo.svg" alt="AskISO" width="128" />
 </p>
 
-<h1 align="center">AskIso</h1>
+<h1 align="center">AskISO</h1>
 
 <p align="center">
   <strong>The ISO 20022 command line.</strong><br>
@@ -33,27 +33,27 @@ Or run the identical bundle locally with `make web-serve`.
 
 ---
 
-## What AskIso is
+## What AskISO is
 
-AskIso is a single Go binary for working with ISO 20022 financial messages. It gives you
+AskISO is a single Go binary for working with ISO 20022 financial messages. It gives you
 fuzzy search across the whole message catalogue, a Bubble Tea TUI, schema and sample
 viewers, a semantic business-rule linter, synthetic message generation, MT ⇄ MX
 cross-references, and a mock clearing rail — without leaving the terminal.
 
-**AskIso does not redistribute ISO 20022 specifications.** The Registration Authority
+**AskISO does not redistribute ISO 20022 specifications.** The Registration Authority
 publishes them free of charge at [iso20022.org](https://www.iso20022.org/); you download
-what you need and point AskIso at it. That keeps the binary small, keeps your schemas
+what you need and point AskISO at it. That keeps the binary small, keeps your schemas
 current, and means the specification content you validate against comes from the source
 of truth rather than a mirror of unknown age.
 
 > This is not the official ISO 20022 site. The sole source of up-to-date ISO 20022
 > material is <https://www.iso20022.org/>
 
-**AskIso is a developer tool, not regulatory advice.** It reports what it can verify
+**AskISO is a developer tool, not regulatory advice.** It reports what it can verify
 against the schemas and rules it was given. A clean result is not an assurance that a
 scheme, a correspondent or a market infrastructure will accept the message — the
 Registration Authority and your scheme operator remain authoritative on that. Where a
-mapping cannot be verified against a published source, AskIso reports the gap rather
+mapping cannot be verified against a published source, AskISO reports the gap rather
 than guessing; [Known limitations](#known-limitations) lists every such case.
 
 ---
@@ -79,7 +79,7 @@ used as a cross-check with `--engine libxml2`.
 
 ## Getting a catalogue
 
-AskIso knows about all **2,845 message definitions across 285 published message sets**
+AskISO knows about all **2,845 message definitions across 285 published message sets**
 out of the box — that index is embedded, so `search`, `info`, `code`, `translate`,
 `lint` and `generate` work the moment you install it, with no download and no network.
 That includes converting a real SWIFT MT message: `translate payment.mt103` needs no
@@ -104,7 +104,7 @@ into the right place, and matches the archive against the official set names so
 land in one canonical directory.
 
 Not sure what you have? `askiso catalog status` compares your install against the full
-published standard; `askiso catalog where` shows every location AskIso searches.
+published standard; `askiso catalog where` shows every location AskISO searches.
 
 The layout it produces, which you can also create by hand:
 
@@ -120,7 +120,7 @@ The layout it produces, which you can also create by hand:
     └── Version 12.0/
 ```
 
-AskIso looks for the catalogue in this order:
+AskISO looks for the catalogue in this order:
 
 | # | Location |
 | :-- | :--- |
@@ -139,14 +139,14 @@ set, which matters on Windows, where it is otherwise ignored entirely.
 message sets extends your existing one rather than quietly starting a second.
 
 ```bash
-askiso doctor    # confirms what AskIso found, and fails if it found nothing
+askiso doctor    # confirms what AskISO found, and fails if it found nothing
 ```
 
-If no catalogue is present, commands that need one tell you where AskIso looked and exit
+If no catalogue is present, commands that need one tell you where AskISO looked and exit
 non-zero. It never reports an empty catalogue as a healthy one.
 
 > **Keep the catalogue out of cloud-synced folders.** iCloud Drive, Dropbox and OneDrive
-> evict cold files and leave placeholders behind. AskIso detects iCloud placeholders and
+> evict cold files and leave placeholders behind. AskISO detects iCloud placeholders and
 > refuses to parse them, but the local data directory is the reliable home.
 
 ---
@@ -160,7 +160,7 @@ Commands marked ◆ need a catalogue; the rest work standalone.
 | `askiso catalog fetch <msg\|set>` | Open the right download page, then import the archive when it lands |
 | `askiso catalog add <zip\|dir>...` | Import message sets downloaded from iso20022.org (`--dry-run`, `--to`) |
 | `askiso catalog status` | Compare what you have installed against all 285 published sets (`--all`) |
-| `askiso catalog where` | Show every location AskIso searches, and which one it picked |
+| `askiso catalog where` | Show every location AskISO searches, and which one it picked |
 | `askiso` ◆ | Interactive TUI: live search, message table, schema and sample viewers |
 | `askiso search <query>` | Search by ID, domain, code, or keyword (`--json`); uses the embedded registry when no catalogue is installed |
 | `askiso info <msg-id>` | Metadata and schema paths (`--json`); without a catalogue, names the message set to download |
@@ -185,7 +185,7 @@ Commands marked ◆ need a catalogue; the rest work standalone.
 | `askiso completion <shell>` | Shell completions for zsh, bash, fish, powershell |
 | `askiso version` | Build version and metadata |
 
-### Using AskIso from an AI assistant
+### Using AskISO from an AI assistant
 
 `askiso-mcp` serves the same engine over the [Model Context Protocol](https://modelcontextprotocol.io),
 so an assistant can check the specification instead of recalling it. Ten tools:
@@ -204,7 +204,7 @@ It speaks newline-delimited JSON-RPC 2.0 on stdin and stdout, writes nothing
 else to stdout, and needs no catalogue for the seven tools that work in light
 mode. `askiso-mcp --tools` lists what it exposes.
 
-### Using AskIso from an editor
+### Using AskISO from an editor
 
 `askiso-lsp` is a language server for ISO 20022 XML. It publishes diagnostics as
 you type — business rules, schema validation against your own downloaded XSDs,
@@ -353,7 +353,7 @@ user what to download.
 ## The November 2026 address requirement
 
 From **14 November 2026** CBPR+ rejects fully unstructured postal addresses outright,
-with no contingency. AskIso checks readiness:
+with no contingency. AskISO checks readiness:
 
 ```bash
 askiso lint payment.xml --profile cbpr-2026
@@ -377,7 +377,7 @@ durable. The exempt message types — `camt.052`, `camt.053`, `camt.054`, `camt.
 `camt.025`, `admi.024` — are skipped and reported as out of scope rather than passing.
 
 This matters because schema validation cannot catch it: ISO 20022 constrains `<Ctry>` to
-`[A-Z]{2,2}` and nothing more, so `XX` validates. AskIso checks against the 249 assigned
+`[A-Z]{2,2}` and nothing more, so `XX` validates. AskISO checks against the 249 assigned
 ISO 3166-1 codes.
 
 Available as `--profile cbpr-2026` in the CLI and as the **Nov 2026** tab on the website.
@@ -391,7 +391,7 @@ Neither needs a catalogue: the rules are embedded.
 cardinality, choices, wildcards, patterns, enumerations, length and numeric facets — in
 pure Go.
 
-It is checked against the reference implementation: over the whole catalogue AskIso and
+It is checked against the reference implementation: over the whole catalogue AskISO and
 libxml2 agree on **4,746 of 4,746** documents, accepting the same 1,035 and rejecting the
 same 3,711. `make differential` reproduces that.
 
@@ -428,7 +428,7 @@ Stated plainly, because a validation tool that overstates itself is worse than n
 - **The exception family converts one way only.** MT n92, n95 and n96 become `camt.056`,
   `camt.110` and `camt.111` for every category (MT192, MT292, MT592 and the rest). The
   new messages want coded investigation types and reasons where MT carries prose, and
-  AskIso will not invent a code it cannot verify: the proprietary branch of the choice
+  AskISO will not invent a code it cannot verify: the proprietary branch of the choice
   names the source message and the prose becomes the narrative. Converting back is not
   implemented.
 - **The two directions lose different things, and both say so.** MT to MX produces
@@ -451,7 +451,7 @@ Stated plainly, because a validation tool that overstates itself is worse than n
 - **`code` searches three sources.** A curated dictionary of 33 codes that needs nothing
   installed; every code set enumerated in the schemas you downloaded; and the Registration
   Authority's external code set publication once you import it with
-  `askiso code --import <ExternalCodeSets.xlsx>`. AskIso ships none of the last two —
+  `askiso code --import <ExternalCodeSets.xlsx>`. AskISO ships none of the last two —
   they are your download, stored beside your catalogue.
 - **`askiso-lsp` synchronises whole documents**, not incremental edits, and offers no
   code actions or formatting. Completion and hover need an installed catalogue; without
@@ -466,7 +466,7 @@ Stated plainly, because a validation tool that overstates itself is worse than n
   appears in your downloads folder. It never accepts the RA's terms on your behalf, and it
   will not, because those terms are yours to accept.
 - **`convert` refuses names that are not valid XML.** Go's XML decoder is more lenient
-  than the specification, and a name AskIso accepted on the way in would be one it could
+  than the specification, and a name AskISO accepted on the way in would be one it could
   not emit on the way back. Found by fuzzing, along with an attribute-escaping bug.
 - **Non-adjacent repeated elements cannot be converted to JSON.** A JSON object cannot
   express that ordering, so `convert` reports it rather than silently reordering the
@@ -481,14 +481,14 @@ next, listed so the gaps are visible rather than implied.
 
 | Next | Why it is not there yet |
 | :--- | :--- |
-| A published bank-transaction-code mapping | MT940 field 61 wants MT's own four-character vocabulary. A mapping exists in scheme documentation; AskIso will carry one when it can be verified against a source, not before |
-| Realistic schema-driven output | A schema walk produces a minimal, synthetic message with plausible identifiers. Making one read like a real trade — consistent parties, matching references across a lifecycle — needs domain data AskIso does not carry |
+| A published bank-transaction-code mapping | MT940 field 61 wants MT's own four-character vocabulary. A mapping exists in scheme documentation; AskISO will carry one when it can be verified against a source, not before |
+| Realistic schema-driven output | A schema walk produces a minimal, synthetic message with plausible identifiers. Making one read like a real trade — consistent parties, matching references across a lifecycle — needs domain data AskISO does not carry |
 
 ---
 
 ## Releases and packages
 
-AskIso has not been tagged yet, so there is no release to install from and the package
+AskISO has not been tagged yet, so there is no release to install from and the package
 managers below carry nothing. Until the first tag, `go install` is the way in:
 
 ```bash
@@ -568,4 +568,4 @@ Dual-licensed at your option:
 - **MIT License** ([LICENSE-MIT](LICENSE-MIT))
 
 ISO 20022 is a registered standard of the International Organization for Standardization.
-AskIso bundles no ISO 20022 specification content — see [NOTICE](NOTICE).
+AskISO bundles no ISO 20022 specification content — see [NOTICE](NOTICE).

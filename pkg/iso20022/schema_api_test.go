@@ -144,7 +144,7 @@ func TestDiffRequiresBothSchemas(t *testing.T) {
 	}
 }
 
-// The external code sets are stored beside the catalogue, because AskIso does
+// The external code sets are stored beside the catalogue, because AskISO does
 // not redistribute the Registration Authority's publication.
 func TestExternalCodesRoundTripThroughImport(t *testing.T) {
 	c := realCatalogue(t, map[string]string{"pacs.008.001.10": schemaWith(
