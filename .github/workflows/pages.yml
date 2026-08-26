@@ -12,9 +12,18 @@ name: Website
 on:
   push:
     branches: [main]
-  # Publishing a release republishes the site, so the version the footer names
-  # and the install instructions the docs give always match the newest release
-  # rather than whatever main happened to be when it last built.
+    # A release republishes the site, so the version the footer names always
+    # matches the newest release rather than whatever main happened to be when
+    # it last built.
+    #
+    # The trigger is the tag, not the release. goreleaser creates the release
+    # with the default GITHUB_TOKEN, and GitHub does not raise workflow events
+    # for actions taken with that token -- so `release: published` never fires
+    # for a release this repository publishes itself. Pushing the tag is a user
+    # action and does fire, which is how the Release workflow is triggered in
+    # the first place.
+    tags: ['v*']
+  # Kept for a release published by hand, where the event does fire.
   release:
     types: [published]
   workflow_dispatch:
@@ -43,11 +52,18 @@ jobs:
       - name: Resolve the release version
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            v="${{ github.event.release.tag_name }}"
-          else
-            v="$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)"
-          fi
+          case "${{ github.event_name }}" in
+            release) v="${{ github.event.release.tag_name }}" ;;
+            push)
+              # On a tag push github.ref_name is the tag itself; on a branch
+              # push it is the branch, so fall back to the newest tag.
+              case "${{ github.ref }}" in
+                refs/tags/*) v="${{ github.ref_name }}" ;;
+                *) v="$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)" ;;
+              esac
+              ;;
+            *) v="$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)" ;;
+          esac
           echo "value=${v#v}" >> "$GITHUB_OUTPUT"
           echo "building the site as ${v}"
 
