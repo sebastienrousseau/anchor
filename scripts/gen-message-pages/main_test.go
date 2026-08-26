@@ -250,8 +250,10 @@ func TestRunWritesOnePagePerMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 	reg := testRegistry(t)
-	if len(entries) != len(reg.Messages) {
-		t.Errorf("wrote %d files, want %d", len(entries), len(reg.Messages))
+	// One page per message, plus the index that makes them browsable.
+	if want := len(reg.Messages) + 1; len(entries) != want {
+		t.Errorf("wrote %d files, want %d (%d messages and an index)",
+			len(entries), want, len(reg.Messages))
 	}
 
 	body, err := os.ReadFile(filepath.Join(dir, "pacs.008.001.10.md"))
@@ -286,4 +288,68 @@ func extract(page, heading string) string {
 		end = len(page)
 	}
 	return page[i:end]
+}
+
+// The index is the front door to 2,845 pages that were otherwise reachable only
+// from search and the sitemap. It has to name every business area and link to
+// the current version of every family, or it is a front door onto a wall.
+func TestIndexCoversEveryDomainAndFamily(t *testing.T) {
+	if testing.Short() {
+		t.Skip("writes 2,845 files")
+	}
+	dir := t.TempDir()
+	if err := run(dir, "2026-08-25"); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+
+	body, err := os.ReadFile(filepath.Join(dir, "index.md"))
+	if err != nil {
+		t.Fatalf("no index was written: %v", err)
+	}
+	page := string(body)
+	reg := testRegistry(t)
+
+	domains := map[string]bool{}
+	families := map[string]string{}
+	for _, m := range reg.Messages {
+		domains[m.Domain] = true
+		if m.ID > families[m.BaseCode] {
+			families[m.BaseCode] = m.ID
+		}
+	}
+
+	for d := range domains {
+		if !strings.Contains(page, "`"+d+"`") {
+			t.Errorf("the index does not mention the %s business area", d)
+		}
+	}
+
+	// Every family must link to its current version, because that link is the
+	// only route to the page for somebody browsing rather than searching.
+	for base, latest := range families {
+		want := "[" + base + "](" + latest + "/)"
+		if !strings.Contains(page, want) {
+			t.Errorf("the index does not link %s to its current version %s", base, latest)
+		}
+	}
+
+	// Counts are a claim about scale, so they must be readable and right.
+	if !strings.Contains(page, commas(len(reg.Messages))) {
+		t.Errorf("the index does not state the message count as %s", commas(len(reg.Messages)))
+	}
+	if strings.Contains(page, "current is") {
+		t.Error("the index still uses the phrasing that read as an arithmetic error")
+	}
+}
+
+func TestCommasGroupsThousands(t *testing.T) {
+	for _, c := range []struct {
+		in   int
+		want string
+	}{{0, "0"}, {7, "7"}, {999, "999"}, {1000, "1,000"}, {2845, "2,845"},
+		{10000, "10,000"}, {166419, "166,419"}, {1000000, "1,000,000"}} {
+		if got := commas(c.in); got != c.want {
+			t.Errorf("commas(%d) = %q, want %q", c.in, got, c.want)
+		}
+	}
 }

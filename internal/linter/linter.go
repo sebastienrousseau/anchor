@@ -287,6 +287,19 @@ func pathOf(stack []elementStackItem) string {
 	return b.String()
 }
 
+// RuleNames lists every rule the linter can report, which is what makes it
+// possible to prove the test table covers all of them. A check added without a
+// case here shows up as a failure rather than as silence.
+func RuleNames() []string {
+	return []string{
+		"ISO 13616 IBAN Checksum",
+		"ISO 9362 BIC Format",
+		"RFC 4122 UUIDv4 UETR",
+		"ISO 4217 Currency Precision",
+		"Temporal Sequence Sanity",
+	}
+}
+
 // Lint inspects an ISO 20022 XML byte payload against semantic business rules.
 func Lint(data []byte, filename string) (*Result, error) {
 	res := &Result{
@@ -296,6 +309,12 @@ func Lint(data []byte, filename string) (*Result, error) {
 
 	decoder := xml.NewDecoder(bytes.NewReader(data))
 	var creDtTmStr, sttlmDtStr string
+
+	// An empty file and a JSON payload both walk to EOF without producing a
+	// single element, and used to come back as "no findings" -- indistinguishable
+	// from a clean message. That is the most dangerous answer a checker can give,
+	// because a pipeline reads it as a pass.
+	var sawElement bool
 
 	var stack []elementStackItem
 
@@ -316,6 +335,7 @@ func Lint(data []byte, filename string) (*Result, error) {
 					ccyAttr = attr.Value
 				}
 			}
+			sawElement = true
 			stack = append(stack, elementStackItem{name: elem.Name.Local, ccy: ccyAttr})
 
 		case xml.EndElement:
@@ -465,6 +485,10 @@ func Lint(data []byte, filename string) (*Result, error) {
 				sttlmDtStr = val
 			}
 		}
+	}
+
+	if !sawElement {
+		return nil, fmt.Errorf("no XML elements found in %s: this is not an ISO 20022 message", filename)
 	}
 
 	// Temporal check

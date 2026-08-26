@@ -10,9 +10,60 @@
       <h1 id="hero-heading">{{headline}}</h1>
       <p class="lead">{{lead}}</p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="{{locale_path}}playground/">Try it in the browser</a>
-        <a class="btn btn-secondary" href="{{locale_path}}docs/">Read the docs</a>
-        <a class="btn btn-outline" href="https://github.com/sebastienrousseau/askiso">Source</a>
+        <a class="btn btn-primary" href="{{locale_path}}workspace/">Check a message</a>
+        <a class="btn btn-secondary" href="{{locale_path}}deadline/">What changes in November 2026</a>
+        <a class="btn btn-outline" href="{{locale_path}}docs/">Developer docs</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- The deadline is the reason most visitors are here, whether or not they
+     arrived knowing it. Putting it above the capability list is the honest
+     ordering: what changes and when, before what we happen to have built. -->
+<section class="section deadline-band" aria-labelledby="deadline-heading">
+  <div class="container">
+    <p class="eyebrow">14 November 2026</p>
+    <h2 id="deadline-heading">Unstructured addresses stop being accepted</h2>
+    <p class="lead">CBPR+ — the cross-border payments and reporting rules that
+    correspondent banks settle under — requires structured or hybrid postal addresses
+    from that date. A message carrying a fully free-text address is rejected by the
+    receiving institution, not repaired, which makes this an operations problem before
+    it is a technical one.</p>
+    <p><a class="btn btn-primary" href="{{locale_path}}workspace/">Check a message against the 2026 rules</a></p>
+  </div>
+</section>
+
+<!-- Three audiences, because the same tool answers three different questions
+     and a visitor should not have to work out which part is aimed at them. -->
+<section class="section" aria-labelledby="audience-heading">
+  <div class="container stack">
+    <div class="text-center stack">
+      <h2 id="audience-heading">Whichever side of the problem you are on</h2>
+      <p class="lead mx-auto text-center">The same engine answers all three, and cites
+      the same rules whichever way you reach it.</p>
+    </div>
+    <div class="grid">
+      <div class="card">
+        <h3>Payments operations</h3>
+        <p>Find out why a message was returned, and what to change. Every finding names
+        the rule and the exact field, in language you can forward to the team that owns
+        it — not a stack trace.</p>
+        <p><a href="{{locale_path}}workspace/">Check a message</a></p>
+      </div>
+      <div class="card">
+        <h3>Engineering</h3>
+        <p>Validate in CI before a message reaches a counterparty. SARIF output lands in
+        code scanning, a language server puts findings in your editor, and an MCP server
+        lets an AI assistant use the same engine.</p>
+        <p><a href="{{locale_path}}docs/">Read the developer docs</a></p>
+      </div>
+      <div class="card">
+        <h3>Compliance and risk</h3>
+        <p>Evidence you can attach to a ticket or an audit: findings as SARIF, an
+        evidence pack naming what was checked and what was not, and a published
+        conformance result you can reproduce.</p>
+        <p><a href="{{locale_path}}conformance/">See the evidence</a></p>
       </div>
     </div>
   </div>

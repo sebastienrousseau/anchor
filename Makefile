@@ -26,7 +26,7 @@ WASM_LDFLAGS = -s -w -X main.buildVersion=$(VERSION)
 # against regression rather than where it forces that work.
 COVERAGE_FLOOR = 95.5
 
-.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint vuln clean run catalog-info web web-test web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
+.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries vuln clean run catalog-info web web-test web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
 
 all: build
 
@@ -82,8 +82,38 @@ race:
 # -coverpkg=./... credits code executed by any package's tests, not just its
 # own, which is the honest measure for a project where the CLI drives the
 # internals.
+# The examples are demonstration programs: argument handling, a library call,
+# and printing. They are proven by examples_test building and running every one
+# of them, which is the guarantee that actually matters -- an example that no
+# longer compiles is the failure worth catching. Statement coverage cannot see
+# work done in a subprocess, so leaving them in the denominator would measure
+# nothing except whether somebody wrote unit tests for demo code. They stay in
+# `go test ./...`, `go vet ./...` and `gofmt`; only the metric excludes them.
+COVERPKG = $(shell go list ./... | grep -v '/examples' | paste -sd, -)
+
+# A compiled binary committed to a public repository is bloat nobody notices
+# until the clone is slow, and `go build ./examples/...` drops one per example
+# into the working directory where a wide `git add` will sweep them up. This
+# caught exactly that, once.
+#
+# Written for POSIX sh, not bash: CI runs /bin/sh, and the first version of this
+# used process substitution, failed to parse there, and still printed its
+# success line -- a gate that passes without checking anything is worse than no
+# gate at all.
+no-binaries:
+	@tmp=$$(mktemp); \
+	git ls-files -z | xargs -0 -n1 sh -c \
+	  'case "$$(file -b --mime-type "$$1")" in application/x-mach-binary|application/x-executable|application/x-sharedlib) echo "$$1";; esac' sh \
+	  > "$$tmp" 2>/dev/null || true; \
+	if [ -s "$$tmp" ]; then \
+	  echo "compiled binaries are tracked:"; sed 's/^/  /' "$$tmp"; \
+	  echo "remove them with: git rm --cached <file>"; rm -f "$$tmp"; exit 1; \
+	fi; \
+	rm -f "$$tmp"; \
+	echo "no-binaries: no compiled executables are tracked"
+
 cover:
-	go test -coverpkg=./... -coverprofile=coverage.out -covermode=atomic ./...
+	go test -coverpkg=$(COVERPKG) -coverprofile=coverage.out -covermode=atomic ./...
 	@go tool cover -func=coverage.out | tail -1
 	@pct=$$(go tool cover -func=coverage.out | tail -1 | grep -oE '[0-9]+\.[0-9]+'); \
 	awk -v p="$$pct" -v f="$(COVERAGE_FLOOR)" \
@@ -180,6 +210,11 @@ web:
 	@# referencing the bare name, so /highlight.css was a 404 on every page.
 	@h=$$(ls $(WEB_OUT)/highlight.*.css 2>/dev/null | head -1); \
 	 test -n "$$h" && cp -f "$$h" "$(WEB_OUT)/highlight.css" || true
+	@# Stamp the release the site reflects. In CI VERSION comes from the tag
+	@# being built, so publishing a release republishes a site that names it.
+	@find $(WEB_OUT) -name '*.html' -exec sed -i.bak 's/ASKISO_RELEASE/v$(VERSION)/g' {} + 2>/dev/null || \
+	 find $(WEB_OUT) -name '*.html' -exec sed -i '' 's/ASKISO_RELEASE/v$(VERSION)/g' {} +
+	@find $(WEB_OUT) -name '*.html.bak' -delete 2>/dev/null || true
 	@printf 'askiso.io\n' > $(WEB_OUT)/CNAME
 	@# Without this GitHub Pages runs its Jekyll filter over the artefact and
 	@# drops anything beginning with a dot or an underscore — which silently
@@ -218,7 +253,7 @@ web-serve: web
 	@cd $(WEB_OUT) && python3 -m http.server 8765
 
 fmt:
-	gofmt -s -w cmd/ internal/ pkg/ scripts/ web/
+	gofmt -s -w cmd/ examples/ internal/ pkg/ scripts/ web/
 
 vet:
 	go vet ./...
@@ -232,7 +267,7 @@ vuln:
 	govulncheck ./...
 
 # The full gate CI runs, minus the catalogue-dependent conformance suite.
-ci: fmt vet lint test cover vuln build sessions web-test mcp-check lsp-check
+ci: fmt vet lint no-binaries test cover vuln build sessions web-test mcp-check lsp-check
 
 catalog-info:
 	@./$(BINARY_NAME) doctor || true

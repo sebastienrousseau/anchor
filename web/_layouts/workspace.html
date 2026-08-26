@@ -35,11 +35,26 @@
 
       <p class="ws-intent" id="ws-intent" aria-live="polite"></p>
 
+      <!-- Every example has to succeed. A demonstration button that returns
+           "nothing matches" teaches a first-time visitor that the tool does not
+           work, which was exactly what the old "A question" example did: the
+           workspace matches identifiers, not free text, so it could only ever
+           fail. Questions in words belong on the FAQ, and that is where the
+           empty result now points. -->
       <div class="row">
         <button class="act" id="ws-go" type="button">Ask</button>
-        <button class="act ghost" type="button" data-ws-example="pacs.008">pacs.008</button>
-        <button class="act ghost" type="button" data-ws-example="GB29NWBK60161331926819">An IBAN</button>
-        <button class="act ghost" type="button" data-ws-example="structured address">A question</button>
+        <button class="act ghost" type="button" data-ws-example="pacs.008">Look up pacs.008</button>
+        <button class="act ghost" type="button" data-ws-example="GB29NWBK60161331926819">Check an IBAN</button>
+        <button class="act ghost" type="button" data-ws-example="{1:F01BANKGB2LAXXX0000000000}{2:I103BANKDEFFXXXXN}{4:
+:20:REF123456
+:23B:CRED
+:32A:260826EUR5000,00
+:50K:/GB33BUKB20201555555555
+ACME INTERNATIONAL CORP
+:59:/FR7630006000011234567890189
+GLOBAL LOGISTICS GMBH
+:71A:SHA
+-}">Convert a SWIFT MT message</button>
       </div>
 
       <div class="ws-answer" id="ws-answer" aria-live="polite">

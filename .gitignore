@@ -2,6 +2,17 @@
 /askiso
 /askiso-mcp
 /askiso-lsp
+
+# `go build ./examples/...` drops one binary per example into the working
+# directory. They are named after their directory, so they are listed rather
+# than matched by a pattern that could hide a real file.
+/batch-audit
+/cbpr-2026
+/ci-sarif
+/lookup
+/mt-to-mx
+/remediate
+/validate
 /dist/
 coverage.out
 coverage.html

@@ -1,8 +1,8 @@
 ---
 name: "AskISO"
 short_name: "AI"
-title: "AskISO — the developer's ISO 20022 toolchain"
-description: "Validate, convert, generate and remediate ISO 20022 financial messages from your terminal, your editor, your CI pipeline or your AI assistant. Open source, ships no specification content, runs entirely on your machine."
+title: "AskISO — validate ISO 20022 messages and get ready for November 2026"
+description: "Validate, lint and convert ISO 20022 and SWIFT MT messages, and check them against the CBPR+ November 2026 structured-address rules. Every finding cites the rule and the field. Nothing is uploaded. Open source, free, ships no specification content."
 keywords: "ISO 20022, pacs.008, pain.001, camt.053, CBPR+, structured address, SWIFT MT to MX, ISO 20022 validator, ISO 20022 CLI, MT103 converter, November 2026 deadline"
 author: "Sebastien Rousseau"
 date: "2026-08-25"
@@ -16,49 +16,63 @@ news_publication_date: "2026-08-25"
 nav_home: "true"
 hero_alt: "The AskISO mark: a question mark inside a circle, in cyan."
 eyebrow: "Open source · Apache-2.0 or MIT"
-headline: "ISO 20022, from the terminal you already live in"
-lead: "Validate, lint, convert and generate financial messages without a portal, a licence key, or an upload. 2,845 message definitions indexed offline. Your payment data never leaves your machine."
+headline: "Know your ISO 20022 messages will be accepted"
+lead: "Check a payment message against the schema, the scheme rules and the November 2026 requirements — and get told which rule failed, in which field, and what to change. Nothing is uploaded: the engine runs on your machine, or inside your browser tab."
 ---
 
-## One command, then you are working
+## What you can do right now
 
-```bash
-go install github.com/sebastienrousseau/askiso/cmd/askiso@latest
-askiso validate payment.xml
-```
+**Check a message and understand the answer.** Paste an ISO 20022 or SWIFT MT
+message into the [workspace](workspace/). It works out what you gave it, runs the
+lint checks and the November 2026 rules, and reports each finding with the rule
+identifier, the exact path in the document, what it expected, and what to change.
+A finding you cannot trace to a rule is a finding you cannot act on.
 
-No account, no API key, no upload. AskISO runs locally: the CLI on your machine,
-the browser build inside your tab. There is no AskISO-operated service that could
-see a payment instruction, which is the honest answer to the question your
-security team will ask first.
+**Look up any message.** All [2,845 message definitions](messages/) across 30
+business areas, every version of each, what replaced it, and where to get the
+schema from the Registration Authority.
 
-## What it does
+**Take the evidence with you.** Findings as JSON, as SARIF 2.1.0 for code
+scanning, or as an evidence pack written for a ticket — including a statement of
+what was *not* checked, because "clean" without a schema means "nothing
+contradicted it".
 
-**Validation that agrees with the reference implementation.** A pure-Go
+## Why the answers can be trusted
+
+**Validation checked against an independent implementation.** A pure-Go
 implementation of the XML Schema subset ISO 20022 uses — element order,
 cardinality, choices, wildcards, patterns, enumerations, length and numeric
 facets. Across the whole catalogue AskISO and libxml2 agree on **4,746 of 4,746
 documents**, accepting the same 1,035 and rejecting the same 3,711. That figure
 is reproduced by a command, not asserted in a brochure.
 
-**Diagnostics that tell you how to fix it.** Where the reference says the
-document is invalid, AskISO says which rule, at which XPath, what it expected
-and what it found.
-
-**MT and MX, both directions.** MT101, MT103, MT104, MT107, MT202, MT204 and
-MT940 convert to pain.001, pacs.008, pain.008, pacs.009, pacs.010 and camt.053,
-and each converts back. Every conversion carries a fidelity report naming what
-was mapped, derived, truncated or lost — because conversion is lossy by nature
-and a tool that hides that is not doing you a favour.
-
 **Scheme rules, not just schema validity.** A message can be schema-valid and
 still be rejected by a clearing system. AskISO checks the rules that sit on top:
 CBPR+ requirements, the November 2026 structured-address mandate, enhanced-data
 expectations, LEI and UETR correctness.
 
-**Wherever you work.** A CLI, a terminal UI, a language server for editor
-diagnostics as you type, and an MCP server so an AI assistant can use the same
-engine.
+**MT and MX, both directions, honestly.** MT101, MT103, MT104, MT107, MT202,
+MT204 and MT940 convert to pain.001, pacs.008, pain.008, pacs.009, pacs.010 and
+camt.053, and each converts back. Every conversion carries a fidelity report
+naming what was mapped, derived, truncated or lost — because conversion is lossy
+by nature and a tool that hides that is not doing you a favour.
+
+## Where it runs
+
+On your machine as a command line and a terminal interface; in your editor as a
+language server, with findings inline as you type; in your pipeline as a GitHub
+Action emitting SARIF; alongside an AI assistant as an MCP server, so the
+assistant cites a rule identifier instead of improvising. And in your browser,
+on this site, with the identical engine compiled to WebAssembly.
+
+```bash
+go install github.com/sebastienrousseau/askiso/cmd/askiso@latest
+askiso lint payment.xml --profile cbpr-2026
+```
+
+No account, no API key, no upload. There is no AskISO-operated service that
+could see a payment instruction, which is the honest answer to the question your
+security team will ask first.
 
 ## Ships no specification content
 
@@ -79,5 +93,8 @@ bank transaction code exists, it emits `NMSC` and tells you what was lost. Where
 camt.110 wants a coded investigation type that MT carries as prose, it uses the
 proprietary branch and names the source message rather than guessing.
 
-AskISO is a developer tool, not regulatory advice. A clean result is not an
-assurance that a scheme or correspondent will accept the message.
+For a payment message, a confident wrong answer costs more than no answer.
+
+AskISO is a tool, not regulatory advice. A clean result is not an assurance that
+a scheme or correspondent will accept the message. It is an independent
+open-source project, not affiliated with ISO or SWIFT.

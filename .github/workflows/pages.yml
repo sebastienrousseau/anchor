@@ -12,6 +12,11 @@ name: Website
 on:
   push:
     branches: [main]
+  # Publishing a release republishes the site, so the version the footer names
+  # and the install instructions the docs give always match the newest release
+  # rather than whatever main happened to be when it last built.
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -29,6 +34,22 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
+          # Tags are needed to work out which release the site reflects.
+          fetch-depth: 0
+
+      # The site states its version in the footer. On a release build that is
+      # the tag being published; on a push to main it is the newest tag that
+      # already exists, so the site never claims a version that was not cut.
+      - name: Resolve the release version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            v="${{ github.event.release.tag_name }}"
+          else
+            v="$(git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)"
+          fi
+          echo "value=${v#v}" >> "$GITHUB_OUTPUT"
+          echo "building the site as ${v}"
 
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
@@ -59,7 +80,7 @@ jobs:
         run: make sessions
 
       - name: Build the site
-        run: make web
+        run: make web VERSION="${{ steps.version.outputs.value }}"
 
       # The site is only as trustworthy as the bridge between Go and JavaScript.
       # A renamed API or a field that stops serialising would break the page

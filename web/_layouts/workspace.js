@@ -302,13 +302,26 @@
       // it matches identifiers, domains and business areas, not free text, so
       // "structured address" finds nothing however reasonable the question is.
       nodes.push(el("p", "ws-note",
-        "Search covers message identifiers, domains and business areas — not " +
-        "free text. Try a code or a domain:"));
+        "This box matches message identifiers, domains and business areas — it " +
+        "does not answer questions in words. Try a code:"));
       nodes.push(suggestions([
         { label: "pacs.008", input: "pacs.008" },
         { label: "camt.053", input: "camt.053" },
         { label: "pain.001", input: "pain.001" },
       ]));
+      // A question asked in words is a reasonable thing to do, so it lands
+      // somewhere useful rather than at a dead end.
+      var more = el("p", "ws-note");
+      more.appendChild(document.createTextNode("Asking a question in words? The "));
+      var faq = el("a", null, "frequently asked questions");
+      faq.href = "../faq/";
+      more.appendChild(faq);
+      more.appendChild(document.createTextNode(" cover the November 2026 change, privacy and schemas, and the "));
+      var ref = el("a", null, "message reference");
+      ref.href = "../messages/";
+      more.appendChild(ref);
+      more.appendChild(document.createTextNode(" lists every definition by business area."));
+      nodes.push(more);
       answer(nodes);
       return;
     }
