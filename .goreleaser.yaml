@@ -151,6 +151,12 @@ nfpms:
 # binary distribution to be a cask rather than a formula.
 homebrew_casks:
   - name: askiso
+    # Publishing to the tap needs a token for a different repository, which the
+    # default GITHUB_TOKEN cannot provide. Without it the cask is built and
+    # attached to the release but not pushed, so a release still succeeds on a
+    # repository that has not been given one -- rather than failing after the
+    # binaries were already produced.
+    skip_upload: '{{ if eq .Env.HOMEBREW_TAP_TOKEN "" }}true{{ else }}false{{ end }}'
     repository:
       owner: sebastienrousseau
       name: homebrew-tap
@@ -171,6 +177,8 @@ homebrew_casks:
 
 scoops:
   - name: askiso
+    # Same reasoning as the cask above.
+    skip_upload: '{{ if eq .Env.SCOOP_BUCKET_TOKEN "" }}true{{ else }}false{{ end }}'
     repository:
       owner: sebastienrousseau
       name: scoop-bucket
