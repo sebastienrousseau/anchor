@@ -13,7 +13,17 @@ LSP_BINARY = askiso-lsp
 LSP_PATH = ./cmd/askiso-lsp
 LDFLAGS = -s -w -X github.com/sebastienrousseau/askiso/internal/tui.Version=$(VERSION)
 SERVER_LDFLAGS = -s -w -X main.version=$(VERSION)
-COVERAGE_FLOOR = 95
+# 95.5, not 95 and not 98. The measurement is taken on a runner with no
+# catalogue installed, which is the honest environment but also the one where
+# the terminal UI, the browser opener and the AI client cannot run at all.
+#
+# What is left uncovered is 427 statements in 377 blocks across 63 files, and
+# 338 of those blocks are a single `if err != nil { return err }`. Reaching 98%
+# would mean contriving roughly 239 individual failure injections to assert
+# that errors propagate — tests that make the suite slower and more brittle
+# without making the tool more correct. The floor is set where it protects
+# against regression rather than where it forces that work.
+COVERAGE_FLOOR = 95.5
 
 .PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint vuln clean run catalog-info web web-test web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
 
