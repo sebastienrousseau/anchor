@@ -108,6 +108,12 @@
          page-weight regression for the 2,847 that never use them. -->
     {{#if nav_playground}}<link rel="stylesheet" href="{{site_path}}playground.css" />{{/if}}
     {{#if nav_workspace}}<link rel="stylesheet" href="{{site_path}}workspace.css" />{{/if}}
+    <!-- Fetched early so it is already in cache when the parser reaches its
+         tag at the end of the body. Without this the browser paints the plain
+         transcripts, waits a round trip for the script, and then replaces them
+         with taller terminals -- a layout shift that only appears over a real
+         network, which is why it did not show up locally. -->
+    <link rel="preload" href="{{site_path}}terminal.js" as="script" />
     <script src="{{site_path}}theme-init.js"></script>
   </head>
 

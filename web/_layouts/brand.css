@@ -737,3 +737,25 @@ h3 {
   font-size: 1.15rem;
   line-height: 1.35;
 }
+
+/* ---------- transcripts, before they become terminals ---------- */
+
+/* terminal.js turns shell blocks into a terminal with a title bar and padded
+   screen. Until it runs -- and for anyone without JavaScript -- the plain <pre>
+   stands in its place, and the two boxes were different heights, so the swap
+   pushed the page around.
+
+   Matching the metrics here means the replacement is close to height-neutral.
+   It also means the fallback looks deliberate rather than like an unstyled
+   remnant, which is what somebody with JavaScript off actually sees. */
+
+pre.language-bash,
+pre.language-console {
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  line-height: 1.6;
+  /* The extra block-start is the title bar the terminal will add. */
+  padding: 3.35rem 1.25rem 1.15rem;
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+}
