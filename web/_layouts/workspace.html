@@ -99,7 +99,11 @@ GLOBAL LOGISTICS GMBH
   </div>
 </section>
 
-<script src="{{site_path}}wasm_exec.js"></script>
+<!-- Deferred. It is the Go runtime's JavaScript shim, and nothing needs it
+     until the engine is instantiated — which happens on first interaction, not
+     on load. Loaded synchronously it blocked rendering for 600ms to deliver
+     17KB that would not be called for seconds, if at all. -->
+<script src="{{site_path}}wasm_exec.js" defer></script>
 <script src="{{site_path}}catalogue.js" defer></script>
 <script src="{{site_path}}evidence.js" defer></script>
 <script src="{{site_path}}workspace.js" defer></script>

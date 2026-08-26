@@ -244,16 +244,29 @@ web:
 	go run ./scripts/gen-message-pages -out web/content/messages
 	ssg build -f web/ssg.toml
 	@$(MAKE) --no-print-directory wasm
-	@for a in styles.css brand.css playground.css workspace.css main.js theme-init.js deadline.js playground.js catalogue.js evidence.js workspace.js workspace-boot.js terminal.js logo.svg favicon.ico; do \
+	@# The stylesheet the pages actually load: both sources, in order, minified.
+	@python3 scripts/minify-css.py $(WEB_OUT)/site.css \
+	  web/_layouts/styles.css web/_layouts/brand.css
+	@python3 scripts/minify-css.py $(WEB_OUT)/playground.css web/_layouts/playground.css
+	@python3 scripts/minify-css.py $(WEB_OUT)/workspace.css web/_layouts/workspace.css
+	@for a in main.js theme-init.js deadline.js playground.js catalogue.js evidence.js workspace.js workspace-boot.js terminal.js logo.svg favicon.ico; do \
 	  test -f "web/_layouts/$$a" && cp -f "web/_layouts/$$a" "$(WEB_OUT)/$$a"; \
 	done
+	@# The theme bootstrap, inlined and allowed by hash. It has to run before
+	@# the first paint, so it cannot be deferred; external it was a round trip
+	@# for 711 bytes.
+	@python3 scripts/inline-theme.py $(WEB_OUT) web/_layouts/theme-init.js
 	@# Question-and-answer markup, read back out of the built page so it cannot
 	@# disagree with the visible text.
 	@python3 scripts/faq-schema.py $(WEB_OUT)/faq/index.html
 	@# The social card. og:image pointed at images/screenshot.png, which was
 	@# never built, so every share of every page showed a broken image.
-	@mkdir -p $(WEB_OUT)/images
+	@mkdir -p $(WEB_OUT)/images/banners
 	@cp -f web/_layouts/images/social-card.png $(WEB_OUT)/images/
+	@# Banner photography, served from this origin. It began on the project's
+	@# CDN, which cost a second DNS lookup and TLS handshake before the largest
+	@# element on the page could even begin downloading.
+	@cp -f web/_layouts/images/banners/*.webp $(WEB_OUT)/images/banners/
 	@# ssg fingerprints its syntax-highlighting stylesheet but emits the page
 	@# referencing the bare name, so /highlight.css was a 404 on every page.
 	@h=$$(ls $(WEB_OUT)/highlight.*.css 2>/dev/null | head -1); \

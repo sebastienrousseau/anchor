@@ -206,8 +206,12 @@ func writeIndex(reg *registry.Registry, outDir, date string) error {
 			// /messages without redirecting to /messages/, so a bare
 			// "pacs.008.001.13/" resolved against the wrong base and every link
 			// on this page 404ed for anyone who arrived without the slash.
-			fmt.Fprintf(&b, "- **[%s](/messages/%s/)** — %d %s, current `%s`\n",
-				base, latest, len(ids), plural(len(ids), "version", "versions"), latest)
+			// The identifier appeared twice on every line: once in the link
+			// and once after it. On an index of 664 families that repetition
+			// was 23KB of the page, and the link already goes to the version
+			// it names.
+			fmt.Fprintf(&b, "- [%s](/messages/%s/) — %d %s\n",
+				base, latest, len(ids), plural(len(ids), "version", "versions"))
 		}
 		fmt.Fprintf(&b, "\n")
 	}
