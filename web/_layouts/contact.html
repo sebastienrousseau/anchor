@@ -1,0 +1,114 @@
+{{#extends "base"}}
+{{#block "main"}}
+<section class="page-banner" aria-labelledby="contact-heading">
+  {{#if banner}}
+  <img class="page-banner-image"
+       src="https://cloudcdn.pro/stocks/images/{{banner}}-1200.webp"
+       srcset="https://cloudcdn.pro/stocks/images/{{banner}}-640.webp 640w,
+               https://cloudcdn.pro/stocks/images/{{banner}}-1200.webp 1200w"
+       sizes="100vw"
+       width="1200" height="800"
+       alt="{{banner_alt}}"
+       fetchpriority="high" decoding="async" />
+  {{/if}}
+  <div class="page-banner-body">
+    <div class="container stack">
+      <p class="eyebrow">{{eyebrow}}</p>
+      <h1 id="contact-heading">{{headline}}</h1>
+      <p class="lead">{{lead}}</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container contact-grid">
+
+    <div class="contact-main">
+      <h2 id="contact-form-heading">Send a message</h2>
+      <p class="contact-intro">
+        Everything here is optional except the message itself. The more you can
+        say about the message type and what your counterparty reported, the more
+        useful the reply will be.
+      </p>
+
+      <!-- Posts to Formspree. There is no server behind this site, and a
+           contact form is the one thing a static site genuinely cannot do
+           alone.
+
+           No reCAPTCHA. Adding it would load Google's scripts onto a site that
+           otherwise makes no third-party request at all, which is a poor trade
+           on a page whose neighbours promise exactly that. Formspree's own
+           filtering plus the honeypot below cover ordinary spam; if that stops
+           being enough, reCAPTCHA is the fallback and this comment is the
+           reason it was not the default. -->
+      <form class="contact-form" action="https://formspree.io/f/mjvqpwyo" method="POST">
+        <fieldset>
+          <legend class="visually-hidden">Send a message to AskISO</legend>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="contact-name">Your name</label>
+              <input type="text" id="contact-name" name="name" autocomplete="name" required />
+            </div>
+            <div class="field">
+              <label for="contact-email">Email</label>
+              <input type="email" id="contact-email" name="email" autocomplete="email" required />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="contact-org">Organisation <span class="field-optional">optional</span></label>
+              <input type="text" id="contact-org" name="organisation" autocomplete="organization" />
+            </div>
+            <div class="field">
+              <label for="contact-subject">What is this about?</label>
+              <select id="contact-subject" name="subject" required>
+                <option value="">Choose a subject</option>
+                <option value="message-wrong">A message AskISO gets wrong</option>
+                <option value="november-2026">Readiness for November 2026</option>
+                <option value="integration">Using it in a pipeline or an editor</option>
+                <option value="feature">Something it should do and does not</option>
+                <option value="briefing">Briefing or speaking request</option>
+                <option value="newsletter">Send me the release notes</option>
+                <option value="general">Something else</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="contact-message">Message</label>
+            <textarea id="contact-message" name="message" rows="7" required
+              placeholder="A line about your institution, your role, and the question you are trying to answer. If a message was rejected, paste the structure with the account numbers and names replaced."></textarea>
+          </div>
+
+          <!-- Left empty by a person and filled in by a bot. Hidden from sight
+               and from assistive technology, and never autofilled. -->
+          <div class="field honeypot" aria-hidden="true">
+            <label for="contact-website">Leave this field empty</label>
+            <input type="text" id="contact-website" name="_gotcha" tabindex="-1" autocomplete="off" />
+          </div>
+
+          <p class="contact-privacy">
+            This form is the one part of this site that sends anything anywhere.
+            It goes to Formspree, which forwards it by email, and it is used to
+            answer you and nothing else. Payment messages you check in the
+            workspace are still never uploaded — please do not paste real
+            account data here.
+          </p>
+
+          <div class="contact-actions">
+            <button type="submit" class="btn btn-primary">Send message</button>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+
+    <aside class="contact-aside" aria-labelledby="contact-aside-heading">
+      <h2 id="contact-aside-heading">Faster routes</h2>
+      {{!content}}
+    </aside>
+
+  </div>
+</section>
+{{/block}}

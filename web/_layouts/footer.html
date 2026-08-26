@@ -50,8 +50,10 @@
         </ul>
       </div>
       <div>
-        <h2>Follow</h2>
+        <h2>Stay connected</h2>
         <ul>
+          <li><a href="{{locale_path}}contact/">Ask a question</a></li>
+          <li><a href="https://github.com/sebastienrousseau/askiso/releases" rel="noopener noreferrer">Release notes</a></li>
           <li><a href="{{site_path}}rss.xml">RSS</a></li>
           <li><a href="{{site_path}}atom.xml">Atom</a></li>
           <li><a href="{{site_path}}feed.json">JSON Feed</a></li>
@@ -62,6 +64,20 @@
     <!-- The three claims a payments team checks before adopting anything:
          where their data goes, what it costs, and whether it is a licence
          risk. Stating them here means nobody has to hunt for them. -->
+    <!-- Deliberately a link, not an email field. A signup box in a footer has
+         to send the address somewhere, and the pattern that does it without a
+         backend puts the address in the URL — where it lands in history, in
+         referrer headers and in any log along the way. The form on the contact
+         page posts it properly instead. -->
+    <div class="footer-signup">
+      <div>
+        <h2>Release notes, when there is something to say</h2>
+        <p>No schedule and no marketing. A note when a release changes something
+        that affects the messages you send, and nothing in between.</p>
+      </div>
+      <a class="btn btn-primary" href="{{locale_path}}contact/">Ask to be told</a>
+    </div>
+
     <div class="footer-assurance">
       <p><strong>Your messages never leave your machine.</strong> The command line runs
       locally and the browser build runs inside your tab. There is no AskISO-operated
