@@ -259,3 +259,64 @@
   filter: none;
   border-color: var(--accent);
 }
+
+/* ---------- a document, rather than a list of findings ---------- */
+
+/* Conversions and JSON are output you read or copy whole, so they get a block
+   of their own instead of being squeezed into the findings list. */
+.ws-code {
+  margin: 0 0 1rem;
+  padding: 0.9rem 1rem;
+  background: var(--bg-soft);
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  /* Wide output scrolls inside its own box; the page never scrolls sideways. */
+  overflow-x: auto;
+  max-height: 26rem;
+  overflow-y: auto;
+  white-space: pre;
+}
+
+/* ---------- catalogue picker ---------- */
+
+.cat-picker {
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  padding: 0.85rem 0.9rem;
+  margin: 1rem 0 0.9rem;
+  background: var(--bg-soft);
+}
+
+.cat-picker .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.cat-status {
+  margin: 0.6rem 0 0;
+  font-size: 0.84rem;
+  color: var(--ink-muted);
+}
+
+.cat-status.is-ready { color: var(--good); }
+.cat-status.is-error { color: var(--crit); }
+
+#cat-pick:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Nothing to forget until something has been chosen. */
+#cat-forget { display: none; }
+body.has-catalogue #cat-forget { display: inline-flex; }
+
+/* Schema validation arrives after the rest of the answer, so it is set apart
+   from the findings above it. */
+.ws-schema {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line-soft);
+}

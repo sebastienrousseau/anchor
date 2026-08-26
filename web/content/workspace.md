@@ -62,14 +62,13 @@ message, and observe that no request transmits it anywhere.
 
 ## Schema validation and your catalogue
 
-Linting and the scheme rules need nothing from you. Schema validation is
+Linting and the scheme rule profiles require nothing at all from you. Schema validation is
 different, because it needs the schema text itself, and AskISO redistributes no
 specification content.
 
 Download the message sets you need from
-[iso20022.org](https://www.iso20022.org/), free of charge, then select the
-folder on the [advanced tools](../playground/) page. Your browser reads those
-files locally, so they are never uploaded either.
+[iso20022.org](https://www.iso20022.org/), free of charge, then choose the
+folder in the Sources panel above. Your browser reads those files locally, so they are never transmitted anywhere either.
 
 Without a catalogue the workspace still lints and still applies the November
 2026 requirements. It simply reports that schema validation did not run, rather

@@ -18,10 +18,26 @@
     <aside class="ws-col ws-col-sources" aria-labelledby="ws-sources-h">
       <h2 id="ws-sources-h" class="ws-col-title">Sources</h2>
       <div id="ws-sources"></div>
+
+      <!-- The catalogue belongs here, in Sources, rather than on another page.
+           Sources is the panel that answers "what is this answer based on", and
+           the schemas are the largest part of that answer. Sending somebody to
+           a different page to choose them, then back again, was the clearest
+           piece of the overlap between the two tools. -->
+      <div class="cat-picker">
+        <div class="row">
+          <button class="act ghost" id="cat-pick" type="button">Choose your catalogue folder…</button>
+          <button class="act ghost" id="cat-forget" type="button">Forget it</button>
+        </div>
+        <p class="cat-status" id="cat-status" role="status">No catalogue selected.</p>
+      </div>
+
       <p class="ws-note">
-        Schema validation reads the catalogue you downloaded from
-        <a href="https://www.iso20022.org/" rel="noopener">iso20022.org</a>.
-        Choose it on the <a href="{{locale_path}}playground/">playground</a>.
+        Schema validation needs the schemas themselves, which AskISO does not
+        ship. Download the message sets you need from
+        <a href="https://www.iso20022.org/" rel="noopener">iso20022.org</a>, free
+        of charge, and point this at the folder. Your browser reads them
+        locally; they are never uploaded.
       </p>
     </aside>
 

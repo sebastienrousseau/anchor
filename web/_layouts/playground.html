@@ -6,105 +6,27 @@
     <h1 id="pg-heading">{{headline}}</h1>
     <p class="lead">{{lead}}</p>
     <p class="privacy"><span class="dot" aria-hidden="true"></span>Everything runs locally. Your messages never leave this tab.</p>
-    <p id="status">The engine loads when you start using a tool.</p>
+    <p id="status">The engine loads automatically when you start using a tool.</p>
   </div>
 </section>
 
 <!-- Scoped: the app brings its own .panel, .row and .field, and every one of
      those names means something else in the design system. -->
 <div class="playground">
-<nav class="tabs" aria-label="Playground tools" id="tools">
+<nav class="tabs" aria-label="Tools" id="tools">
   <div class="wrap">
     <div class="tablist" role="tablist">
-      <button role="tab" aria-selected="true" data-panel="lint">Lint</button>
-      <button role="tab" aria-selected="false" data-panel="validate">Validate</button>
-      <button role="tab" aria-selected="false" data-panel="address">Nov 2026</button>
-      <button role="tab" aria-selected="false" data-panel="generate">Generate</button>
-      <button role="tab" aria-selected="false" data-panel="browse">Browse</button>
-      <button role="tab" aria-selected="false" data-panel="convert">Convert</button>
-      <button role="tab" aria-selected="false" data-panel="codes">Codes</button>
-      <button role="tab" aria-selected="false" data-panel="translate">MT ⇄ MX</button>
-      <button role="tab" aria-selected="false" data-panel="check">Validators</button>
-      <button role="tab" aria-selected="false" data-panel="stats">Standard</button>
+      <button role="tab" aria-selected="true" data-panel="generate">Generate a sample</button>
+      <button role="tab" aria-selected="false" data-panel="codes">Code sets</button>
+      <button role="tab" aria-selected="false" data-panel="stats">The standard</button>
     </div>
   </div>
 </nav>
 
 <div class="wrap">
 
-  <!-- LINT -->
-  <section class="panel" data-panel="lint" data-active="true" role="tabpanel">
-    <h2>Lint a message</h2>
-    <p class="hint">Checks IBAN mod-97 checksums, BIC structure, ISO 4217 currency precision, UETR format, and date sanity. Identical rules to <code>askiso lint</code>.</p>
-    <label class="sr" for="lint-in">ISO 20022 XML message</label>
-    <textarea id="lint-in" spellcheck="false" placeholder="Paste an ISO 20022 XML message, or press Generate below to make one."></textarea>
-    <div class="row mt-loose">
-      <button class="act" id="lint-go">Lint message</button>
-      <button class="act ghost" id="lint-fill">Use a sample pacs.008</button>
-    </div>
-    <div class="out" id="lint-out"></div>
-  </section>
-
-  <!-- VALIDATE -->
-  <section class="panel" data-panel="validate" role="tabpanel">
-    <h2>Validate against a schema</h2>
-    <p class="hint">Full XML Schema validation — element order, cardinality, choices, patterns, enumerations, lengths and numeric facets. The same pure-Go engine as <code>askiso validate</code>, which agrees with libxml2 on all 4,746 schemas in the ISO 20022 catalogue.</p>
-    <div class="notice lede-tight">
-      AskISO ships no specification content. Point the page at the catalogue you
-      already downloaded from
-      <a href="https://www.iso20022.org/iso-20022-message-definitions" rel="noopener">iso20022.org</a>
-      and it resolves the schema itself — the files are read from your disk and
-      never leave it. Or paste the XSD by hand.
-    </div>
-
-    <div class="cat-picker">
-      <div class="row">
-        <button class="act ghost" id="cat-pick" type="button">Use my catalogue folder…</button>
-        <button class="act ghost" id="cat-forget" type="button">Forget it</button>
-      </div>
-      <p class="cat-status" id="cat-status" role="status">No catalogue selected.</p>
-    </div>
-    <div class="row items-stretch">
-      <div class="field grow-280">
-        <label for="val-xml">Message (XML)</label>
-        <textarea id="val-xml" spellcheck="false" placeholder="Paste the ISO 20022 message."></textarea>
-      </div>
-      <div class="field grow-280">
-        <label for="val-xsd">Schema (XSD)</label>
-        <textarea id="val-xsd" spellcheck="false" placeholder="Paste the matching .xsd schema."></textarea>
-      </div>
-    </div>
-    <div class="row">
-      <button class="act" id="val-go">Validate</button>
-      <button class="act ghost" id="val-demo">Load a worked example</button>
-    </div>
-    <div class="out" id="val-out"></div>
-  </section>
-
-  <!-- ADDRESS / NOV 2026 -->
-  <section class="panel" data-panel="address" role="tabpanel">
-    <h2>The 14 November 2026 address requirement</h2>
-    <p class="hint">From that date CBPR+ rejects fully unstructured postal addresses outright, with no contingency. Any address present must be hybrid or fully structured: town name and country in their own elements, at minimum. Paste a message to see where it stands.</p>
-    <div class="notice lede-tight">
-      <strong>What changes.</strong> <code>&lt;TwnNm&gt;</code> and <code>&lt;Ctry&gt;</code> become mandatory
-      wherever a <code>&lt;PstlAdr&gt;</code> appears, <code>&lt;Ctry&gt;</code> must be an ISO 3166-1 alpha-2
-      code rather than a country name, and a hybrid address may keep at most two
-      <code>&lt;AdrLine&gt;</code> of 70 characters. Reporting messages
-      (<code>camt.052</code>, <code>camt.053</code>, <code>camt.054</code>, <code>camt.060</code>,
-      <code>camt.025</code>, <code>admi.024</code>) are out of scope.
-    </div>
-    <label class="sr" for="addr-in">ISO 20022 XML message</label>
-    <textarea id="addr-in" spellcheck="false" placeholder="Paste a message containing postal addresses."></textarea>
-    <div class="row mt-loose">
-      <button class="act" id="addr-go">Check readiness</button>
-      <button class="act ghost" id="addr-demo">Load a non-compliant example</button>
-      <button class="act ghost" id="addr-demo-ok">Load a compliant example</button>
-    </div>
-    <div class="out" id="addr-out"></div>
-  </section>
-
   <!-- GENERATE -->
-  <section class="panel" data-panel="generate" role="tabpanel">
+  <section class="panel" data-panel="generate" data-active="true" role="tabpanel">
     <h2>Generate a message</h2>
     <p class="hint">Synthetic messages with valid identifiers and rail-appropriate defaults. Useful for testing pipelines without real payment data.</p>
     <div class="row">
@@ -135,33 +57,6 @@
     <div class="out" id="gen-out"></div>
   </section>
 
-  <!-- BROWSE -->
-  <section class="panel" data-panel="browse" role="tabpanel">
-    <h2>Browse the standard</h2>
-    <p class="hint">Every message definition the Registration Authority publishes, with the message set that carries it. Schema text is not bundled — each result links to the official download.</p>
-    <div class="row">
-      <div class="field grow-240">
-        <label for="browse-q">Search by identifier, domain, or keyword</label>
-        <input type="text" id="browse-q" value="pacs.008" placeholder="pacs.008, camt, pain.001.001.11…">
-      </div>
-      <button class="act" id="browse-go">Search</button>
-    </div>
-    <div class="out" id="browse-out"></div>
-  </section>
-
-  <!-- CONVERT -->
-  <section class="panel" data-panel="convert" role="tabpanel">
-    <h2>XML to JSON</h2>
-    <p class="hint">Turn an ISO 20022 message into JSON for REST pipelines and log processing.</p>
-    <label class="sr" for="conv-in">ISO 20022 XML message</label>
-    <textarea id="conv-in" spellcheck="false" placeholder="Paste an ISO 20022 XML message."></textarea>
-    <div class="row mt-loose">
-      <button class="act" id="conv-go">Convert to JSON</button>
-      <button class="act ghost" id="conv-fill">Use a sample pacs.008</button>
-    </div>
-    <div class="out" id="conv-out"></div>
-  </section>
-
   <!-- CODES -->
   <section class="panel" data-panel="codes" role="tabpanel">
     <h2>External code sets</h2>
@@ -174,59 +69,6 @@
       <button class="act" id="codes-go">Look up</button>
     </div>
     <div class="out" id="codes-out"></div>
-  </section>
-
-  <!-- TRANSLATE -->
-  <section class="panel" data-panel="translate" role="tabpanel">
-    <h2>SWIFT MT ⇄ ISO 20022 MX</h2>
-    <p class="hint">Field-level migration mapping between legacy MT messages and their MX equivalents.</p>
-    <div class="row">
-      <div class="field grow-240">
-        <label for="tr-q">MT or MX identifier</label>
-        <input type="text" id="tr-q" value="MT103" placeholder="MT103, MT202, MT940, pacs.008…">
-      </div>
-      <button class="act" id="tr-go">Look up</button>
-      <button class="act ghost" id="tr-all">Show full matrix</button>
-    </div>
-    <div class="out" id="tr-out"></div>
-
-    <h3 class="mt-section">Convert a real message</h3>
-    <p class="hint">Paste an MT103, MT202 or MT940 and get the ISO 20022 document plus a fidelity report saying what was carried, shortened, inferred, or dropped. Same converter as <code>askiso translate</code>.</p>
-    <label class="sr" for="mt-in">SWIFT MT message</label>
-    <textarea id="mt-in" rows="12" spellcheck="false" placeholder="{1:F01BANKGB2LAXXX0000000000}{2:I103BANKDEFFXXXXN}{4:&#10;:20:REF20260824001&#10;..."></textarea>
-    <div class="row">
-      <button class="act" id="mt-go">Convert</button>
-      <button class="act ghost" id="mt-fill">Load a sample MT103</button>
-    </div>
-    <div class="out" id="mt-out"></div>
-  </section>
-
-  <!-- CHECK -->
-  <section class="panel" data-panel="check" role="tabpanel">
-    <h2>Field validators</h2>
-    <p class="hint">Check a single value without building a whole message.</p>
-    <div class="row">
-      <div class="field grow-260">
-        <label for="chk-iban">IBAN (ISO 13616, mod-97)</label>
-        <input type="text" id="chk-iban" value="DE89370400440532013000">
-      </div>
-      <button class="act" data-check="iban">Check</button>
-    </div>
-    <div class="row">
-      <div class="field grow-260">
-        <label for="chk-bic">BIC (ISO 9362)</label>
-        <input type="text" id="chk-bic" value="DEUTDEDDXXX">
-      </div>
-      <button class="act" data-check="bic">Check</button>
-    </div>
-    <div class="row">
-      <div class="field grow-260">
-        <label for="chk-uetr">UETR (RFC 4122 v4)</label>
-        <input type="text" id="chk-uetr" value="e1b2c3d4-5678-4abc-8def-1234567890ab">
-      </div>
-      <button class="act" data-check="uetr">Check</button>
-    </div>
-    <div class="out" id="chk-out"></div>
   </section>
 
   <!-- STATS -->
@@ -256,6 +98,16 @@
   </div>
 </footer>
 </div>
+
+<!-- Prose below the tools. Somebody who came to generate a message does not
+     read it; somebody deciding whether this page or the workspace is the one
+     they want does, and so does a search engine. -->
+<section class="section" aria-labelledby="pg-about-heading">
+  <div class="container prose">
+    <h2 id="pg-about-heading">About these tools</h2>
+    {{!content}}
+  </div>
+</section>
 
 <script src="{{site_path}}wasm_exec.js"></script>
 <script src="{{site_path}}catalogue.js" defer></script>

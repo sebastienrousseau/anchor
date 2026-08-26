@@ -96,25 +96,14 @@ console.log('askiso page interaction test\n');
   check('playground: engine not fetched on load', wasmRequests.length === 0,
     `${wasmRequests.length} wasm request(s)`);
 
-  // Both clicks in one task, so the engine cannot possibly load between them
-  // and both are genuinely blocked. Clicking them separately is timing
-  // dependent: on a fast connection the engine arrives in the gap and the race
-  // this is meant to exercise never happens.
-  await page.evaluate(() => {
-    document.getElementById('lint-fill').click();
-    document.getElementById('lint-go').click();
-  });
+  // Pressed before the engine exists, so it has to be queued and replayed.
+  await page.evaluate(() => document.getElementById('gen-go').click());
   await page.waitForFunction(
-    () => document.querySelector('#lint-out .verdict') !== null, { timeout: 30000 });
-  const verdict = await page.$eval('#lint-out .verdict', e => e.textContent.trim());
-  // Both blocked actions must replay, in order: the sample fills the textarea
-  // and the lint then runs against it. Asserting only that some verdict exists
-  // passes on the failure case, because "paste a message to lint" is a verdict.
-  const filled = await page.$eval('#lint-in', e => e.value.length);
-  check('playground: the sample was filled by the replayed first action', filled > 100,
-    `${filled} characters in the textarea`);
-  check('playground: both blocked actions replayed and the lint passed',
-    /passed/i.test(verdict) && !/paste an ISO/i.test(verdict), verdict);
+    () => (document.querySelector('#gen-out')?.textContent || '').trim().length > 0,
+    { timeout: 30000 });
+  const generated = await page.$eval('#gen-out', e => e.textContent.trim());
+  check('playground: an action taken before the engine is ready still runs',
+    /<Document|xmlns/.test(generated), generated.slice(0, 90));
   check('playground: no page errors', errors.length === 0, errors.join('; '));
 
   // Every tool tab must still switch.
@@ -130,6 +119,77 @@ console.log('askiso page interaction test\n');
   }
   check(`playground: all ${tabs.length} tool tabs switch`, switched === tabs.length,
     `${switched}/${tabs.length}`);
+  // The tools the workspace already does were removed rather than duplicated.
+  check('playground: no tab duplicates the workspace',
+    !tabs.some(t => /^(Lint|Validate|Convert|Validators|Browse|MT)/i.test(t)),
+    tabs.join(', '));
+  await page.close();
+}
+
+// --- workspace: the follow-up chips must do something ----------------------
+//
+// They used to set the input to the message already on screen and re-submit,
+// which re-ran the same lint. Pressing "Convert to MT" did nothing visible.
+{
+  const page = await browser.newPage();
+  const errs = [];
+  page.on('pageerror', e => errs.push(String(e)));
+  await page.goto(`${BASE}/workspace/`, { waitUntil: 'networkidle0' });
+
+const MSG = `<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.10">
+  <FIToFICstmrCdtTrf><GrpHdr><MsgId>MSG-1</MsgId><CreDtTm>2026-08-26T09:00:00Z</CreDtTm><NbOfTxs>1</NbOfTxs></GrpHdr>
+    <CdtTrfTxInf><PmtId><EndToEndId>E2E-1</EndToEndId></PmtId>
+      <IntrBkSttlmAmt Ccy="EUR">1000.00</IntrBkSttlmAmt>
+      <Dbtr><Nm>Acme</Nm></Dbtr>
+      <DbtrAcct><Id><IBAN>DE89370400440532013000</IBAN></Id></DbtrAcct>
+      <DbtrAgt><FinInstnId><BICFI>DEUTDEDDXXX</BICFI></FinInstnId></DbtrAgt>
+      <CdtrAgt><FinInstnId><BICFI>BNPAFRPPXXX</BICFI></FinInstnId></CdtrAgt>
+      <Cdtr><Nm>Global</Nm></Cdtr>
+      <CdtrAcct><Id><IBAN>FR7630006000011234567890189</IBAN></Id></CdtrAcct>
+    </CdtTrfTxInf></FIToFICstmrCdtTrf></Document>`;
+
+async function run() {
+  await page.evaluate(m => { document.getElementById('ws-input').value = m;
+    document.getElementById('ws-go').click(); }, MSG);
+  await page.waitForFunction(() => document.querySelector('.ws-verdict'), { timeout: 30000 });
+}
+const chips = async () => page.$$eval('.ws-suggest .ws-chip', e => e.map(x => x.textContent.trim()));
+const clickChip = async label => page.evaluate(l => {
+  [...document.querySelectorAll('.ws-suggest .ws-chip')].find(c => c.textContent.trim() === l).click();
+}, label);
+
+
+
+
+await run();
+check('lint offers both chips', (await chips()).join('|').includes('Convert to SWIFT MT'), (await chips()).join('|'));
+
+await clickChip('Convert to SWIFT MT');
+await new Promise(r => setTimeout(r, 600));
+let v = await page.$eval('.ws-verdict', e => e.textContent.trim());
+let code = await page.$$eval('.ws-code', e => e.map(x => x.textContent).join('').trim());
+check('convert changes the answer', /Converted/.test(v), v);
+check('convert shows MT output', /^\{1:|:20:/m.test(code), code.slice(0, 90));
+check('convert names a real target, not a placeholder', !/the other format/.test(v) && !/^Converted to ISO 20022\.$/.test(v), v);
+let studio = await page.$$eval('#ws-studio .ws-offer-label', e => e.map(x => x.textContent.trim()));
+check('studio offers the conversion', studio.some(l => /Converted|Fidelity/.test(l)), studio.join(', '));
+
+await clickChip('Back to the findings');
+await new Promise(r => setTimeout(r, 500));
+v = await page.$eval('.ws-verdict', e => e.textContent.trim());
+check('back returns to the findings', /finding|Clean/.test(v), v);
+
+await clickChip('Show as JSON');
+await new Promise(r => setTimeout(r, 600));
+v = await page.$eval('.ws-verdict', e => e.textContent.trim());
+code = await page.$$eval('.ws-code', e => e.map(x => x.textContent).join('').trim());
+check('json changes the answer', /JSON/.test(v), v);
+check('json output parses', (() => { try { JSON.parse(code); return true; } catch { return false; } })(), code.slice(0, 90));
+studio = await page.$$eval('#ws-studio .ws-offer-label', e => e.map(x => x.textContent.trim()));
+check('studio offers the JSON', studio.some(l => /JSON/.test(l)), studio.join(', '));
+
+  check('workspace: no page errors from the chips', errs.length === 0, errs.join('; '));
   await page.close();
 }
 

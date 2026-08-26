@@ -143,12 +143,27 @@
       var b = el("button", "ws-chip", s.label);
       b.type = "button";
       b.addEventListener("click", function () {
+        // A chip either runs something on what is already there, or replaces
+        // the input and asks again. The first kind used to be written as the
+        // second, which meant "Convert to MT" set the input to the message it
+        // was already showing and re-ran the same lint: pressing it did
+        // nothing visible, twice.
+        if (typeof s.run === "function") {
+          s.run();
+          return;
+        }
         $("#ws-input").value = s.input;
         submit();
       });
       row.appendChild(b);
     });
     return row;
+  }
+
+  function codeBlock(text) {
+    var pre = el("pre", "ws-code");
+    pre.textContent = text;
+    return pre;
   }
 
   function answer(nodes) {
@@ -207,12 +222,150 @@
     };
 
     nodes.push(suggestions([
-      { label: "Convert to MT", input: intent.text },
-      { label: "Show as JSON", input: intent.text },
+      { label: "Convert to SWIFT MT", run: function () { showConversion(intent); } },
+      { label: "Show as JSON", run: function () { showJSON(intent); } },
     ]));
     answer(nodes);
     renderStudio();
     renderSources(intent);
+
+    validateAgainstCatalogue(intent);
+  }
+
+  // Schema validation, when the visitor has the schema.
+  //
+  // The page said it would validate "if your catalogue has the schema" and then
+  // never did: it linted, applied the rules, and stopped. Saying a check ran
+  // when it did not is the one failure a validator cannot afford, so it now
+  // runs, and says plainly when it could not.
+  //
+  // Resolving a schema reads files from disk, which is asynchronous, so this
+  // appends to the answer already on screen rather than holding it back.
+  function validateAgainstCatalogue(intent) {
+    var cat = window.askisoCatalogue;
+    var out = $("#ws-answer");
+    if (!out) return;
+
+    var slot = el("div", "ws-schema");
+    out.appendChild(slot);
+
+    if (!cat || typeof cat.count !== "function" || cat.count() === 0) {
+      slot.appendChild(el("p", "ws-note",
+        "Schema validation did not run: no catalogue is open. Choose the folder " +
+        "you downloaded from iso20022.org in Sources, and this message will be " +
+        "checked against its schema too."));
+      return;
+    }
+
+    slot.appendChild(el("p", "ws-note", "Checking against the schema in your catalogue…"));
+
+    Promise.resolve(cat.schemaFor(intent.text)).then(function (xsd) {
+      slot.innerHTML = "";
+
+      if (!xsd) {
+        var id = cat.messageIDFrom(intent.text) || "this message";
+        slot.appendChild(el("p", "ws-note",
+          "Your catalogue has no schema for " + id + ", so schema validation " +
+          "did not run. Everything above still applies."));
+        return;
+      }
+
+      var res = call("validate", intent.text, xsd);
+      if (res.error) {
+        slot.appendChild(el("p", "ws-note", res.error));
+        return;
+      }
+
+      var d = res.data || {};
+      var errors = d.errors || [];
+      slot.appendChild(el("h3", null, "Schema"));
+      slot.appendChild(d.valid
+        ? verdict(true, "Valid against the schema in your catalogue.")
+        : verdict(false, errors.length + " schema error(s)."));
+      if (errors.length) {
+        slot.appendChild(findingList(errors));
+      }
+
+      lastResult.schema = { valid: d.valid, errors: errors };
+      renderStudio();
+      renderSources(intent);
+    }).catch(function (e) {
+      slot.innerHTML = "";
+      slot.appendChild(el("p", "ws-note",
+        "The schema could not be read: " + (e && e.message ? e.message : e)));
+    });
+  }
+
+  // Convert whatever is in the box to the other format, in whichever direction
+  // that is. The engine decides from the payload; the page does not need to.
+  function showConversion(intent) {
+    var res = call("convertMT", intent.text);
+    var nodes = [];
+
+    if (res.error) {
+      nodes.push(verdict(false, res.error));
+      nodes.push(suggestions([
+        { label: "Back to the findings", run: function () { handleMX(intent); } },
+      ]));
+      answer(nodes);
+      return;
+    }
+
+    var d = res.data || {};
+    var target = d.target_type || "the other format";
+    nodes.push(verdict(true, "Converted " +
+      (d.source_type ? d.source_type + " to " : "to ") + target + "."));
+    nodes.push(codeBlock(d.xml || ""));
+
+    if (d.report && d.report.length) {
+      nodes.push(el("h3", null, "What survived the conversion"));
+      nodes.push(fidelityList(d.report));
+    }
+
+    lastResult = { kind: "mt", input: intent.text, xml: d.xml, report: d.report };
+    nodes.push(suggestions([
+      { label: "Back to the findings", run: function () { handleMX(intent); } },
+    ]));
+    answer(nodes);
+    renderStudio();
+    renderSources(intent);
+  }
+
+  function showJSON(intent) {
+    var res = call("toJSON", intent.text);
+    var nodes = [];
+
+    if (res.error) {
+      nodes.push(verdict(false, res.error));
+      nodes.push(suggestions([
+        { label: "Back to the findings", run: function () { handleMX(intent); } },
+      ]));
+      answer(nodes);
+      return;
+    }
+
+    var json = (res.data && res.data.json) || "";
+    nodes.push(verdict(true, "The same message, as JSON."));
+    nodes.push(codeBlock(json));
+
+    lastResult = { kind: "json", input: intent.text, json: json };
+    nodes.push(suggestions([
+      { label: "Back to the findings", run: function () { handleMX(intent); } },
+    ]));
+    answer(nodes);
+    renderStudio();
+    renderSources(intent);
+  }
+
+  // The fidelity report, rendered the same way wherever a conversion is shown.
+  function fidelityList(report) {
+    return findingList(report.map(function (r) {
+      return {
+        rule: r.fidelity || r.status,
+        message: r.tag + (r.note ? " — " + r.note : ""),
+        path: r.path,
+      };
+    }));
   }
 
   function handleMT(intent) {
@@ -226,13 +379,17 @@
     }
     var d = res.data || {};
 
-    nodes.push(verdict(true, "Converted to " + (d.target || d.message_id || "ISO 20022") + "."));
+    // target_type is what the engine actually returns. This read d.target and
+    // d.message_id, neither of which exists, so every conversion claimed to
+    // have produced "ISO 20022" whichever direction it went.
+    nodes.push(verdict(true, "Converted " +
+      (d.source_type ? d.source_type + " to " : "to ") +
+      (d.target_type || "ISO 20022") + "."));
+    nodes.push(codeBlock(d.xml || ""));
 
     if (d.report && d.report.length) {
       nodes.push(el("h3", null, "What survived the conversion"));
-      nodes.push(findingList(d.report.map(function (r) {
-        return { rule: r.fidelity || r.status, message: r.tag + " " + (r.note || ""), path: r.path };
-      })));
+      nodes.push(fidelityList(d.report));
     }
 
     lastResult = { kind: "mt", input: intent.text, xml: d.xml, report: d.report };
@@ -464,6 +621,16 @@
         name: "fidelity.json",
         type: "application/json",
         body: function () { return JSON.stringify(lastResult.report || [], null, 2); },
+      });
+    }
+
+    if (lastResult.kind === "json" && lastResult.json) {
+      offers.push({
+        label: "The message as JSON",
+        note: "the same content, in a shape most tooling reads more easily",
+        name: "message.json",
+        type: "application/json",
+        body: function () { return lastResult.json; },
       });
     }
 

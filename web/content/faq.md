@@ -142,9 +142,9 @@ message definition report ever reached the published site, the build fails.
 ### How do I get a catalogue?
 
 Download the message sets you need from the Registration Authority, then point
-AskISO at the folder. On the website, the [advanced tools](../playground/) page
-lets you select the folder directly from your browser; nothing is uploaded there
-either — the browser reads the files locally.
+AskISO at the folder. On the website, the [workspace](../workspace/) lets you
+choose that folder in its Sources panel; nothing is uploaded there either, as
+the browser reads the files locally.
 
 ### What does it cost?
 
