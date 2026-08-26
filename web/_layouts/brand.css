@@ -1291,3 +1291,31 @@ pre.highlight.language-console {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* ---------- syntax-highlighted blocks ---------- */
+
+/* The generator's highlight stylesheet switches on prefers-color-scheme alone.
+   The site also has a theme toggle, so a visitor on a light system who chooses
+   dark got light code blocks with the dark theme's ink on them: #eef4f6 on
+   #f6f8fa, a contrast ratio of 1.04, which is invisible. It only appears in the
+   combination of a light system and a dark choice, which is why it survived
+   local testing and was caught in CI.
+
+   Styling these from the tokens instead makes them follow whichever theme is
+   actually in effect, in all three states: an explicit choice either way, and
+   no choice at all. */
+pre.highlight,
+:root[data-theme="light"] pre.highlight,
+:root[data-theme="dark"] pre.highlight {
+  background: var(--bg-soft);
+  border-color: var(--line-soft);
+  color: var(--ink-soft);
+}
+
+/* A code block scrolls horizontally, so it is a scroll region, and a scroll
+   region a keyboard user cannot focus holds content they cannot reach. The
+   attribute is added at build time; this is the visible half of the same fix. */
+pre.highlight:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

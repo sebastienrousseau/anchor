@@ -252,6 +252,9 @@ web:
 	@for a in main.js theme-init.js deadline.js playground.js catalogue.js evidence.js workspace.js workspace-boot.js terminal.js logo.svg favicon.ico; do \
 	  test -f "web/_layouts/$$a" && cp -f "web/_layouts/$$a" "$(WEB_OUT)/$$a"; \
 	done
+	@# A fenced block scrolls, which makes it a scroll region, which WCAG 2.1.1
+	@# requires to be reachable from a keyboard.
+	@python3 scripts/focusable-code.py $(WEB_OUT)
 	@# The theme bootstrap, inlined and allowed by hash. It has to run before
 	@# the first paint, so it cannot be deferred; external it was a round trip
 	@# for 711 bytes.

@@ -10,8 +10,13 @@
 // one hidden by an attribute. This drives the built pages in Chrome and asks
 // axe-core, which is what WAVE and the other auditors are built on.
 //
-// Both themes, because the palettes are independent and a contrast ratio that
-// passes in light can fail in dark.
+// Every combination of what the system asks for and what the visitor chose.
+// Those are independent: a stylesheet that switches on prefers-color-scheme
+// alone is correct until somebody on a light system chooses dark, at which
+// point its colours and the site's disagree. That combination shipped a
+// contrast ratio of 1.04 on code blocks, and this test missed it because it
+// only ever set the theme attribute — inheriting whatever the machine running
+// it happened to prefer.
 //
 //   make a11y-axe
 //
@@ -31,6 +36,13 @@ const AXE = fs.readFileSync(
 
 // Every hand-written page, plus one generated message page as a proxy for the
 // 2,845 that share its template.
+// system preference, explicit choice (null means the visitor chose nothing).
+const COMBINATIONS = [
+  ['light', null], ['dark', null],
+  ['light', 'light'], ['light', 'dark'],
+  ['dark', 'light'], ['dark', 'dark'],
+];
+
 const PAGES = ['', 'solutions/', 'innovation/', 'news/', 'about/', 'workspace/',
   'playground/', 'messages/', 'deadline/', 'docs/', 'faq/', 'conformance/',
   'contact/', 'messages/pacs.008.001.13/'];
@@ -42,14 +54,21 @@ const browser = await puppeteer.launch({
 let violations = 0;
 let checked = 0;
 
-console.log('axe-core, WCAG 2.2 AA, both themes\n');
+console.log('axe-core, WCAG 2.2 AA — every system preference and theme choice\n');
 
 for (const p of PAGES) {
-  for (const theme of ['light', 'dark']) {
+  for (const [system, theme] of COMBINATIONS) {
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 900 });
+    await page.emulateMediaFeatures([
+      { name: 'prefers-color-scheme', value: system },
+    ]);
     await page.goto(`${BASE}/${p}`, { waitUntil: 'networkidle0' });
-    await page.evaluate(t => document.documentElement.setAttribute('data-theme', t), theme);
+    if (theme) {
+      await page.evaluate(t => document.documentElement.setAttribute('data-theme', t), theme);
+    } else {
+      await page.evaluate(() => document.documentElement.removeAttribute('data-theme'));
+    }
     // Let the theme transition finish: contrast is measured from resolved
     // colours, and a value read mid-transition is neither theme's.
     await new Promise(r => setTimeout(r, 400));
@@ -65,7 +84,7 @@ for (const p of PAGES) {
     checked++;
     if (result.violations.length) {
       violations += result.violations.length;
-      console.log(`  FAIL  /${p} (${theme})`);
+      console.log(`  FAIL  /${p} (system ${system}, chose ${theme || 'nothing'})`);
       for (const v of result.violations) {
         console.log(`          ${v.id} [${v.impact}] ${v.help}`);
         for (const n of v.nodes.slice(0, 3)) {
@@ -76,7 +95,7 @@ for (const p of PAGES) {
         }
       }
     } else {
-      console.log(`  ok    /${p} (${theme})`);
+      console.log(`  ok    /${p} (system ${system}, chose ${theme || 'nothing'})`);
     }
     await page.close();
   }
