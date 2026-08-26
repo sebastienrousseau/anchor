@@ -892,10 +892,15 @@ pre.highlight.language-console {
 
 
 
-/* The section directly under a masthead starts closer to it. The full section
+/* The prose directly under a masthead starts closer to it. The full section
    padding was designed to separate two bands of content, and after a banner it
-   read as the page having forgotten to begin. */
-.page-banner + .section {
+   read as the page having forgotten to begin.
+
+   Only the prose article, not any section. On the home page the next element is
+   a full band of its own, and pulling its top padding in while leaving the
+   bottom alone left the content sitting high in a lopsided box — 44 pixels above
+   and 112 below. A band should be even on both sides. */
+.page-banner + article.section {
   padding-block-start: clamp(1.75rem, 3.5vw, 2.75rem);
 }
 
@@ -1194,4 +1199,43 @@ pre.highlight.language-console {
 .container.prose > .tablewrap,
 .container.prose > .terminal {
   max-width: none;
+}
+
+
+/* ---------- footer balance ---------- */
+
+/* Six columns laid out by auto-fit became five across and one alone underneath,
+   which reads as an accident rather than a decision. Three by two is even on
+   both axes at every width the site is likely to be read at, and gives each
+   column room for its longest link rather than squeezing all six onto one line. */
+.footer-cols {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 56rem) {
+  .footer-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 34rem) {
+  .footer-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- card rhythm ---------- */
+
+/* Cards in a row hold different amounts of text, so their links landed at four
+   different heights and the row read as ragged rather than as a set. Making
+   each card a column and pushing its last element to the floor puts every link
+   on the same line, which is what makes a row of four look deliberate. */
+.grid .card {
+  display: flex;
+  flex-direction: column;
+}
+
+.grid .card > p:last-child {
+  margin-block-start: auto;
+  padding-block-start: 0.75rem;
 }

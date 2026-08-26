@@ -196,10 +196,17 @@
 }
 
 @layer base {
+  /* The generator pins a floating search trigger to the bottom-right, but only
+     below 48rem — its own media query says so. Applying the clearance at every
+     width left 72 pixels of body background below the footer on every desktop
+     page: a white strip under a tinted footer, on all 2,854 pages. */
+  @media (max-width: 47.999rem) {
+    body {
+      padding-block-end: 4.5rem;
+    }
+  }
+
   body {
-    /* The generator pins a floating search trigger to the bottom-right on
-       phones; this keeps it from resting over the final control. */
-    padding-block-end: 4.5rem;
     background-color: var(--bg);
     color: var(--ink);
     font-family: var(--font-sans);
