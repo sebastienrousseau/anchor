@@ -38,11 +38,11 @@
     {{!microsoft}}
 
     <!-- Absolute URLs: Open Graph consumers do not resolve relative paths. -->
-    <meta property="og:image" content="{{site_url}}images/screenshot.png" />
-    <meta property="og:image:width" content="1500" />
-    <meta property="og:image:height" content="1000" />
+    <meta property="og:image" content="{{site_url}}images/social-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="{{title}}" />
-    <meta name="twitter:image" content="{{site_url}}images/screenshot.png" />
+    <meta name="twitter:image" content="{{site_url}}images/social-card.png" />
 
     <link rel="canonical" href="{{permalink}}" />
     <link rel="alternate" hreflang="{{language}}" href="{{permalink}}" />
@@ -76,6 +76,15 @@
             "inLanguage": "{{language}}"
           },
           {
+            "@type": "Organization",
+            "@id": "{{site_url}}#organization",
+            "name": "AskISO",
+            "url": "{{site_url}}",
+            "logo": "{{site_url}}images/social-card.png",
+            "description": "Open-source ISO 20022 tooling: validation, linting, scheme rule checks and SWIFT MT conversion.",
+            "sameAs": ["https://github.com/sebastienrousseau/askiso"]
+          },
+          {
             "@type": "WebPage",
             "@id": "{{permalink}}#webpage",
             "url": "{{permalink}}",
@@ -83,6 +92,7 @@
             "description": "{{description}}",
             "inLanguage": "{{language}}",
             "isPartOf": { "@id": "{{site_url}}#website" },
+            "publisher": { "@id": "{{site_url}}#organization" },
             "datePublished": "{{date}}"
           }
         ]

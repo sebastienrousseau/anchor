@@ -2,7 +2,7 @@
 name: "AskISO"
 short_name: "AI"
 title: "Conformance evidence — what AskISO is measured against"
-description: "Differential agreement with libxml2 across all 4,746 schemas, streaming and buffered validation agreement, coverage enforced at 95% on a catalogue-free runner, and zero known vulnerabilities. Every figure names the command that reproduces it."
+description: "AskISO agrees with libxml2 on all 4,746 documents tested. Every figure here names the command that reproduces it, so you can check the claim yourself."
 keywords: "ISO 20022 validator conformance, libxml2 differential testing, XML schema validator correctness, askiso conformance, ISO 20022 validation evidence"
 author: "Sebastien Rousseau"
 date: "2026-08-25"

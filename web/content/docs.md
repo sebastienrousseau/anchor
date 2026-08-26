@@ -2,7 +2,7 @@
 name: "AskISO"
 short_name: "AI"
 title: "AskISO documentation — commands, profiles and integrations"
-description: "Every AskISO command, which need a catalogue and which do not, the scheme rule profiles, and how to wire the MCP server into an AI assistant or the language server into an editor."
+description: "Every AskISO command, which ones need a catalogue, the scheme rule profiles, and how to wire it into your editor, your build or an AI assistant."
 keywords: "askiso documentation, ISO 20022 CLI reference, askiso commands, ISO 20022 MCP server, ISO 20022 language server, askiso lint, askiso validate, askiso translate"
 author: "Sebastien Rousseau"
 date: "2026-08-25"
@@ -16,7 +16,7 @@ form_origin: "https://askiso.io"
 nav_docs: "true"
 eyebrow: "Reference"
 headline: "Documentation"
-lead: "Every command, what it needs, and how AskISO fits into an editor, a pipeline or an AI assistant."
+lead: "Every command, what it needs, and how AskISO fits into your editor, your build and your AI assistant."
 ---
 
 ## Install
@@ -41,8 +41,8 @@ standard library security fixes AskISO builds against.
 
 ## See it work
 
-Every session on this site is replayed against the binary on each commit, so
-what follows is what AskISO actually prints — not a transcription of it.
+Every session here is replayed against the binary on each commit. So what you
+read below is what AskISO actually prints, not a transcription of it.
 
 Converting a SWIFT MT message, with the fidelity report that says what survived
 the trip:
@@ -166,8 +166,7 @@ SARIF output uploads straight into GitHub code scanning.
 
 ## In an editor
 
-`askiso-lsp` is a language server, so diagnostics appear as you type. It
-synchronises whole documents rather than incremental edits, and offers hover and
+`askiso-lsp` is a language server, so diagnostics appear as you type. It syncs whole documents rather than single edits, and it also offers hover and
 completion; both need a catalogue, and say so rather than guessing when there
 is none.
 
@@ -180,8 +179,8 @@ vim.lsp.start({ name = 'askiso', cmd = { 'askiso-lsp' } })
 
 `askiso-mcp` speaks the Model Context Protocol over stdio, exposing eleven
 tools — lint, validate, translate, diff, generate, search, info, code, convert,
-and the profile check. An assistant configured with it works against the same
-engine as the CLI rather than against its own recollection of the standard.
+and the profile check. An assistant set up this way works against the same engine as the command line,
+rather than leaning on its own memory of the standard.
 
 ```json
 {
@@ -205,12 +204,11 @@ engine as the CLI rather than against its own recollection of the standard.
 
 The [repository README](https://github.com/sebastienrousseau/askiso#known-limitations)
 lists every one in detail, stated plainly because a validation tool that
-overstates itself is worse than no tool. The short version: `translate` covers
-seven MT/MX pairs both ways and the exception family one way only; MT940
-transaction types fall back to `NMSC` because no verifiable mapping exists;
-`diff` reports any pattern change as breaking because deciding otherwise is not
-decidable; and a schema-generated message is minimal and synthetic rather than
-realistic.
+overstates itself is worse than no tool. In short, there are four of them. `translate` covers seven MT/MX pairs both
+ways, and the exception family in one direction only. MT940 transaction types
+fall back to `NMSC`, because no verified mapping exists for them. `diff` treats
+any pattern change as breaking, since deciding otherwise is not possible. And a
+message generated from a schema is minimal and synthetic rather than realistic.
 
 ---
 

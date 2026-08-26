@@ -6,6 +6,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -44,8 +45,27 @@ func TestPageCarriesTheFrontMatterSearchNeeds(t *testing.T) {
 			t.Errorf("front matter is missing %s", key)
 		}
 	}
-	if !strings.Contains(page, `"pacs.008.001.10 — ISO 20022 Payments Clearing and Settlement message"`) {
-		t.Error("the title does not name the message and its business area")
+	if !strings.Contains(page, `title: "pacs.008.001.10 — ISO 20022 message definition"`) {
+		t.Error("the title does not name the message")
+	}
+
+	// Search results truncate a title past roughly 60 characters and a
+	// description past roughly 160. The longest identifiers and business area
+	// names are what push these over, so the budget is checked here rather than
+	// noticed later in a search listing.
+	for _, field := range []string{"title", "description"} {
+		limit := 60
+		if field == "description" {
+			limit = 160
+		}
+		m := regexp.MustCompile(`(?m)^` + field + `: "(.*)"$`).FindStringSubmatch(page)
+		if m == nil {
+			t.Fatalf("no %s in the front matter", field)
+		}
+		if len(m[1]) > limit {
+			t.Errorf("%s is %d characters, which search results truncate at %d: %q",
+				field, len(m[1]), limit, m[1])
+		}
 	}
 }
 
@@ -61,8 +81,8 @@ func TestPagePointsAtTheRegistrationAuthorityRatherThanReproducingIt(t *testing.
 
 	page := buildPage(reg, m, []string{"pacs.008.001.10"}, nil, false, true, "2026-08-25")
 
-	if !strings.Contains(page, "AskISO does not reproduce the specification") {
-		t.Error("the page does not state that the specification is not reproduced")
+	if !strings.Contains(page, "AskISO does not copy the specification") {
+		t.Error("the page does not state that the specification is not copied")
 	}
 	if !strings.Contains(page, "iso20022.org") {
 		t.Error("the page does not link to the Registration Authority")
@@ -83,8 +103,13 @@ func TestVersionListMarksThePageYouAreOn(t *testing.T) {
 	if !strings.Contains(page, "[`pacs.008.001.10`](/messages/pacs.008.001.10/) — this page") {
 		t.Error("the current version is not marked in the version list")
 	}
-	if !strings.Contains(page, "3 versions of this definition are published") {
+	if !strings.Contains(page, "The standard publishes 3 versions of this definition") {
 		t.Error("the version count is wrong or missing")
+	}
+	// The page must say where this version sits in its family: a reader who
+	// arrived on an old version needs to know a newer one exists.
+	if !strings.Contains(page, "not the newest") {
+		t.Error("an older version does not say that a newer one exists")
 	}
 	if !strings.Contains(page, "[`pacs.008.001.09`](/messages/pacs.008.001.09/)") {
 		t.Error("a sibling version is not linked")
@@ -327,7 +352,10 @@ func TestIndexCoversEveryDomainAndFamily(t *testing.T) {
 	// Every family must link to its current version, because that link is the
 	// only route to the page for somebody browsing rather than searching.
 	for base, latest := range families {
-		want := "[" + base + "](" + latest + "/)"
+		// Root-relative: GitHub Pages serves /messages as well as /messages/ and
+		// does not redirect between them, so a document-relative href resolves
+		// against the wrong base and 404s for anyone arriving without the slash.
+		want := "[" + base + "](/messages/" + latest + "/)"
 		if !strings.Contains(page, want) {
 			t.Errorf("the index does not link %s to its current version %s", base, latest)
 		}

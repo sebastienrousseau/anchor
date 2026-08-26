@@ -1,8 +1,8 @@
 ---
 name: "AskISO"
 short_name: "AI"
-title: "AskISO — validate ISO 20022 messages and get ready for November 2026"
-description: "Validate, lint and convert ISO 20022 and SWIFT MT messages, and check them against the CBPR+ November 2026 structured-address rules. Every finding cites the rule and the field. Nothing is uploaded. Open source, free, ships no specification content."
+title: "AskISO — ISO 20022 validator and CBPR+ 2026 checker"
+description: "Validate, lint and convert ISO 20022 and SWIFT MT messages, and check them against the CBPR+ November 2026 address rules. Free, open source, nothing uploaded."
 keywords: "ISO 20022, pacs.008, pain.001, camt.053, CBPR+, structured address, SWIFT MT to MX, ISO 20022 validator, ISO 20022 CLI, MT103 converter, November 2026 deadline"
 author: "Sebastien Rousseau"
 date: "2026-08-25"
@@ -20,81 +20,109 @@ headline: "Know your ISO 20022 messages will be accepted"
 lead: "Check a payment message against the schema, the scheme rules and the November 2026 requirements — and get told which rule failed, in which field, and what to change. Nothing is uploaded: the engine runs on your machine, or inside your browser tab."
 ---
 
-## What you can do right now
+## Start with a single message
 
-**Check a message and understand the answer.** Paste an ISO 20022 or SWIFT MT
-message into the [workspace](workspace/). It works out what you gave it, runs the
-lint checks and the November 2026 rules, and reports each finding with the rule
-identifier, the exact path in the document, what it expected, and what to change.
-A finding you cannot trace to a rule is a finding you cannot act on.
+Paste a payment message into the [workspace](/workspace/) and see what comes
+back. It recognises the format on its own, then validates the message and
+explains every result in plain language.
 
-**Look up any message.** All [2,845 message definitions](messages/) across 30
-business areas, every version of each, what replaced it, and where to get the
-schema from the Registration Authority.
+Each finding names three things: the rule that fired, the exact field it points
+at, and what you should change. That final part matters most, because a finding
+you cannot act on is really just a finding you have to ask somebody about.
 
-**Take the evidence with you.** Findings as JSON, as SARIF 2.1.0 for code
-scanning, or as an evidence pack written for a ticket — including a statement of
-what was *not* checked, because "clean" without a schema means "nothing
-contradicted it".
+Suppose a creditor IBAN fails its checksum. AskISO never stops at "invalid". It
+reports that the check digits are incorrect and calculates the appropriate pair
+for that account number. It also warns you the account number itself may be the
+underlying mistake.
+
+## Look up any message definition
+
+The [message reference](/messages/) covers all 2,845 ISO 20022 definitions,
+including every version of pacs.008, pain.001, camt.053 and the rest, arranged
+by business area. Each page records which version superseded it and where the
+Registration Authority publishes the schema.
+
+There is no account to create and nothing to subscribe to.
+
+## Take the evidence away with you
+
+Findings rarely stay with whoever discovered them. Export yours as JSON, as
+SARIF for code scanning, or as a written summary for a ticket or a review.
+
+That pack also records what was **not** checked. Without a schema installed,
+"clean" only means that nothing contradicted the message. Those are genuinely
+different claims, and the difference deserves to be written down.
 
 ## Why the answers can be trusted
 
-**Validation checked against an independent implementation.** A pure-Go
-implementation of the XML Schema subset ISO 20022 uses — element order,
-cardinality, choices, wildcards, patterns, enumerations, length and numeric
-facets. Across the whole catalogue AskISO and libxml2 agree on **4,746 of 4,746
-documents**, accepting the same 1,035 and rejecting the same 3,711. That figure
-is reproduced by a command, not asserted in a brochure.
+**Our validation is checked against somebody else's.** AskISO validates ISO
+20022 messages with its own implementation of the schema rules. To demonstrate
+that it agrees with the reference, we ran the entire catalogue through libxml2
+as well. Both accept the same 1,035 documents and reject the same 3,711, which
+is agreement on 4,746 of 4,746. A single command reproduces that result.
 
-**Scheme rules, not just schema validity.** A message can be schema-valid and
-still be rejected by a clearing system. AskISO checks the rules that sit on top:
-CBPR+ requirements, the November 2026 structured-address mandate, enhanced-data
-expectations, LEI and UETR correctness.
+**Schema validity is only half the question.** A perfectly valid message can still be refused by a clearing system. AskISO
+therefore applies the scheme rules that sit above the schema: CBPR+
+requirements, the November 2026 address mandate, enhanced data, and LEI and UETR
+correctness.
 
-**MT and MX, both directions, honestly.** MT101, MT103, MT104, MT107, MT202,
-MT204 and MT940 convert to pain.001, pacs.008, pain.008, pacs.009, pacs.010 and
-camt.053, and each converts back. Every conversion carries a fidelity report
-naming what was mapped, derived, truncated or lost — because conversion is lossy
-by nature and a tool that hides that is not doing you a favour.
+**Conversion reports its own losses.** MT101, MT103, MT104, MT107, MT202, MT204
+and MT940 all convert into their ISO 20022 equivalents and back again. Every conversion includes a fidelity report describing what was mapped,
+derived, shortened or lost. Conversion between MT and MX genuinely loses detail,
+and concealing that would help nobody.
 
-## Where it runs
+## Fits wherever you already work
 
-On your machine as a command line and a terminal interface; in your editor as a
-language server, with findings inline as you type; in your pipeline as a GitHub
-Action emitting SARIF; alongside an AI assistant as an MCP server, so the
-assistant cites a rule identifier instead of improvising. And in your browser,
-on this site, with the identical engine compiled to WebAssembly.
+Run it on your own machine as a command line tool. Install it in your editor and
+it identifies problems while you type. Add it to your build pipeline and a
+malformed message fails there, rather than reaching a correspondent. Connect it
+to an AI assistant and that assistant can cite a rule identifier instead of
+improvising. Or simply use this website, which runs the identical engine inside
+your browser tab.
 
 ```bash
 go install github.com/sebastienrousseau/askiso/cmd/askiso@latest
 askiso lint payment.xml --profile cbpr-2026
 ```
 
-No account, no API key, no upload. There is no AskISO-operated service that
-could see a payment instruction, which is the honest answer to the question your
-security team will ask first.
+No account, no API key, and nothing ever leaves your machine. That is the honest
+answer to the first question your security team will ask.
 
-## Ships no specification content
+## Why we publish no schemas ourselves
 
-The Registration Authority publishes ISO 20022 free of charge at
-[iso20022.org](https://www.iso20022.org/). AskISO does not mirror it. You
-download the message sets you need and point AskISO at them, which keeps your
-schemas current and means what you validate against comes from the source of
-truth rather than a copy of unknown age.
+The Registration Authority publishes ISO 20022 at
+[iso20022.org](https://www.iso20022.org/), free of charge, and we deliberately
+do not mirror it. You download whichever message sets you need and point AskISO
+at the folder.
 
-Search, lint, MT conversion, code lookup, identifier checking and template
-generation all work with no download at all.
+That arrangement benefits you directly. Your schemas remain current, and you
+validate against the authoritative source instead of a copy of uncertain age.
+Search, linting, MT conversion, code lookup and message generation all operate
+with no download whatsoever.
 
-## What it will not do
+## Where AskISO deliberately stops
 
-It will not invent a mapping it cannot verify against a published source. Where
-MT940 wants a transaction-type code and no verifiable mapping from the ISO 20022
-bank transaction code exists, it emits `NMSC` and tells you what was lost. Where
-camt.110 wants a coded investigation type that MT carries as prose, it uses the
-proprietary branch and names the source message rather than guessing.
+Some questions have no answer that can be verified, and when we meet one we say
+so rather than improvise.
 
-For a payment message, a confident wrong answer costs more than no answer.
+MT940 expects a transaction type code, but sometimes no verified mapping exists
+from the ISO 20022 bank transaction code. AskISO writes `NMSC` and tells you
+exactly what was lost. Similarly, camt.110 expects a coded investigation type
+where MT carries only prose. AskISO uses the proprietary branch and identifies
+its source, rather than inventing a code.
 
-AskISO is a tool, not regulatory advice. A clean result is not an assurance that
-a scheme or correspondent will accept the message. It is an independent
-open-source project, not affiliated with ISO or SWIFT.
+Guessing would be straightforward. It would also be wrong occasionally, and you
+would have no reliable way to tell which occasions those were. For a payment
+instruction, a confident wrong answer costs considerably more than an honest
+gap.
+
+The same caution applies to what AskISO itself is. It is a tool rather than
+regulatory advice, so a clean result is never a guarantee that a scheme or a
+correspondent will accept your message. And it is an independent open-source
+project, with no affiliation to ISO or to SWIFT.
+
+## Try it with a message of your own
+
+The quickest way to judge any of this is to [check a message](/workspace/) and
+read what comes back. Everything runs inside your browser, so nothing is
+uploaded, and the whole exercise takes about a minute.

@@ -2,7 +2,7 @@
 name: "AskISO"
 short_name: "AI"
 title: "ISO 20022 questions, answered — AskISO FAQ"
-description: "What changes in November 2026, whether your payment data is uploaded, how AskISO validates without redistributing the standard, what it costs, and how to get a schema. Straight answers for payments, compliance and engineering teams."
+description: "What changes in November 2026, whether your payment data is uploaded, what AskISO costs, and where to get ISO 20022 schemas. Straight answers, no jargon."
 keywords: "ISO 20022 FAQ, CBPR+ November 2026, structured address deadline, ISO 20022 validation, MT to MX migration, ISO 20022 schema download, ISO 20022 free validator"
 author: "Sebastien Rousseau"
 date: "2026-08-26"
@@ -42,8 +42,8 @@ those two mandatory elements. Fully unstructured is what stops being accepted.
 Messages that carry a fully unstructured address are rejected by the receiving
 institution rather than repaired. A rejection is a failed payment, an
 investigation, and a customer asking why their money did not arrive — which is
-why most institutions treat this as an operations risk rather than a
-technical one.
+why most institutions treat this as an operations risk rather than a technical
+one.
 
 ### Is that the only deadline?
 
@@ -69,7 +69,8 @@ that field. Nothing is uploaded — see below.
 
 ### Is our payment data uploaded anywhere?
 
-No. There is no AskISO-operated service that could receive a payment instruction.
+No. There is no AskISO-operated service that could receive a payment
+instruction.
 
 The command line runs on your machine. The website runs the same engine compiled
 to WebAssembly **inside your browser tab** — the message you paste is processed
@@ -86,10 +87,11 @@ files, and those are ones you download once from the Registration Authority.
 
 ### Is it safe to use on production payment data?
 
-That is your institution's call, but the properties that usually matter are:
-the data does not leave the machine, the source is public and auditable, the
+That is your institution's call, but the properties that usually matter are: the
+data does not leave the machine, the source is public and auditable, the
 dependency tree is small, releases are built in public CI, and a software bill
-of materials ships with each release. The [security policy](https://github.com/sebastienrousseau/askiso/blob/main/SECURITY.md)
+of materials ships with each release. The [security
+policy](https://github.com/sebastienrousseau/askiso/blob/main/SECURITY.md)
 covers reporting and supported versions.
 
 ## Coverage and correctness
@@ -98,8 +100,8 @@ covers reporting and supported versions.
 
 Because it is checked against an independent implementation and the result is
 published. AskISO's schema validator is compared with **libxml2** across the
-whole catalogue, and the two agree on every message tested. The
-[conformance page](../conformance/) carries the current numbers and the method.
+whole catalogue, and the two agree on every message tested. The [conformance
+page](../conformance/) carries the current numbers and the method.
 
 The point is not that a validator claims to be correct. It is that you can see
 what was tested, against what, and what the result was.
@@ -162,8 +164,8 @@ by, affiliated with, or connected to either.
 Yes, and that is where most of the value is: catching a malformed message before
 it reaches a counterparty rather than after. There is a GitHub Action, and the
 linter emits **SARIF 2.1.0**, so findings appear as annotations in code scanning
-alongside everything else your pipeline reports. The
-[developer documentation](../docs/) has the details.
+alongside everything else your pipeline reports. The [developer
+documentation](../docs/) has the details.
 
 ### Does it work in an editor?
 
@@ -178,16 +180,16 @@ and cite the rule identifier it used rather than improvising an answer.
 
 ### How do we report a problem or ask for something?
 
-Use the [issue tracker](https://github.com/sebastienrousseau/askiso/issues) —
-it is the public list of reported problems and requested changes. Opening one
-needs a free GitHub account and takes a minute; everything is visible to
-everyone, including the reply.
+Use the [issue tracker](https://github.com/sebastienrousseau/askiso/issues) — it
+is the public list of reported problems and requested changes. Opening one needs
+a free GitHub account and takes a minute; everything is visible to everyone,
+including the reply.
 
 The most useful report is a message AskISO gets wrong: one it accepts that your
 counterparty rejected, or one it rejects that is genuinely fine. Include the
 message with any real account numbers, names and references replaced — the
 structure is what matters, not the values.
 
-If the problem is a security issue, do not open a public report. The
-[security policy](https://github.com/sebastienrousseau/askiso/blob/main/SECURITY.md)
+If the problem is a security issue, do not open a public report. The [security
+policy](https://github.com/sebastienrousseau/askiso/blob/main/SECURITY.md)
 explains how to report it privately.

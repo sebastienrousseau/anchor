@@ -126,11 +126,11 @@ func writeIndex(reg *registry.Registry, outDir, date string) error {
 	fmt.Fprintf(&b, "---\n")
 	fmt.Fprintf(&b, "name: %q\n", "AskISO")
 	fmt.Fprintf(&b, "short_name: %q\n", "AI")
-	fmt.Fprintf(&b, "title: %q\n", "ISO 20022 message reference — every definition, every version")
+	fmt.Fprintf(&b, "title: %q\n", "ISO 20022 message reference")
 	fmt.Fprintf(&b, "description: %q\n",
-		fmt.Sprintf("Browse all %s ISO 20022 message definitions by business area. "+
-			"Every version, what replaced it, which message sets publish it, and where "+
-			"to download the schema from the Registration Authority.", commas(len(reg.Messages))))
+		fmt.Sprintf("Browse all %s ISO 20022 message definitions by business area: "+
+			"every version, what replaced it, and where to get the schema.",
+			commas(len(reg.Messages))))
 	fmt.Fprintf(&b, "keywords: %q\n",
 		"ISO 20022 message reference, ISO 20022 message types, pacs, pain, camt, "+
 			"seev, sese, ISO 20022 message list")
@@ -199,7 +199,11 @@ func writeIndex(reg *registry.Registry, outDir, date string) error {
 			// The full identifier, not the bare version number: version numbers
 			// are not contiguous, so "14 versions, current is 15" reads as an
 			// arithmetic mistake when it is simply how the standard numbers them.
-			fmt.Fprintf(&b, "- **[%s](%s/)** — %d %s, current `%s`\n",
+			// Root-relative, not document-relative. GitHub Pages serves
+			// /messages without redirecting to /messages/, so a bare
+			// "pacs.008.001.13/" resolved against the wrong base and every link
+			// on this page 404ed for anyone who arrived without the slash.
+			fmt.Fprintf(&b, "- **[%s](/messages/%s/)** — %d %s, current `%s`\n",
 				base, latest, len(ids), plural(len(ids), "version", "versions"), latest)
 		}
 		fmt.Fprintf(&b, "\n")
@@ -258,11 +262,19 @@ func buildPage(reg *registry.Registry, m registry.Message, versions []string,
 	domain := iso20022.DomainName(m.Domain)
 	sets := reg.SetsFor(m.ID)
 
-	title := fmt.Sprintf("%s — ISO 20022 %s message", m.ID, domain)
+	// Search results truncate a title past roughly 60 characters and a
+	// description past roughly 160, so both are built to fit rather than
+	// written long and cut off by the engine.
+	title := fmt.Sprintf("%s — ISO 20022 message definition", m.ID)
 	desc := fmt.Sprintf(
-		"%s is an ISO 20022 message definition in the %s business area. "+
-			"Validate, lint and generate it with AskISO, and download the schema from the Registration Authority.",
+		"%s is an ISO 20022 message in the %s area. Validate, lint and generate "+
+			"it with AskISO, and get the schema from the Registration Authority.",
 		m.ID, domain)
+	if len(desc) > 160 {
+		desc = fmt.Sprintf(
+			"%s is an ISO 20022 message definition. Validate, lint and generate it "+
+				"with AskISO, and get the schema from the Registration Authority.", m.ID)
+	}
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "---\n")
@@ -297,17 +309,44 @@ func buildPage(reg *registry.Registry, m registry.Message, versions []string,
 	fmt.Fprintf(&b, "`%s` is an ISO 20022 message definition. Its business area is "+
 		"**%s** (`%s`), and `%s` is the definition it versions.\n\n",
 		m.ID, domain, m.Domain, m.BaseCode)
-	fmt.Fprintf(&b, "AskISO does not reproduce the specification. The message definition "+
-		"report and schema are published by the Registration Authority, free of charge, "+
-		"and the links below go there.\n\n")
+	// Short sentences here matter more than anywhere else on the site: this
+	// paragraph is repeated on 2,845 pages, so its reading level is effectively
+	// the site's reading level.
+	fmt.Fprintf(&b, "AskISO does not copy the specification. The Registration "+
+		"Authority publishes the message definition report and the schema, free of "+
+		"charge. The links below go straight there.\n\n")
+
+	// --- how this version sits in its family ------------------------------
+	//
+	// Written from the registry rather than from a fixed template, so each page
+	// says something true about its own message instead of repeating the same
+	// paragraph 2,845 times. It is also the prose that makes these pages worth
+	// reading: an identifier, a table and four commands answer "what is this",
+	// but not "is this the one I should be sending".
+	if len(versions) > 1 {
+		latest := versions[len(versions)-1]
+		switch m.ID {
+		case latest:
+			fmt.Fprintf(&b, "This is the newest published version of `%s`, out of %d "+
+				"in total. Older versions remain valid, and plenty of institutions "+
+				"still send them, so receiving one is normal rather than a problem.\n\n",
+				m.BaseCode, len(versions))
+		default:
+			fmt.Fprintf(&b, "This is one of %d published versions of `%s`, and it is "+
+				"not the newest. The current version is [`%s`](/messages/%s/). That "+
+				"does not make this page obsolete: a counterparty running an older "+
+				"integration may still send you exactly this version, and you will "+
+				"need to read it.\n\n", len(versions), m.BaseCode, latest, latest)
+		}
+	}
 
 	// --- versions ---------------------------------------------------------
 	if len(versions) > 1 {
 		fmt.Fprintf(&b, "## Versions of %s\n\n", m.BaseCode)
-		fmt.Fprintf(&b, "%d versions of this definition are published. "+
-			"A newer version is not automatically a replacement — which one you send "+
-			"is decided by the scheme or market infrastructure you are sending to.\n\n",
-			len(versions))
+		fmt.Fprintf(&b, "The standard publishes %d versions of this definition. A "+
+			"newer version does not automatically replace an older one. The scheme "+
+			"or market infrastructure you send to decides which version you should "+
+			"be using.\n\n", len(versions))
 		for _, v := range versions {
 			marker := ""
 			if v == m.ID {
@@ -397,27 +436,28 @@ func buildPage(reg *registry.Registry, m registry.Message, versions []string,
 	fmt.Fprintf(&b, "%s (`%s`).\n\n", domain, m.Domain)
 
 	fmt.Fprintf(&b, "### How do I validate a %s message?\n\n", m.BaseCode)
-	fmt.Fprintf(&b, "`askiso validate message.xml`. The schema is resolved from the "+
-		"document's own namespace, so you do not pass it. Validation needs the schema "+
-		"installed; `askiso lint` checks business rules without one.\n\n")
+	fmt.Fprintf(&b, "Run `askiso validate message.xml`. The schema is found from "+
+		"the document's own namespace, so you do not name it. Validation needs that "+
+		"schema installed. To check the business rules without one, run "+
+		"`askiso lint` instead.\n\n")
 
 	fmt.Fprintf(&b, "### Does AskISO include the %s schema?\n\n", m.ID)
-	fmt.Fprintf(&b, "No. AskISO redistributes no ISO 20022 specification content. "+
-		"You download the message set from the Registration Authority and import it with "+
-		"`askiso catalog add`. What ships in the binary is the index of what exists and "+
-		"where to get it.\n\n")
+	fmt.Fprintf(&b, "No. AskISO ships no ISO 20022 specification content at all. "+
+		"You download the message set from the Registration Authority, then import it "+
+		"with `askiso catalog add`. The binary carries only an index: what exists, and "+
+		"where to find it.\n\n")
 
 	if len(versions) > 1 {
 		fmt.Fprintf(&b, "### Which version of %s should I send?\n\n", m.BaseCode)
-		fmt.Fprintf(&b, "That is decided by the scheme or market infrastructure you are "+
-			"sending to, not by the standard. %d versions are published; "+
-			"`askiso diff <from> <to>` classifies every structural difference between two "+
-			"of them as breaking or compatible.\n\n", len(versions))
+		fmt.Fprintf(&b, "The scheme or market infrastructure you send to decides "+
+			"that, not the standard. There are %d published versions. Run "+
+			"`askiso diff <from> <to>` to see every structural difference between two "+
+			"of them, marked as breaking or compatible.\n\n", len(versions))
 	}
 
 	fmt.Fprintf(&b, "---\n\n")
-	fmt.Fprintf(&b, "*This page is generated from AskISO's embedded index of the standard. "+
-		"The authoritative source for ISO 20022 is "+
+	fmt.Fprintf(&b, "*AskISO generates this page from its built-in index of the "+
+		"standard. The source of truth for ISO 20022 is "+
 		"[iso20022.org](https://www.iso20022.org/).*\n")
 
 	return b.String()

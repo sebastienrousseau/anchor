@@ -26,7 +26,7 @@ WASM_LDFLAGS = -s -w -X main.buildVersion=$(VERSION)
 # against regression rather than where it forces that work.
 COVERAGE_FLOOR = 95.5
 
-.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries vuln clean run catalog-info web web-test web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
+.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries readability seo vuln clean run catalog-info web web-test web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
 
 all: build
 
@@ -100,6 +100,22 @@ COVERPKG = $(shell go list ./... | grep -v '/examples' | paste -sd, -)
 # used process substitution, failed to parse there, and still printed its
 # success line -- a gate that passes without checking anything is worse than no
 # gate at all.
+# Prose on a standards site drifts towards the standard's own register, and the
+# argument about whether it reads well is unwinnable without a number. The band
+# is the one the site is written to: Flesch Reading Ease 55-58, Flesch-Kincaid
+# grade 8-9. The generated message pages are reported rather than gated; the
+# script explains why.
+readability:
+	@command -v python3 >/dev/null || { echo "python3 is required"; exit 1; }
+	python3 scripts/readability.py $(WEB_OUT)
+
+# Search defects are easy to ship and hard to notice: a social image that was
+# never built, a description the results truncate, two pages competing under one
+# title. Every rule in the script was something actually wrong here once.
+seo:
+	@command -v python3 >/dev/null || { echo "python3 is required"; exit 1; }
+	python3 scripts/seocheck.py $(WEB_OUT)
+
 no-binaries:
 	@tmp=$$(mktemp); \
 	git ls-files -z | xargs -0 -n1 sh -c \
@@ -200,12 +216,30 @@ web:
 	@# One page per message definition, generated from the embedded registry.
 	@# They are derived data, so they are not tracked — regenerating is a
 	@# second of work and a stale copy in the tree would be worse than none.
+	@# An unclosed code fence does not fail the build: the renderer simply keeps
+	@# swallowing the page into one <pre>, and the rest of the content silently
+	@# disappears. That happened once, to two pages, and was noticed only because
+	@# a word count looked wrong.
+	@bad=$$(for f in web/content/*.md; do \
+	  n=$$(grep -c '^```' "$$f"); \
+	  [ $$((n % 2)) -eq 0 ] || echo "$$f ($$n fences)"; \
+	done); \
+	if [ -n "$$bad" ]; then \
+	  echo "unclosed code fence:"; echo "$$bad" | sed 's/^/  /'; exit 1; \
+	fi
 	go run ./scripts/gen-message-pages -out web/content/messages
 	ssg build -f web/ssg.toml
 	@$(MAKE) --no-print-directory wasm
 	@for a in styles.css brand.css playground.css workspace.css main.js theme-init.js deadline.js playground.js catalogue.js evidence.js workspace.js workspace-boot.js terminal.js logo.svg favicon.ico; do \
 	  test -f "web/_layouts/$$a" && cp -f "web/_layouts/$$a" "$(WEB_OUT)/$$a"; \
 	done
+	@# Question-and-answer markup, read back out of the built page so it cannot
+	@# disagree with the visible text.
+	@python3 scripts/faq-schema.py $(WEB_OUT)/faq/index.html
+	@# The social card. og:image pointed at images/screenshot.png, which was
+	@# never built, so every share of every page showed a broken image.
+	@mkdir -p $(WEB_OUT)/images
+	@cp -f web/_layouts/images/social-card.png $(WEB_OUT)/images/
 	@# ssg fingerprints its syntax-highlighting stylesheet but emits the page
 	@# referencing the bare name, so /highlight.css was a 404 on every page.
 	@h=$$(ls $(WEB_OUT)/highlight.*.css 2>/dev/null | head -1); \

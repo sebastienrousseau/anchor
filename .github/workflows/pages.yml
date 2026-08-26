@@ -104,6 +104,14 @@ jobs:
       - name: Smoke-test the bundle
         run: node web/wasm/smoke_test.mjs
 
+      # Readability is a property of the published pages, so it is checked on
+      # the built output rather than on the sources.
+      - name: Check readability
+        run: make readability
+
+      - name: Check search metadata
+        run: make seo
+
       # The premise of the project is that it redistributes no specification
       # content. This is the gate that keeps that true rather than aspirational.
       - name: Verify no specification content is being published

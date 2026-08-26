@@ -1,8 +1,8 @@
 ---
 name: "AskISO"
 short_name: "AI"
-title: "ISO 20022 playground — lint, validate and convert in the browser"
-description: "Lint payment messages, generate compliant samples, search 2,845 message definitions and convert XML to JSON — in the browser, running the same engine as the askiso command line. Nothing is uploaded."
+title: "ISO 20022 tools — lint, validate and convert online"
+description: "Lint payment messages, generate samples, search 2,845 message definitions and convert XML to JSON. Runs in your browser; nothing is uploaded."
 keywords: "ISO 20022 validator online, pacs.008 linter, ISO 20022 playground, validate ISO 20022 XML browser, MT to MX converter online, IBAN BIC UETR checker"
 author: "Sebastien Rousseau"
 date: "2026-08-25"

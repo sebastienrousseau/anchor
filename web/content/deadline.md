@@ -1,8 +1,8 @@
 ---
 name: "AskISO"
 short_name: "AI"
-title: "The 14 November 2026 structured address mandate — what it requires and how to check"
-description: "From 14 November 2026, CBPR+ rejects unstructured postal addresses on cross-border payments. 44% of banks are not on track and 65% of messages are still non-compliant. Check your own messages with AskISO."
+title: "November 2026: the CBPR+ structured address mandate"
+description: "From 14 November 2026, CBPR+ rejects unstructured postal addresses on cross-border payments. Find out what changes, and check your own messages free."
 keywords: "CBPR+ structured address, November 2026 deadline, ISO 20022 structured address mandate, unstructured address rejected, hybrid address pacs.008, SWIFT 2026 address requirement, structured address migration"
 author: "Sebastien Rousseau"
 date: "2026-08-25"
@@ -21,14 +21,15 @@ lead: "From 14 November 2026, a cross-border payment carrying an unstructured po
 
 ## What changes
 
-From 14 November 2026, financial institutions and corporates sending cross-border
-payments over SWIFT CBPR+ or the key payment market infrastructures must use
-**hybrid or fully structured addresses** wherever an address is present.
+From 14 November 2026 the rule applies to everyone sending cross-border
+payments. That covers banks and corporates using SWIFT CBPR+, and the main
+payment market infrastructures. Wherever an address appears, it must be
+**hybrid or fully structured**.
 Non-compliant messages are rejected outright.
 
-A structured address puts each component in its own element — town, post code,
-country, street, building number — instead of the free-text `AdrLine` lines that
-MT carried and that early ISO 20022 messages allowed. A hybrid address keeps
+A structured address places each component in its own element: town, post code,
+country, street and building number. It replaces the free-text `AdrLine` lines
+that MT carried, and that early ISO 20022 messages permitted. A hybrid address keeps
 some address lines but requires town name and country to be structured.
 
 This is not the whole of ISO 20022's 2026 change, and the address rule is the
@@ -44,8 +45,8 @@ one with a hard rejection behind it.
 | Institutions reporting core banking gaps for structured addresses | **60%** |
 
 Nearly one institution in ten reports that more than half of its address data is
-still non-compliant. The gap is rarely in the payment engine — it is in the
-customer data that feeds it, which is why it takes longer to close than it looks.
+still non-compliant. The gap is rarely in the payment engine itself. It lies in the customer data
+feeding that engine, which is why it takes longer to close than expected.
 
 ## What comes after
 
@@ -160,8 +161,9 @@ $ askiso batch ./messages --profile cbpr-2026
 $ askiso batch ./messages --profile cbpr-2026 --format sarif > findings.sarif
 ```
 
-The SARIF output drops into GitHub code scanning or any tool that reads it, so
-the check can sit in a pipeline rather than in someone's terminal.
+The SARIF output feeds GitHub code scanning, or any other tool that reads the
+format. Your check can therefore sit in a pipeline rather than in somebody's
+terminal.
 
 Nothing is uploaded. AskISO runs locally, which matters when the input is a real
 payment instruction.
@@ -169,9 +171,9 @@ payment instruction.
 ## The rules behind it
 
 The `cbpr-2026` profile carries five address rules, `CBPR-ADDR-001` through
-`CBPR-ADDR-005`. Every diagnostic names the rule, the path, what was expected
-and what to do about it, so it can be handed to whoever owns the data rather
-than interpreted first.
+`CBPR-ADDR-005`. Every diagnostic names the rule, the path and what was expected. It also states
+what to do about it, so you can hand it straight to whoever owns the data
+instead of interpreting it first.
 
 `--profile cbpr-2027` checks the enhanced-data expectations that follow a year
 later, and `--profile all` runs everything.
@@ -226,9 +228,9 @@ $ askiso translate payment.mt103 --report
 ```
 
 The fidelity report names every field in the source and what became of it —
-mapped, derived, truncated or unmapped. Nothing is dropped silently, which
-matters most in exactly this case: the conversion succeeds, the XML is
-schema-valid, and it would still be rejected in November.
+mapped, derived, truncated or unmapped. Nothing is dropped silently, which matters most in precisely this case. The
+conversion succeeds and the XML is schema-valid. It would still be rejected in
+November.
 
 ## Remediating at scale
 
