@@ -187,13 +187,11 @@ jobs:
       # 2,845 of the pages are the message definitions, and they are the reason
       # the site is discoverable at all. An empty sitemap published them to
       # nobody, which is exactly the kind of failure that looks like success.
+      # Compares the two sets rather than their sizes: a page dropped and a
+      # page wrongly added cancel out in a count, and a count cannot express
+      # the one page that is deliberately absent.
       - name: Verify the sitemap lists every page
-        run: |
-          pages="$(find web/public -name index.html | wc -l | xargs)"
-          locs="$(grep -c '<loc>' web/public/sitemap.xml || echo 0)"
-          echo "pages: $pages   sitemap entries: $locs"
-          [ "$locs" = "$pages" ] || { echo "::error::sitemap lists $locs of $pages pages"; exit 1; }
-          [ "$pages" -gt 2000 ] || { echo "::error::only $pages pages built"; exit 1; }
+        run: make sitemap-check
 
       # A dead reference in a shared layout is dead on every page, and a static
       # site has no runtime to notice. This caught six such targets across all
