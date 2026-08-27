@@ -43,9 +43,40 @@ const COMBINATIONS = [
   ['dark', 'light'], ['dark', 'dark'],
 ];
 
-const PAGES = ['', 'solutions/', 'innovation/', 'news/', 'about/', 'workspace/',
-  'playground/', 'messages/', 'deadline/', 'docs/', 'faq/', 'conformance/',
-  'contact/', 'messages/pacs.008.001.13/'];
+const PAGES = ['', 'solutions/', 'innovation/', 'news/', 'about/', 'vision/',
+  'knowledge/', 'workspace/', 'playground/', 'messages/', 'deadline/', 'docs/',
+  'faq/', 'conformance/', 'contact/', 'legal/', 'messages/pacs.008.001.13/'];
+
+// axe reports three outcomes, not two, and the third is where a real failure
+// hid. A contrast ratio of exactly 1:1 is filed as "incomplete" rather than as
+// a violation, because at 1:1 axe cannot tell text deliberately hidden behind
+// its own background from a button whose label has vanished. This suite read
+// only `violations`, so it called a nav CTA with an invisible label green.
+//
+// So incomplete results are failures too, with two exceptions that axe cannot
+// decide and no cascade bug can hide behind:
+//
+//   - a background it could not resolve because a pseudo element paints it,
+//     which is every heading over a banner scrim;
+//   - an element whose content is only non-text characters, which is a table
+//     cell holding an em dash.
+//
+// Anything else — above all a message quoting a ratio axe measured and then
+// declined to rule on — fails. An unrecognised message fails as well, so a new
+// class of deferral has to be looked at rather than passing unseen.
+const DEFERRABLE = [
+  /background color could not be determined due to a pseudo element/,
+  /content contains only non-text characters/,
+];
+
+const undecidable = (node) => {
+  const messages = (node.any || []).concat(node.all || [], node.none || [])
+    .map(check => check.message || '')
+    .filter(Boolean);
+  // No message at all is not a reason to let it through.
+  return messages.length > 0
+    && messages.every(m => DEFERRABLE.some(rx => rx.test(m)));
+};
 
 const browser = await puppeteer.launch({
   executablePath: CHROME, headless: 'new',
@@ -53,6 +84,7 @@ const browser = await puppeteer.launch({
 
 let violations = 0;
 let checked = 0;
+let deferred = 0;
 
 console.log('axe-core, WCAG 2.2 AA — every system preference and theme choice\n');
 
@@ -77,11 +109,25 @@ for (const p of PAGES) {
     const result = await page.evaluate(async () => {
       return await window.axe.run(document, {
         runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
-        resultTypes: ['violations'],
+        resultTypes: ['violations', 'incomplete'],
       });
     });
 
     checked++;
+
+    // An incomplete axe could not decide is reported as a violation of its own,
+    // carrying the rule that raised it and the node it names.
+    const undecided = [];
+    for (const inc of result.incomplete) {
+      const bad = inc.nodes.filter(n => !undecidable(n));
+      if (bad.length) {
+        undecided.push({ ...inc, nodes: bad, help: `${inc.help} (axe could not rule)` });
+      } else {
+        deferred += inc.nodes.length;
+      }
+    }
+    result.violations.push(...undecided);
+
     if (result.violations.length) {
       violations += result.violations.length;
       console.log(`  FAIL  /${p} (system ${system}, chose ${theme || 'nothing'})`);
@@ -104,5 +150,7 @@ for (const p of PAGES) {
 await browser.close();
 console.log(violations === 0
   ? `\n${checked} page renders audited, no WCAG 2.2 AA violations`
+    + `\n${deferred} contrast check(s) axe left to a human: text over a banner`
+    + ` scrim, and table cells holding only an em dash`
   : `\n${violations} violation(s) across ${checked} page renders`);
 process.exit(violations === 0 ? 0 : 1);

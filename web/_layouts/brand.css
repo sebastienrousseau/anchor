@@ -1266,8 +1266,16 @@ pre.highlight.language-console {
   color: var(--accent-ink, #fff);
 }
 
-/* The underline the other links carry would sit under a filled pill. */
+/* On the page it points at, the CTA is its own current page — and
+   `.nav-link[aria-current="page"]` above sets the accent as the text colour,
+   which on a pill already filled with the accent is cyan on cyan: a 1:1 ratio
+   and a button with no visible label. Both declarations are (0,2,0), so this
+   one wins only by sitting later in the file; the colour is restated here
+   rather than left to inheritance for that reason.
+
+   The underline the other links carry would also sit under a filled pill. */
 .nav-cta[aria-current="page"] {
+  color: var(--accent-ink, #fff);
   text-decoration: none;
 }
 

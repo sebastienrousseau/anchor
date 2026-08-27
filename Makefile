@@ -26,7 +26,7 @@ WASM_LDFLAGS = -s -w -X main.buildVersion=$(VERSION)
 # against regression rather than where it forces that work.
 COVERAGE_FLOOR = 95.5
 
-.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries readability a11y seo vuln clean run catalog-info web web-test web-interact a11y-axe web-console web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
+.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries readability a11y seo vuln clean run catalog-info web web-test web-interact a11y-axe banner-contrast web-console web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
 
 all: build
 
@@ -358,6 +358,25 @@ a11y-axe: web
 	 CHROME_PATH="$$chrome" ASKISO_BASE_URL=http://127.0.0.1:8899 node web/tests/a11y.mjs; \
 	 status=$$?; \
 	 kill "$$(cat /tmp/askiso-axe.pid)" 2>/dev/null; rm -f /tmp/askiso-axe.pid; \
+	 exit $$status
+
+# The contrast axe-core will not rule on. Where a banner sets text over a
+# photograph behind a gradient scrim, axe cannot resolve the background and
+# defers; this measures it from the rendered pixels instead.
+banner-contrast: web
+	@command -v node >/dev/null || { echo "node is required"; exit 1; }
+	@chrome="$${CHROME_PATH:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"; \
+	 if [ ! -x "$$chrome" ]; then chrome="$$(command -v google-chrome-stable || command -v google-chrome || true)"; fi; \
+	 if [ -z "$$chrome" ] || [ ! -x "$$chrome" ]; then \
+	   echo "banner-contrast: no Chrome found, skipping"; exit 0; \
+	 fi; \
+	 node -e "import('puppeteer-core')" >/dev/null 2>&1 || { \
+	   echo "banner-contrast: puppeteer-core is not installed, skipping"; exit 0; }; \
+	 (cd $(WEB_OUT) && python3 -m http.server 8899 >/dev/null 2>&1 & echo $$! > /tmp/askiso-banner.pid); \
+	 sleep 2; \
+	 CHROME_PATH="$$chrome" ASKISO_BASE_URL=http://127.0.0.1:8899 node web/tests/banner-contrast.mjs; \
+	 status=$$?; \
+	 kill "$$(cat /tmp/askiso-banner.pid)" 2>/dev/null; rm -f /tmp/askiso-banner.pid; \
 	 exit $$status
 
 # Loads every page and fails on anything the browser complains about: errors,
