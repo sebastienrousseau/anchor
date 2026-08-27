@@ -70,14 +70,22 @@ const PAGES = ['', 'solutions/', 'innovation/', 'news/', 'about/', 'vision/',
 //
 //   - a background it could not resolve because a pseudo element paints it,
 //     which is every heading over a banner scrim;
+//   - a background it could not resolve because something overlaps the element.
+//     This one only appears in CI, on prose that this Chrome measures at 17.23
+//     against the same page, so it is a difference in what the two browsers can
+//     resolve rather than a difference in the page;
 //   - an element whose content is only non-text characters, which is a table
 //     cell holding an em dash.
 //
 // Anything else — above all a message quoting a ratio axe measured and then
 // declined to rule on — fails. An unrecognised message fails as well, so a new
 // class of deferral has to be looked at rather than passing unseen.
+// Every one of these says axe could not compute a ratio. None of them carries a
+// ratio it computed and then declined to rule on — that is the case this suite
+// exists to catch, and it stays a failure.
 const DEFERRABLE = [
   /background color could not be determined due to a pseudo element/,
+  /background color could not be determined because it is overlapped by another element/,
   /content contains only non-text characters/,
 ];
 
