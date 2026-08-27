@@ -193,6 +193,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  /* A flex item refuses to shrink below its content by default, and the
+     content here is a `select` as wide as its longest option. */
+  min-width: 0;
 }
 
 .playground .field label {
@@ -215,6 +218,12 @@
 
 .playground select {
   font-family: inherit;
+  /* A `select` sizes itself to its widest option, and the widest here is
+     "pacs.008 — FI to FI Customer Credit Transfer". At 320px that made the
+     control 353px wide inside a 280px column and the whole page scrolled
+     sideways, which is the one thing WCAG 1.4.10 asks a layout not to do. */
+  width: 100%;
+  max-width: 100%;
 }
 
 .playground input[type="text"]:focus,
@@ -534,4 +543,11 @@ body.has-catalogue .playground #cat-forget { display: inline-flex; }
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* The install command is a single unbroken token — no space, no hyphen, so no
+   break opportunity — and at 320px it reached 486px wide and took the page
+   with it. Breaking anywhere is right for a URL: it is read, not parsed. */
+.playground code {
+  overflow-wrap: anywhere;
 }

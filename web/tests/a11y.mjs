@@ -43,6 +43,17 @@ const COMBINATIONS = [
   ['dark', 'light'], ['dark', 'dark'],
 ];
 
+// Contrast does not care what size the window is, but several AA rules do —
+// 2.5.8 Target Size above all, where two controls comfortably 24px apart on a
+// desktop can end up adjacent once a row wraps. Running every theme at both
+// sizes would double a suite that already takes minutes for no contrast
+// benefit, so the phone width runs the two system preferences and no explicit
+// choice, which is what the overwhelming majority of visitors are in.
+const VIEWPORTS = [
+  { label: 'desktop', width: 1280, height: 900, mobile: false, combinations: COMBINATIONS },
+  { label: 'phone', width: 390, height: 780, mobile: true, combinations: COMBINATIONS.slice(0, 2) },
+];
+
 const PAGES = ['', 'solutions/', 'innovation/', 'news/', 'about/', 'vision/',
   'knowledge/', 'workspace/', 'playground/', 'messages/', 'deadline/', 'docs/',
   'faq/', 'conformance/', 'contact/', 'legal/', 'messages/pacs.008.001.13/'];
@@ -86,12 +97,14 @@ let violations = 0;
 let checked = 0;
 let deferred = 0;
 
-console.log('axe-core, WCAG 2.2 AA — every system preference and theme choice\n');
+console.log('axe-core, WCAG 2.2 AA — every system preference and theme choice, desktop and phone\n');
 
 for (const p of PAGES) {
-  for (const [system, theme] of COMBINATIONS) {
+ for (const vp of VIEWPORTS) {
+  for (const [system, theme] of vp.combinations) {
     const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 900 });
+    await page.setViewport({ width: vp.width, height: vp.height,
+      isMobile: vp.mobile, hasTouch: vp.mobile });
     await page.emulateMediaFeatures([
       { name: 'prefers-color-scheme', value: system },
     ]);
@@ -130,7 +143,7 @@ for (const p of PAGES) {
 
     if (result.violations.length) {
       violations += result.violations.length;
-      console.log(`  FAIL  /${p} (system ${system}, chose ${theme || 'nothing'})`);
+      console.log(`  FAIL  /${p} ${vp.label} (system ${system}, chose ${theme || 'nothing'})`);
       for (const v of result.violations) {
         console.log(`          ${v.id} [${v.impact}] ${v.help}`);
         for (const n of v.nodes.slice(0, 3)) {
@@ -141,10 +154,11 @@ for (const p of PAGES) {
         }
       }
     } else {
-      console.log(`  ok    /${p} (system ${system}, chose ${theme || 'nothing'})`);
+      console.log(`  ok    /${p} ${vp.label} (system ${system}, chose ${theme || 'nothing'})`);
     }
     await page.close();
   }
+ }
 }
 
 await browser.close();

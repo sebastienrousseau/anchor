@@ -369,6 +369,11 @@ h3 {
   border-radius: 4px;
   padding: 0.1em 0.36em;
   font-size: 0.88em;
+  /* An import path or a message identifier carries no space and no hyphen, so
+     a narrow column offers it nowhere to break and it runs off the side
+     instead. Fenced blocks scroll inside their own box; inline code has no box
+     to scroll in, so it wraps. */
+  overflow-wrap: anywhere;
 }
 
 /* ---------------------------------------------------------------------------
