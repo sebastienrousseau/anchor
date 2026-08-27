@@ -32,10 +32,11 @@ rather than interpreted first.
 **Start here:** [check a message](/workspace/). It runs in your browser and
 nothing is uploaded.
 
-## Meet the November 2026 mandate
+## Meet the structured address mandate
 
-From 14 November 2026, a cross-border payment carrying an unstructured postal
-address is rejected. Not flagged, not downgraded — rejected.
+A cross-border payment carrying an unstructured postal address is rejected. Not
+flagged, not downgraded — rejected. Swift deferred the November 2026 cutover on
+27 August and will confirm replacement timing by December.
 
 The gap is rarely located in the payment engine. It sits in the customer data feeding that engine, which is precisely why remediation takes considerably longer than institutions anticipate.
 AskISO reports which addresses are unstructured, where they are, and what each

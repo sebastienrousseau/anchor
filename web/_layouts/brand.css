@@ -234,6 +234,23 @@ h3 {
   color: var(--ink);
 }
 
+/* The generator fixes its search trigger to the top right of the viewport, 16px
+   in and 146px wide, from 48rem upward. The header's own row runs to the edge of
+   its container, so between 48rem and the width at which the container stops
+   growing, the two occupy the same strip: the trigger sat on top of the "Check a
+   message" button by 88px at 1024 and 18px at 1280, and over the theme toggle up
+   to 1366. Reserving the strip is the fix that does not touch the widget — the
+   stylesheet that positions it also binds it to the overlay it opens.
+
+   Bounded above on purpose. Past 85.5rem the container is narrower than the
+   viewport and the trigger clears it on its own; reserving there would pull the
+   header off the axis every other row on the page is aligned to. */
+@media (min-width: 48rem) and (max-width: 85.5rem) {
+  .site-nav {
+    padding-inline-end: 10.5rem;
+  }
+}
+
 .nav-link {
   font-size: 0.95rem;
   font-weight: 450;

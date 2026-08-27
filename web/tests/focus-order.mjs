@@ -36,7 +36,8 @@ const CHROME = process.env.CHROME_PATH
 
 const PAGES = ['', 'solutions/', 'innovation/', 'news/', 'about/', 'vision/',
   'knowledge/', 'workspace/', 'playground/', 'messages/', 'deadline/', 'docs/',
-  'faq/', 'conformance/', 'contact/', 'legal/', '404/', 'contact/sent/', 'messages/pacs.008.001.13/'];
+  'faq/', 'conformance/', 'contact/', 'legal/', '404/', 'contact/sent/', 'news/swift-defers-structured-address-migration/',
+  'messages/pacs.008.001.13/'];
 
 // Painted within this many pixels of the top of the first screen counts as
 // visually early; the header and its controls sit well inside it.

@@ -38,6 +38,11 @@ concurrency:
 jobs:
   build:
     name: Build
+    # Every browser gate skips when Chrome or puppeteer is missing, which is
+    # right on a laptop and wrong here: a dependency that failed to install
+    # would turn all of them into silent passes. This makes them refuse.
+    env:
+      ASKISO_REQUIRE_BROWSER: "1"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5

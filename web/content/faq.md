@@ -21,13 +21,17 @@ headline: "Questions we get asked"
 lead: "Straight answers for payments operations, compliance teams, and the engineers who have to implement what they decide."
 ---
 
-## The November 2026 change
+## The structured address change
 
-### What actually changes in November 2026?
+### What actually changes, and when?
 
-From **14 November 2026**, CBPR+ requires the postal addresses in cross-border
-payment messages to be **structured or hybrid**. An address written entirely as
-free-text `<AdrLine>` elements no longer passes.
+CBPR+ requires the postal addresses in cross-border payment messages to be
+**structured or hybrid**. An address written entirely as free-text `<AdrLine>`
+elements no longer passes.
+
+The cutover was to be 14 November 2026. Swift deferred every payments change in
+Standards Release 2026 on 27 August 2026 and will confirm replacement timing by
+December at the latest. The requirement itself stands.
 
 CBPR+ stands for *cross-border payments and reporting plus*: the market practice
 guidelines that govern how banks exchange ISO 20022 payment messages with each
@@ -53,7 +57,7 @@ No. There are three, and they are separate:
 
 | Date | What changes |
 | --- | --- |
-| 14 November 2026 | Structured or hybrid addresses become mandatory for CBPR+ |
+| Deferred, timing by December | Structured or hybrid addresses become mandatory for CBPR+ |
 | November 2027 | Enhanced data requirements take effect |
 | November 2028 | The SWIFT MT retirement date for cross-border payments |
 

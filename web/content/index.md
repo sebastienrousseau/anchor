@@ -18,7 +18,7 @@ nav_home: "true"
 banner: "freeman-zhou-oV9hp8wXkPE"
 banner_alt: "A financial district skyline at dawn, mirrored in still water."
 hero_alt: "The AskISO mark: a question mark inside a circle, in cyan."
-eyebrow: "ISO 20022 · 14 November 2026"
+eyebrow: "ISO 20022 · CBPR+ structured addresses"
 headline: "Know your ISO 20022 messages will be accepted"
 lead: "Paste one. See which rule failed, in which field, and what to change. Nothing is uploaded."
 ---

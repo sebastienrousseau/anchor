@@ -257,7 +257,7 @@ web:
 	@# 0.064 — so it is on the critical path, where two thirds of it was prose.
 	@# main.js and the generator's own _csp bundle are left alone: both are
 	@# referenced with an integrity hash computed from the bytes as they are.
-	@for a in deadline.js playground.js catalogue.js evidence.js workspace.js workspace-boot.js terminal.js; do \
+	@for a in playground.js catalogue.js evidence.js workspace.js workspace-boot.js terminal.js; do \
 	  test -f "web/_layouts/$$a" && python3 scripts/minify-js.py "web/_layouts/$$a" "$(WEB_OUT)/$$a"; \
 	done
 	@# Independently of what produced them, everything emitted has to parse.
@@ -279,6 +279,9 @@ web:
 	@# Question-and-answer markup, read back out of the built page so it cannot
 	@# disagree with the visible text.
 	@python3 scripts/faq-schema.py $(WEB_OUT)/faq/index.html
+	@# A news piece has to say what it is, who wrote it and what it reports on,
+	@# or an assistant answering the question it answers has nothing to cite.
+	@python3 scripts/article-schema.py $(WEB_OUT)
 	@# The social card. og:image pointed at images/screenshot.png, which was
 	@# never built, so every share of every page showed a broken image.
 	@mkdir -p $(WEB_OUT)/images/banners
@@ -348,7 +351,7 @@ web-interact: web
 	@chrome="$${CHROME_PATH:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"; \
 	 if [ ! -x "$$chrome" ]; then chrome="$$(command -v google-chrome-stable || command -v google-chrome || true)"; fi; \
 	 if [ -z "$$chrome" ] || [ ! -x "$$chrome" ]; then \
-	   echo "web-interact: no Chrome found, skipping"; exit 0; \
+	   if [ -n "$$ASKISO_REQUIRE_BROWSER" ]; then echo "web-interact: no Chrome found — refusing to skip because ASKISO_REQUIRE_BROWSER is set"; exit 1; fi; echo "web-interact: no Chrome found, skipping"; exit 0; \
 	 fi; \
 	 node -e "import('puppeteer-core')" >/dev/null 2>&1 || { \
 	   echo "web-interact: puppeteer-core is not installed, skipping"; \
@@ -390,10 +393,10 @@ focus-order: web
 	@chrome="$${CHROME_PATH:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"; \
 	 if [ ! -x "$$chrome" ]; then chrome="$$(command -v google-chrome-stable || command -v google-chrome || true)"; fi; \
 	 if [ -z "$$chrome" ] || [ ! -x "$$chrome" ]; then \
-	   echo "focus-order: no Chrome found, skipping"; exit 0; \
+	   if [ -n "$$ASKISO_REQUIRE_BROWSER" ]; then echo "focus-order: no Chrome found — refusing to skip because ASKISO_REQUIRE_BROWSER is set"; exit 1; fi; echo "focus-order: no Chrome found, skipping"; exit 0; \
 	 fi; \
 	 node -e "import('puppeteer-core')" >/dev/null 2>&1 || { \
-	   echo "focus-order: puppeteer-core is not installed, skipping"; exit 0; }; \
+	   if [ -n "$$ASKISO_REQUIRE_BROWSER" ]; then echo "focus-order: puppeteer-core is not installed — refusing to skip because ASKISO_REQUIRE_BROWSER is set"; exit 1; fi; echo "focus-order: puppeteer-core is not installed, skipping"; exit 0; }; \
 	 (cd $(WEB_OUT) && python3 -m http.server 8899 >/dev/null 2>&1 & echo $$! > /tmp/askiso-focus.pid); \
 	 sleep 2; \
 	 CHROME_PATH="$$chrome" ASKISO_BASE_URL=http://127.0.0.1:8899 node web/tests/focus-order.mjs; \
@@ -413,10 +416,10 @@ banner-contrast: web
 	@chrome="$${CHROME_PATH:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"; \
 	 if [ ! -x "$$chrome" ]; then chrome="$$(command -v google-chrome-stable || command -v google-chrome || true)"; fi; \
 	 if [ -z "$$chrome" ] || [ ! -x "$$chrome" ]; then \
-	   echo "banner-contrast: no Chrome found, skipping"; exit 0; \
+	   if [ -n "$$ASKISO_REQUIRE_BROWSER" ]; then echo "banner-contrast: no Chrome found — refusing to skip because ASKISO_REQUIRE_BROWSER is set"; exit 1; fi; echo "banner-contrast: no Chrome found, skipping"; exit 0; \
 	 fi; \
 	 node -e "import('puppeteer-core')" >/dev/null 2>&1 || { \
-	   echo "banner-contrast: puppeteer-core is not installed, skipping"; exit 0; }; \
+	   if [ -n "$$ASKISO_REQUIRE_BROWSER" ]; then echo "banner-contrast: puppeteer-core is not installed — refusing to skip because ASKISO_REQUIRE_BROWSER is set"; exit 1; fi; echo "banner-contrast: puppeteer-core is not installed, skipping"; exit 0; }; \
 	 (cd $(WEB_OUT) && python3 -m http.server 8899 >/dev/null 2>&1 & echo $$! > /tmp/askiso-banner.pid); \
 	 sleep 2; \
 	 CHROME_PATH="$$chrome" ASKISO_BASE_URL=http://127.0.0.1:8899 node web/tests/banner-contrast.mjs; \
@@ -431,10 +434,10 @@ terminal-swap: web
 	@chrome="$${CHROME_PATH:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"; \
 	 if [ ! -x "$$chrome" ]; then chrome="$$(command -v google-chrome-stable || command -v google-chrome || true)"; fi; \
 	 if [ -z "$$chrome" ] || [ ! -x "$$chrome" ]; then \
-	   echo "terminal-swap: no Chrome found, skipping"; exit 0; \
+	   if [ -n "$$ASKISO_REQUIRE_BROWSER" ]; then echo "terminal-swap: no Chrome found — refusing to skip because ASKISO_REQUIRE_BROWSER is set"; exit 1; fi; echo "terminal-swap: no Chrome found, skipping"; exit 0; \
 	 fi; \
 	 node -e "import('puppeteer-core')" >/dev/null 2>&1 || { \
-	   echo "terminal-swap: puppeteer-core is not installed, skipping"; exit 0; }; \
+	   if [ -n "$$ASKISO_REQUIRE_BROWSER" ]; then echo "terminal-swap: puppeteer-core is not installed — refusing to skip because ASKISO_REQUIRE_BROWSER is set"; exit 1; fi; echo "terminal-swap: puppeteer-core is not installed, skipping"; exit 0; }; \
 	 (cd $(WEB_OUT) && python3 -m http.server 8899 >/dev/null 2>&1 & echo $$! > /tmp/askiso-swap.pid); \
 	 sleep 2; \
 	 CHROME_PATH="$$chrome" ASKISO_BASE_URL=http://127.0.0.1:8899 node web/tests/terminal-swap.mjs; \
@@ -450,10 +453,10 @@ reflow: web
 	@chrome="$${CHROME_PATH:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"; \
 	 if [ ! -x "$$chrome" ]; then chrome="$$(command -v google-chrome-stable || command -v google-chrome || true)"; fi; \
 	 if [ -z "$$chrome" ] || [ ! -x "$$chrome" ]; then \
-	   echo "reflow: no Chrome found, skipping"; exit 0; \
+	   if [ -n "$$ASKISO_REQUIRE_BROWSER" ]; then echo "reflow: no Chrome found — refusing to skip because ASKISO_REQUIRE_BROWSER is set"; exit 1; fi; echo "reflow: no Chrome found, skipping"; exit 0; \
 	 fi; \
 	 node -e "import('puppeteer-core')" >/dev/null 2>&1 || { \
-	   echo "reflow: puppeteer-core is not installed, skipping"; exit 0; }; \
+	   if [ -n "$$ASKISO_REQUIRE_BROWSER" ]; then echo "reflow: puppeteer-core is not installed — refusing to skip because ASKISO_REQUIRE_BROWSER is set"; exit 1; fi; echo "reflow: puppeteer-core is not installed, skipping"; exit 0; }; \
 	 (cd $(WEB_OUT) && python3 -m http.server 8899 >/dev/null 2>&1 & echo $$! > /tmp/askiso-reflow.pid); \
 	 sleep 2; \
 	 CHROME_PATH="$$chrome" ASKISO_BASE_URL=http://127.0.0.1:8899 node web/tests/reflow.mjs; \
@@ -468,10 +471,10 @@ web-console: web
 	@chrome="$${CHROME_PATH:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"; \
 	 if [ ! -x "$$chrome" ]; then chrome="$$(command -v google-chrome-stable || command -v google-chrome || true)"; fi; \
 	 if [ -z "$$chrome" ] || [ ! -x "$$chrome" ]; then \
-	   echo "web-console: no Chrome found, skipping"; exit 0; \
+	   if [ -n "$$ASKISO_REQUIRE_BROWSER" ]; then echo "web-console: no Chrome found — refusing to skip because ASKISO_REQUIRE_BROWSER is set"; exit 1; fi; echo "web-console: no Chrome found, skipping"; exit 0; \
 	 fi; \
 	 node -e "import('puppeteer-core')" >/dev/null 2>&1 || { \
-	   echo "web-console: puppeteer-core is not installed, skipping"; exit 0; }; \
+	   if [ -n "$$ASKISO_REQUIRE_BROWSER" ]; then echo "web-console: puppeteer-core is not installed — refusing to skip because ASKISO_REQUIRE_BROWSER is set"; exit 1; fi; echo "web-console: puppeteer-core is not installed, skipping"; exit 0; }; \
 	 (cd $(WEB_OUT) && python3 -m http.server 8899 >/dev/null 2>&1 & echo $$! > /tmp/askiso-console.pid); \
 	 sleep 2; \
 	 CHROME_PATH="$$chrome" ASKISO_BASE_URL=http://127.0.0.1:8899 node web/tests/console.mjs; \

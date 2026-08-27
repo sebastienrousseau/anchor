@@ -153,7 +153,7 @@ clearing system will accept it. Profiles are the rules on top:
 | :--- | :--- |
 | `base` | Rules that apply everywhere |
 | `cbpr-plus` | CBPR+ requirements in force today |
-| `cbpr-2026` | The 14 November 2026 structured address mandate |
+| `cbpr-2026` | The CBPR+ structured address mandate (cutover deferred; see the [briefing](/deadline/)) |
 | `cbpr-2027` | Enhanced data: purpose codes, LEI, structured remittance |
 | `investigations` | The camt exceptions and investigations family |
 | `verification-of-payee` | VoP requirements |

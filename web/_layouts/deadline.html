@@ -26,19 +26,18 @@
      be the first thing on the page rather than a card in a corner of a photo. -->
 <section class="section countdown-band" aria-label="Time remaining">
   <div class="container">
-    <!-- The number is filled in by deadline.js. The markup ships the date
-         itself, not a count computed at build time: a page that says "89 days"
-         is wrong the morning after it is published, and a wrong countdown is
-         worse than none on a page whose whole subject is a date.
+    <!-- This was a countdown to 14 November 2026 until Swift deferred the
+         payments changes on 27 August 2026. There is no date to count to now:
+         Swift has said it will confirm the new timing by December at the
+         latest, and inventing a placeholder would be exactly the wrong thing
+         for a page whose subject is what the rule actually says.
 
-         Both lines are short enough to set on one line at 360px, because that
-         is what the script replaces them with. The sentence that used to stand
-         here wrapped to two lines on a phone and the script then collapsed it
-         to one, dropping everything below by 76px — and it only repeated the
-         headline immediately above, so nothing was lost in shortening it. -->
+         Static, and short enough to set on one line at 360px, which is what
+         the countdown had to be made to do after the script's replacement
+         text collapsed the block and dropped the page 76px on a phone. -->
     <div class="countdown" role="status">
-      <p class="countdown-value"><span id="days-remaining">14 Nov 2026</span></p>
-      <p class="countdown-label"><span id="days-label">the CBPR+ deadline</span></p>
+      <p class="countdown-value">Deferred</p>
+      <p class="countdown-label">new timing confirmed by December</p>
     </div>
   </div>
 </section>
@@ -50,5 +49,4 @@
   </div>
 </section>
 
-<script src="{{site_path}}deadline.js" defer></script>
 {{/block}}

@@ -1,12 +1,12 @@
 ---
 name: "AskISO"
 short_name: "AskISO"
-title: "November 2026: the CBPR+ structured address mandate"
-description: "From 14 November 2026, CBPR+ rejects unstructured postal addresses on cross-border payments. Find out what changes, and check your own messages free."
-keywords: "CBPR+ structured address, November 2026 deadline, ISO 20022 structured address mandate, unstructured address rejected, hybrid address pacs.008, SWIFT 2026 address requirement, structured address migration"
+title: "The CBPR+ structured address requirement"
+description: "CBPR+ will reject unstructured postal addresses. Swift deferred the November cutover and confirms new timing by December. Check your own messages free."
+keywords: "CBPR+ structured address, structured address deferred, ISO 20022 structured address requirement, unstructured address rejected, hybrid address pacs.008, Swift structured address timing, structured address migration"
 author: "Sebastien Rousseau"
-date: "2026-08-25"
-news_publication_date: "2026-08-25"
+date: "2026-08-27"
+news_publication_date: "2026-08-27"
 layout: "deadline"
 language: "en-GB"
 schema: "page"
@@ -18,15 +18,25 @@ banner: "getty-images-f9bcOaV5zbU"
 banner_alt: "Looking up between financial district towers against a clear blue sky."
 eyebrow: "CBPR+ · cross-border payments"
 headline: "Unstructured addresses stop being accepted"
-lead: "From 14 November 2026 an unstructured postal address is rejected on the network. Not flagged, not downgraded — rejected."
+lead: "An unstructured postal address will be rejected on the network. Not flagged, not downgraded — rejected. Swift deferred the November cutover on 27 August and confirms new timing by December."
 ---
+
+## Where the timing stands
+
+Swift [deferred every payments change](/news/swift-defers-structured-address-migration/)
+in Standards Release 2026 on 27 August 2026, the structured address requirement
+among them. There is no replacement date yet. Swift is consulting banks, central
+banks, payment market infrastructures, market practice groups and corporates,
+and has promised to confirm the timing by December at the latest.
+
+The requirement itself was not withdrawn. The community agreed it in 2023 and it
+still stands, so what follows is what it asks for.
 
 ## What changes
 
-From 14 November 2026 the rule applies to everyone sending cross-border
-payments. That covers banks and corporates using SWIFT CBPR+, and the main
-payment market infrastructures. Wherever an address appears, it must be
-**hybrid or fully structured**.
+The rule applies to everyone sending cross-border payments. That covers banks
+and corporates using SWIFT CBPR+, and the main payment market infrastructures.
+Wherever an address appears, it must be **hybrid or fully structured**.
 Non-compliant messages are rejected outright.
 
 A structured address places each component in its own element: town, post code,
@@ -54,7 +64,7 @@ feeding that engine, which is why it takes longer to close than expected.
 
 | Date | What it brings |
 | :--- | :--- |
-| 14 November 2026 | Structured address mandate. Unstructured addresses rejected. |
+| Deferred, timing by December | Structured address mandate. Unstructured addresses rejected. |
 | November 2027 | Enhanced data: purpose codes, LEI, structured remittance move from optional to expected. |
 | November 2028 | MT retirement. The coexistence period ends. |
 
