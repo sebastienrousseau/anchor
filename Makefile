@@ -249,9 +249,23 @@ web:
 	  web/_layouts/styles.css web/_layouts/brand.css
 	@python3 scripts/minify-css.py $(WEB_OUT)/playground.css web/_layouts/playground.css
 	@python3 scripts/minify-css.py $(WEB_OUT)/workspace.css web/_layouts/workspace.css
-	@for a in main.js theme-init.js deadline.js playground.js catalogue.js evidence.js workspace.js workspace-boot.js terminal.js logo.svg favicon.ico; do \
+	@for a in main.js theme-init.js logo.svg favicon.ico; do \
 	  test -f "web/_layouts/$$a" && cp -f "web/_layouts/$$a" "$(WEB_OUT)/$$a"; \
 	done
+	@# The site's own scripts, comments stripped. terminal.js is the one the
+	@# pages load without `defer` — deferring it measured a layout shift of
+	@# 0.064 — so it is on the critical path, where two thirds of it was prose.
+	@# main.js and the generator's own _csp bundle are left alone: both are
+	@# referenced with an integrity hash computed from the bytes as they are.
+	@for a in deadline.js playground.js catalogue.js evidence.js workspace.js workspace-boot.js terminal.js; do \
+	  test -f "web/_layouts/$$a" && python3 scripts/minify-js.py "web/_layouts/$$a" "$(WEB_OUT)/$$a"; \
+	done
+	@# Independently of what produced them, everything emitted has to parse.
+	@if command -v node >/dev/null 2>&1; then \
+	  for a in $(WEB_OUT)/*.js; do \
+	    node --check "$$a" >/dev/null 2>&1 || { echo "web: $$a does not parse"; exit 1; }; \
+	  done; \
+	fi
 	@# The generator leaves theme_color null, which browsers reject with a
 	@# console error on every page load.
 	@python3 scripts/fix-manifest.py $(WEB_OUT)/manifest.json
