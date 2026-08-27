@@ -153,6 +153,13 @@ jobs:
         env:
           CHROME_PATH: /usr/bin/google-chrome
 
+      # WCAG 2.4.3: what is painted first must not be reached last. No checker
+      # reports this — focus order is not decidable from markup alone.
+      - name: Check focus order against what is painted
+        run: make focus-order
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
       # Anything the browser complains about, on every page.
       - name: Check the browser console
         run: make web-console
