@@ -772,10 +772,19 @@ pre.highlight.language-console {
   font-family: var(--font-mono);
   font-size: 0.86rem;
   line-height: 1.6;
-  /* The extra block-start is the title bar the terminal will add. */
-  padding: 3.35rem 1.25rem 1.15rem;
+  /* This block becomes a terminal, and the swap must not move the page. So
+     the box is the box the terminal has, stated in the terminal's own terms:
+     the title bar it will add (2.5625rem) plus the screen's own block-start
+     padding (1.15rem). It read 3.35rem, which is 5.8px short of the two, and
+     every shell block on the page therefore grew by that much the moment the
+     script ran. Matched here rather than approximated, and asserted by
+     web/tests/terminal-swap.mjs so it cannot drift apart again. */
+  padding: calc(2.5625rem + 1.15rem) 1.25rem 1.15rem;
   border-radius: var(--radius-sm);
   overflow-x: auto;
+  /* .terminal sets the same, and a margin that changes moves the page just as
+     surely as a height that does. */
+  margin-block: 1.75rem;
 }
 
 /* ---------- page banner ---------- */

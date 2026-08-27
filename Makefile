@@ -26,7 +26,7 @@ WASM_LDFLAGS = -s -w -X main.buildVersion=$(VERSION)
 # against regression rather than where it forces that work.
 COVERAGE_FLOOR = 95.5
 
-.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries readability a11y seo vuln clean run catalog-info web web-test web-interact a11y-axe banner-contrast reflow web-console web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
+.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries readability a11y seo vuln clean run catalog-info web web-test web-interact a11y-axe banner-contrast reflow terminal-swap web-console web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
 
 all: build
 
@@ -391,6 +391,24 @@ banner-contrast: web
 	 CHROME_PATH="$$chrome" ASKISO_BASE_URL=http://127.0.0.1:8899 node web/tests/banner-contrast.mjs; \
 	 status=$$?; \
 	 kill "$$(cat /tmp/askiso-banner.pid)" 2>/dev/null; rm -f /tmp/askiso-banner.pid; \
+	 exit $$status
+
+# The shell block and the terminal it becomes must have the same box, or every
+# paragraph below them moves when the script runs.
+terminal-swap: web
+	@command -v node >/dev/null || { echo "node is required"; exit 1; }
+	@chrome="$${CHROME_PATH:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"; \
+	 if [ ! -x "$$chrome" ]; then chrome="$$(command -v google-chrome-stable || command -v google-chrome || true)"; fi; \
+	 if [ -z "$$chrome" ] || [ ! -x "$$chrome" ]; then \
+	   echo "terminal-swap: no Chrome found, skipping"; exit 0; \
+	 fi; \
+	 node -e "import('puppeteer-core')" >/dev/null 2>&1 || { \
+	   echo "terminal-swap: puppeteer-core is not installed, skipping"; exit 0; }; \
+	 (cd $(WEB_OUT) && python3 -m http.server 8899 >/dev/null 2>&1 & echo $$! > /tmp/askiso-swap.pid); \
+	 sleep 2; \
+	 CHROME_PATH="$$chrome" ASKISO_BASE_URL=http://127.0.0.1:8899 node web/tests/terminal-swap.mjs; \
+	 status=$$?; \
+	 kill "$$(cat /tmp/askiso-swap.pid)" 2>/dev/null; rm -f /tmp/askiso-swap.pid; \
 	 exit $$status
 
 # WCAG 1.4.10: 1280 CSS pixels at 400% zoom is 320, and nothing may scroll

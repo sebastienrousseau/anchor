@@ -131,6 +131,28 @@ jobs:
         env:
           CHROME_PATH: /usr/bin/google-chrome
 
+      # The contrast axe will not rule on. Where a banner sets text over a
+      # photograph behind a gradient scrim it cannot resolve the background and
+      # defers; this measures it from the rendered pixels instead.
+      - name: Measure banner contrast from the pixels
+        run: make banner-contrast
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
+      # WCAG 1.4.10: nothing may scroll sideways at 320 CSS pixels, which is
+      # 1280 at 400% zoom. axe renders at 1280, where reflow cannot fail.
+      - name: Check reflow at phone widths
+        run: make reflow
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
+      # A shell block and the terminal it becomes must have the same box, or
+      # every paragraph below them moves when the script runs.
+      - name: Check the terminal swap moves nothing
+        run: make terminal-swap
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+
       # Anything the browser complains about, on every page.
       - name: Check the browser console
         run: make web-console
