@@ -27,9 +27,11 @@ import re
 import sys
 from pathlib import Path
 
-# Pages that must not appear. The 404 is served for addresses that do not
-# resolve; a sitemap is a list of addresses that do.
-EXCLUDED = {"/404/"}
+# Which pages must not appear is not a list kept here. A page marked noindex is
+# one a crawler is asked not to index, and listing it in a sitemap asks the
+# opposite; so the mark is read back out of the built page. scripts/noindex.py
+# owns which pages carry it, and the two cannot drift apart.
+NOINDEX = re.compile(r'<meta name="robots" content="[^"]*noindex', re.I)
 
 # Below this, something went wrong with the build rather than with the sitemap.
 MINIMUM_PAGES = 2000
@@ -49,22 +51,26 @@ def main() -> int:
         listed.add(path or "/")
 
     built = set()
+    excluded = set()
     for page in out.rglob("index.html"):
         rel = page.relative_to(out).parent.as_posix()
-        built.add("/" if rel == "." else f"/{rel}/")
+        path = "/" if rel == "." else f"/{rel}/"
+        built.add(path)
+        if NOINDEX.search(page.read_text(encoding="utf-8", errors="replace")):
+            excluded.add(path)
 
     if len(built) < MINIMUM_PAGES:
         print(f"check-sitemap: only {len(built)} page(s) built", file=sys.stderr)
         return 1
 
-    should_be_listed = built - EXCLUDED
+    should_be_listed = built - excluded
     missing = sorted(should_be_listed - listed)
     extra = sorted(listed - should_be_listed)
 
     for path in missing[:10]:
         print(f"check-sitemap: {path} was built but is not in the sitemap", file=sys.stderr)
     for path in extra[:10]:
-        reason = "deliberately excluded" if path in EXCLUDED else "is not a built page"
+        reason = "is marked noindex" if path in excluded else "is not a built page"
         print(f"check-sitemap: {path} is in the sitemap but {reason}", file=sys.stderr)
 
     if missing or extra:
@@ -72,9 +78,8 @@ def main() -> int:
               file=sys.stderr)
         return 1
 
-    excluded_present = sorted(EXCLUDED & built)
     print(f"sitemap: {len(listed)} entries for {len(built)} built page(s)"
-          + (f", excluding {', '.join(excluded_present)}" if excluded_present else ""))
+          + (f", excluding {', '.join(sorted(excluded))} as noindex" if excluded else ""))
     return 0
 
 

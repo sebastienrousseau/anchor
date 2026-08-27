@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 //
-// WCAG 1.4.10 Reflow: no page scrolls sideways at 320 CSS pixels.
+// WCAG 1.4.10 Reflow and 1.4.4 Resize text: the two criteria a suite that never
+// leaves 1280x900 cannot fail.
 //
 // The axe suite runs every page at 1280x900, which is where a desktop layout is
 // at its most comfortable and where nothing to do with reflow can possibly go
@@ -22,6 +23,12 @@
 // scroll container, which would otherwise be reported on every page that
 // handles wide content properly.
 //
+// 1.4.4 is the other half and a different failure: it doubles the text alone,
+// leaving every box the size it was, so text that fits only because its
+// container is exactly tall enough spills out of it. Screen-reader-only text is
+// excluded — the standard pattern clips it to a single pixel deliberately, and
+// so does the form's honeypot, so all three would report on every page forever.
+//
 //   make reflow
 //
 // Needs puppeteer-core and a Chrome; the make target skips rather than fails
@@ -35,7 +42,7 @@ const CHROME = process.env.CHROME_PATH
 
 const PAGES = ['', 'solutions/', 'innovation/', 'news/', 'about/', 'vision/',
   'knowledge/', 'workspace/', 'playground/', 'messages/', 'deadline/', 'docs/',
-  'faq/', 'conformance/', 'contact/', 'legal/', '404/', 'messages/pacs.008.001.13/'];
+  'faq/', 'conformance/', 'contact/', 'legal/', '404/', 'contact/sent/', 'messages/pacs.008.001.13/'];
 
 // 320 is the criterion. 360 and 412 are the two widths most phones actually
 // report, and a layout can pass at 320 by collapsing to a single column and
@@ -101,8 +108,66 @@ for (const pg of PAGES) {
   }
 }
 
+// --- 1.4.4: text at 200%, boxes unchanged -----------------------------------
+
+let resized = 0;
+
+for (const pg of PAGES) {
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1280, height: 900 });
+  await page.evaluateOnNewDocument(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      document.documentElement.style.fontSize = '200%';
+    });
+  });
+  await page.goto(`${BASE}/${pg}`, { waitUntil: 'networkidle0' });
+  await new Promise(r => setTimeout(r, 600));
+
+  const result = await page.evaluate(() => {
+    const de = document.documentElement;
+    // Text deliberately taken out of view: the one-pixel clip that exposes a
+    // label to a screen reader and nothing else, and the form's honeypot. Their
+    // content exceeding their box is the entire point of them.
+    const outOfView = (el) => {
+      for (let e = el; e; e = e.parentElement) {
+        const s = getComputedStyle(e);
+        const cls = typeof e.className === 'string' ? e.className : '';
+        if (/visually-hidden|sr-only|\bsr\b/.test(cls)) return true;
+        if (s.position === 'absolute' && parseFloat(s.width) <= 1 && parseFloat(s.height) <= 1) return true;
+        if (s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0') return true;
+      }
+      return false;
+    };
+    const clipped = [];
+    for (const el of document.querySelectorAll('body *')) {
+      const s = getComputedStyle(el);
+      if (s.overflowY !== 'hidden' && s.overflowY !== 'clip') continue;
+      if (!(el.textContent || '').trim()) continue;
+      if (outOfView(el)) continue;
+      if (el.clientHeight > 0 && el.scrollHeight > el.clientHeight + 2) {
+        const cls = typeof el.className === 'string' && el.className
+          ? `.${el.className.trim().split(/\s+/)[0]}` : '';
+        clipped.push(`${el.tagName.toLowerCase()}${cls} needs ${el.scrollHeight}px in ${el.clientHeight}px`);
+      }
+    }
+    return { overflow: de.scrollWidth - de.clientWidth, clipped: [...new Set(clipped)].slice(0, 4) };
+  });
+
+  resized++;
+  if (result.overflow > 1 || result.clipped.length) {
+    failures++;
+    console.log(`  FAIL  /${pg} at 200% text size`
+      + (result.overflow > 1 ? ` — scrolls ${result.overflow}px sideways` : ''));
+    for (const c of result.clipped) console.log(`          ${c}`);
+  } else {
+    console.log(`  ok    /${pg} at 200% text size`);
+  }
+  await page.close();
+}
+
 await browser.close();
 console.log(failures === 0
-  ? `\n${checked} renders at 320, 360 and 412px, no page scrolls sideways`
-  : `\n${failures} of ${checked} renders scroll sideways`);
+  ? `\n${checked} renders at 320, 360 and 412px and ${resized} at 200% text size:`
+    + ` nothing scrolls sideways and no text is clipped`
+  : `\n${failures} failure(s) across ${checked + resized} renders`);
 process.exit(failures === 0 ? 0 : 1);

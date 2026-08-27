@@ -42,6 +42,12 @@
            being enough, reCAPTCHA is the fallback and this comment is the
            reason it was not the default. -->
       <form class="contact-form" action="https://formspree.io/f/mjvqpwyo" method="POST">
+        <!-- Where the visitor lands once the message is accepted. Without it
+             Formspree shows its own confirmation, on its own domain and under
+             its own branding, which is a strange place for the one conversation
+             this site invites to end. Absolute because the redirect is issued
+             by Formspree, not by this page. -->
+        <input type="hidden" name="_next" value="{{form_origin}}/contact/sent/" />
         <fieldset>
           <legend class="visually-hidden">Send a message to AskISO</legend>
 

@@ -56,7 +56,7 @@ const VIEWPORTS = [
 
 const PAGES = ['', 'solutions/', 'innovation/', 'news/', 'about/', 'vision/',
   'knowledge/', 'workspace/', 'playground/', 'messages/', 'deadline/', 'docs/',
-  'faq/', 'conformance/', 'contact/', 'legal/', '404/', 'messages/pacs.008.001.13/'];
+  'faq/', 'conformance/', 'contact/', 'legal/', '404/', 'contact/sent/', 'messages/pacs.008.001.13/'];
 
 // axe reports three outcomes, not two, and the third is where a real failure
 // hid. A contrast ratio of exactly 1:1 is filed as "incomplete" rather than as

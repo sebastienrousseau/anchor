@@ -321,6 +321,10 @@ web:
 	@# and adds 12 MB to the artefact.
 	@rm -rf $(WEB_OUT)/.meta $(WEB_OUT)/.ssg-cache $(WEB_OUT)/.ssg-plugin-cache.json
 	@python3 scripts/gen-sitemap.py $(WEB_OUT)
+	@# Two pages answer something that already happened rather than being
+	@# destinations: the 404, and the confirmation after the contact form.
+	@# Marks both noindex and takes them out of the sitemap just rebuilt above.
+	@python3 scripts/noindex.py $(WEB_OUT)
 	@# GitHub Pages serves /404.html for any address it cannot match; without
 	@# one it serves its own, branded as GitHub and with no way back into this
 	@# site. After the sitemap, which is rebuilt above and would otherwise list

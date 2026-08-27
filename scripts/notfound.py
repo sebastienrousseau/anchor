@@ -48,25 +48,15 @@ def main() -> int:
             print(f"  {r}", file=sys.stderr)
         return 1
 
-    # The copy at /404/ returns 200 and would be indexed on its own merits,
-    # which is not what a page saying "that page is not here" should rank for.
-    # The one served as /404.html carries the status and needs no help, but it
-    # costs nothing to mark both.
-    marked = re.sub(r'<meta name="robots" content="[^"]*"',
-                    '<meta name="robots" content="noindex, follow"', html, count=1)
+    # Copied after scripts/noindex.py has marked it, so the copy carries the
+    # mark too. The one served as /404.html sends a 404 status and needs no
+    # help; the one at /404/ returns 200 and does.
+    if "noindex" not in html:
+        print("notfound: the 404 page is not marked noindex; run noindex.py first",
+              file=sys.stderr)
+        return 1
 
-    (out / "404.html").write_text(marked, encoding="utf-8")
-    built.write_text(marked, encoding="utf-8")
-
-    # A page that says nothing is here does not belong in the sitemap.
-    sitemap = out / "sitemap.xml"
-    if sitemap.exists():
-        xml = sitemap.read_text(encoding="utf-8")
-        pruned = re.sub(r"\s*<url>(?:(?!</url>).)*?<loc>[^<]*/404/</loc>.*?</url>",
-                        "", xml, flags=re.S)
-        if pruned != xml:
-            sitemap.write_text(pruned, encoding="utf-8")
-
+    (out / "404.html").write_text(html, encoding="utf-8")
     return 0
 
 
