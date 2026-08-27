@@ -35,7 +35,7 @@ const CHROME = process.env.CHROME_PATH
 
 const PAGES = ['', 'solutions/', 'innovation/', 'news/', 'about/', 'vision/',
   'knowledge/', 'workspace/', 'playground/', 'messages/', 'deadline/', 'docs/',
-  'faq/', 'conformance/', 'contact/', 'legal/', 'messages/pacs.008.001.13/'];
+  'faq/', 'conformance/', 'contact/', 'legal/', '404/', 'messages/pacs.008.001.13/'];
 
 // 320 is the criterion. 360 and 412 are the two widths most phones actually
 // report, and a layout can pass at 320 by collapsing to a single column and

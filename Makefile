@@ -321,6 +321,11 @@ web:
 	@# and adds 12 MB to the artefact.
 	@rm -rf $(WEB_OUT)/.meta $(WEB_OUT)/.ssg-cache $(WEB_OUT)/.ssg-plugin-cache.json
 	@python3 scripts/gen-sitemap.py $(WEB_OUT)
+	@# GitHub Pages serves /404.html for any address it cannot match; without
+	@# one it serves its own, branded as GitHub and with no way back into this
+	@# site. After the sitemap, which is rebuilt above and would otherwise list
+	@# the page again, and after the release stamping, so the copy carries it.
+	@python3 scripts/notfound.py $(WEB_OUT)
 	@printf 'site: %s page(s), %s\n' \
 	  "$$(find $(WEB_OUT) -name '*.html' | wc -l | xargs)" \
 	  "$$(du -sh $(WEB_OUT) | cut -f1)"
