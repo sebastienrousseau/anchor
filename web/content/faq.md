@@ -154,8 +154,14 @@ the browser reads the files locally.
 
 ### What does it cost?
 
-Nothing. It is open source under Apache-2.0 or MIT, at your option. There is no
-paid tier, no account, no API key and no licence server.
+Nothing, and that is a commitment rather than an introductory stage. There is no
+paid tier, no account, no API key and no licence server, and the tool answers
+before it asks for an email address, because it never asks for one. The code is
+open source under Apache-2.0 or MIT, at your option, and remains so.
+
+Should an institution eventually want something built for it alone, that would
+be a separate commercial arrangement and would not alter anything described
+here.
 
 ### Is AskISO affiliated with SWIFT or ISO?
 

@@ -62,6 +62,8 @@ and the source of truth.
 
 It is not funded. There is no company, no investment, and no paid tier. The costs amount to a domain registration and a maintainer's time.
 
+That arrangement is deliberate rather than temporary. The immediate objective is adoption by the practitioners who handle these messages daily, and an invoice would obstruct precisely that.
+
 That is worth stating plainly, because it sets expectations correctly. Replies
 come from a person rather than a support desk, usually within a few days.
 Roadmap decisions are made in public. Nothing here is underwritten by a
