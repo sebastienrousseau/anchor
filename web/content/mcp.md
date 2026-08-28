@@ -53,7 +53,12 @@ uvx --from "iso20022-mcp[all]" iso20022-mcp
 
 `pip install "iso20022-mcp[all]"` accomplishes the same thing permanently. The
 gateway loads a light core and introduces each family as an extra, so an agent
-concerned solely with payments never installs the securities machinery.
+concerned solely with payments never installs anything it will not call.
+
+`[all]` currently covers the four message families — pain, pacs, camt and acmt.
+The specialist servers below install on their own name, for example
+`pip install structured-address-fix-mcp`, and the gateway finds them once they
+are present.
 
 ## The thirteen servers
 

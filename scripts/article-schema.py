@@ -48,6 +48,32 @@ AUTHOR_SAME_AS = (
 # Where the news articles live. The index at /news/ is a hub, not an article.
 NEWS_DIR = "news"
 
+# Pages a person wrote and stands behind, which is not the same set as pages
+# that exist. The 2,845 message pages are generated from an index, and putting a
+# personal byline on one would claim an authorship nobody has; the utility pages
+# -- contact, legal, the 404, the confirmation -- carry no expertise to attest
+# to. What is left is the writing somebody would cite, and that is where saying
+# who wrote it earns its place.
+AUTHORED = (
+    "mcp",
+    "mcp/setup",
+    "mcp/recipes",
+    "deadline",
+    "solutions",
+    "innovation",
+    "vision",
+    "knowledge",
+    "conformance",
+    "docs",
+    "faq",
+    "about",
+)
+
+# True and checkable, which is the only kind of credential worth printing. It
+# says what this person does rather than how long they have done it, because the
+# repositories are the evidence and a claim about years is not.
+AUTHOR_ROLE = "maintainer of AskISO and the ISO 20022 MCP servers"
+
 LD = re.compile(r'(<script type="application/ld\+json">)(.*?)(</script>)', re.S)
 
 
@@ -139,15 +165,29 @@ def article_node(page: Path, out: Path, markup: str) -> dict | None:
     return article
 
 
-def add_byline(markup: str, node: dict) -> str:
-    """Put the author and the date at the head of the article body.
+def pretty_date(iso: str) -> str:
+    """A date a reader can take in, falling back to what was given."""
+    try:
+        from datetime import date
 
-    Placed inside the content wrapper rather than the banner so it reads as part
-    of the piece, and marked with rel="author" so the link and the Person node
-    say the same thing to a parser that only reads one of them.
+        y, m, d = (int(part) for part in iso.split("-")[:3])
+        return date(y, m, d).strftime("%-d %B %Y")
+    except (ValueError, TypeError):
+        return iso
+
+
+def add_byline(markup: str, author: str, published: str, role: str = "") -> str:
+    """Put who wrote this, and when it was last checked, at the head of it.
+
+    Inside the content wrapper rather than the banner, so it reads as part of the
+    piece. Marked rel="author" so the link and the Person node in the graph say
+    the same thing to a parser that reads only one of them.
+
+    The date is described as when the page was last reviewed rather than when it
+    was published. On a page about a rule whose timing moved twice in a year,
+    when somebody last checked it is the useful fact; when it first appeared is
+    not.
     """
-    author = (node.get("author") or {}).get("name")
-    published = node.get("datePublished")
     if not author or not published:
         return markup
 
@@ -155,19 +195,57 @@ def add_byline(markup: str, node: dict) -> str:
     if anchor not in markup or 'class="byline"' in markup:
         return markup
 
-    pretty = published
-    try:
-        from datetime import date
-        y, m, d = (int(part) for part in published.split("-")[:3])
-        pretty = date(y, m, d).strftime("%-d %B %Y")
-    except (ValueError, TypeError):
-        pass
-
+    credential = f", {role}" if role else ""
     html_byline = (
         '<p class="byline">By <a rel="author" href="/about/">'
-        f'{author}</a> · <time datetime="{published}">{pretty}</time></p>'
+        f"{author}</a>{credential}. Last reviewed "
+        f'<time datetime="{published}">{pretty_date(published)}</time>.</p>'
     )
     return markup.replace(anchor, anchor + html_byline, 1)
+
+
+def person_node() -> dict:
+    """The author as an entity, so the claim can be corroborated elsewhere."""
+    return {
+        "@type": "Person",
+        "@id": f"{SITE}/#author",
+        "name": "Sebastien Rousseau",
+        "jobTitle": AUTHOR_ROLE,
+        "url": f"{SITE}/about/",
+        "sameAs": list(AUTHOR_SAME_AS),
+    }
+
+
+def mark_authored_page(page: Path, out: Path) -> bool:
+    """Give one authored page a byline and an author in its graph."""
+    markup = page.read_text(encoding="utf-8")
+    block = LD.search(markup)
+    if not block:
+        return False
+
+    graph = json.loads(block.group(2))
+    nodes = graph.get("@graph", [])
+    if any(n.get("@id", "").endswith("#author") for n in nodes):
+        return False
+
+    author = meta(markup, "author")
+    published = meta(markup, "date") or next(
+        (n.get("datePublished", "") for n in nodes if n.get("datePublished")), ""
+    )
+    if not author or not published:
+        return False
+
+    nodes.append(person_node())
+    for node in nodes:
+        if node.get("@type") == "WebPage":
+            node["author"] = {"@id": f"{SITE}/#author"}
+            node["dateModified"] = published
+
+    rebuilt = block.group(1) + json.dumps(graph, indent=2) + block.group(3)
+    markup = markup[: block.start()] + rebuilt + markup[block.end() :]
+    markup = add_byline(markup, author, published, AUTHOR_ROLE)
+    page.write_text(markup, encoding="utf-8")
+    return True
 
 
 def main() -> int:
@@ -198,11 +276,25 @@ def main() -> int:
         graph["@graph"].append(node)
         rebuilt = block.group(1) + json.dumps(graph, indent=2) + block.group(3)
         markup = markup[:block.start()] + rebuilt + markup[block.end():]
-        markup = add_byline(markup, node)
+        markup = add_byline(
+            markup,
+            (node.get("author") or {}).get("name", ""),
+            node.get("datePublished", ""),
+            AUTHOR_ROLE,
+        )
         page.write_text(markup, encoding="utf-8")
         marked += 1
 
-    print(f"article schema: {marked} news article(s) marked as NewsArticle")
+    authored = 0
+    for rel in AUTHORED:
+        page = out / rel / "index.html"
+        if page.exists() and mark_authored_page(page, out):
+            authored += 1
+
+    print(
+        f"article schema: {marked} news article(s) marked as NewsArticle, "
+        f"{authored} authored page(s) given a byline"
+    )
     return 0
 
 
