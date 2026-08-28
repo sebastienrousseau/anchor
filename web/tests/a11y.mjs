@@ -57,6 +57,7 @@ const VIEWPORTS = [
 const PAGES = ['', 'solutions/', 'innovation/', 'news/', 'about/', 'vision/',
   'knowledge/', 'workspace/', 'playground/', 'messages/', 'deadline/', 'docs/',
   'faq/', 'conformance/', 'contact/', 'legal/', '404/', 'contact/sent/', 'news/swift-defers-structured-address-migration/',
+  'mcp/', 'mcp/setup/', 'mcp/recipes/',
   'messages/pacs.008.001.13/'];
 
 // axe reports three outcomes, not two, and the third is where a real failure

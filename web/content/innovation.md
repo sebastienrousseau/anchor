@@ -41,6 +41,10 @@ fidelity report describing what was mapped, derived, shortened or lost.
 **Reference.** All 2,845 message definitions indexed offline, with every
 version and where to obtain the schema.
 
+**Agents.** Thirteen [MCP servers](/mcp/) that expose the same work to an AI
+assistant: initiate, settle, read a statement, reconcile it, remediate an
+address, and seal the result into an evidence pack an auditor can verify.
+
 ## Where it runs
 
 The same engine compiled five ways: a command line tool, a terminal interface,

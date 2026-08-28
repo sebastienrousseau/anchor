@@ -43,6 +43,7 @@ const CHROME = process.env.CHROME_PATH
 const PAGES = ['', 'solutions/', 'innovation/', 'news/', 'about/', 'vision/',
   'knowledge/', 'workspace/', 'playground/', 'messages/', 'deadline/', 'docs/',
   'faq/', 'conformance/', 'contact/', 'legal/', '404/', 'contact/sent/', 'news/swift-defers-structured-address-migration/',
+  'mcp/', 'mcp/setup/', 'mcp/recipes/',
   'messages/pacs.008.001.13/'];
 
 // 320 is the criterion. 360 and 412 are the two widths most phones actually

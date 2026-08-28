@@ -71,7 +71,12 @@ An assistant questioned about ISO 20022 answers from memory, confidently, and oc
 same engine as eleven tools, so the assistant looks the answer up and cites the
 rule identifier it used.
 
-**Start here:** the [MCP integration guide](/docs/).
+Beyond looking things up, thirteen further [MCP servers](/mcp/) let an assistant
+do the work: compose a payment, read the statement that returns, reconcile it,
+remediate an address, and seal the outcome into an evidence pack. Each validates
+its own output before returning it, and none of them moves money.
+
+**Start here:** the [MCP servers](/mcp/), or the [integration guide](/docs/).
 
 ## What it costs
 
