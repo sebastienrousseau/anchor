@@ -124,6 +124,30 @@ regulatory advice, so a clean result is never a guarantee that a scheme or a
 correspondent will accept your message. And it is an independent open-source
 project, with no affiliation to ISO or to SWIFT.
 
+## What it costs, and what it will cost
+
+Nothing, and that is a commitment rather than an introductory stage.
+
+There is no paid tier, no account, no API key and no licence server, and no
+registration form stands between a visitor and an answer. Because no email
+address is ever requested, you can paste a message immediately, and you can
+forward this page to a colleague who can do exactly the same without
+qualification.
+
+That undertaking extends to the tooling as well as the website. The command
+line, the libraries and the servers are distributed under Apache-2.0 or MIT, at
+your option, and that arrangement is permanent rather than provisional.
+
+The reasoning deserves stating plainly. AskISO carries no funding and seeks
+none; its expenses amount to a domain registration and a maintainer's time. The
+present objective is that practitioners who handle these messages professionally
+find the tool genuinely useful and recommend it to one another, and introducing
+an invoice would obstruct precisely that.
+
+Should an institution eventually require something built exclusively for itself,
+that would constitute a separate commercial arrangement, and it would alter
+nothing described above.
+
 ## Try it with a message of your own
 
 The quickest way to judge any of this is to [check a message](/workspace/) and
