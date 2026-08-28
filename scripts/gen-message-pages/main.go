@@ -473,7 +473,7 @@ func buildPage(reg *registry.Registry, m registry.Message, versions []string,
 	fmt.Fprintf(&b, "## Related\n\n")
 	fmt.Fprintf(&b, "- [Check a %s message](/workspace/) — paste one and see every "+
 		"finding, with the rule and the path behind it\n", m.BaseCode)
-	if isPayments(m.Domain) {
+	if governedByAddressRule(m.Domain, m.BaseCode) {
 		fmt.Fprintf(&b, "- [Structured addresses](/deadline/) — the CBPR+ rule that "+
 			"governs every address in a %s, and where its timing now stands\n", m.BaseCode)
 	}
@@ -529,11 +529,30 @@ func plural(n int, one, many string) string {
 	return many
 }
 
-// isPayments reports whether a message carries the postal addresses the CBPR+
-// structured address rule governs. pacs is interbank settlement, pain is
+// addressRuleExempt lists the message identifiers Swift names as outside the
+// structured address requirement. Four of the six are camt, so a rule applied by
+// domain alone points four of the most-read cash management pages at a briefing
+// that does not govern them.
+//
+// https://www.swift.com/news-events/news/iso-20022-milestone-november-2026-unstructured-addresses-be-removed
+var addressRuleExempt = map[string]bool{
+	"admi.024": true,
+	"camt.025": true,
+	"camt.052": true,
+	"camt.053": true,
+	"camt.054": true,
+	"camt.060": true,
+}
+
+// governedByAddressRule reports whether the CBPR+ structured address
+// requirement reaches this message. pacs is interbank settlement, pain is
 // customer initiation, camt is the cash management that reports on both; the
-// securities and card domains carry addresses the rule does not reach.
-func isPayments(domain string) bool {
+// securities and card domains carry addresses the rule does not reach, and six
+// identifiers are exempt by name.
+func governedByAddressRule(domain, baseCode string) bool {
+	if addressRuleExempt[baseCode] {
+		return false
+	}
 	switch domain {
 	case "pacs", "pain", "camt":
 		return true

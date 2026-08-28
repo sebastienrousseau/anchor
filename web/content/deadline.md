@@ -60,6 +60,25 @@ Nearly one institution in ten reports that more than half of its address data is
 still non-compliant. The gap is rarely in the payment engine itself. It lies in the customer data
 feeding that engine, which is why it takes longer to close than expected.
 
+The 65% is Swift's own count, published in its
+[March 2026 milestone notice](https://www.swift.com/news-events/news/iso-20022-milestone-november-2026-unstructured-addresses-be-removed).
+The other three figures come from
+[RedCompass Labs research](https://www.redcompasslabs.com/iso-20022/), which
+surveyed 308 senior payments professionals across Europe and North America and
+was [reported in March 2026](https://treasurytoday.com/press-releases/press-release-44-of-banks-behind-on-iso-20022-readiness-for-november-2026/).
+All four were measured while the cutover was still November 2026, so read them
+as the readiness that prompted the deferral rather than as the position today.
+
+## Which messages the rule does not reach
+
+Swift names six message identifiers as outside the requirement: `admi.024`,
+`camt.025`, `camt.052`, `camt.053`, `camt.054` and `camt.060`. Everything else
+carrying an agent or a party is in scope, across payments, securities, trade, FX
+and funds.
+
+For an agent specifically, giving the BIC alone remains valid. The requirement
+bites where a name and address are used in place of one.
+
 ## What comes after
 
 | Date | What it brings |
