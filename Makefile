@@ -279,6 +279,10 @@ web:
 	@# Question-and-answer markup, read back out of the built page so it cannot
 	@# disagree with the visible text.
 	@python3 scripts/faq-schema.py $(WEB_OUT)/faq/index.html
+	@# The same treatment for the message pages. Each asks and answers what
+	@# somebody searching a message identifier actually wants to know, and those
+	@# answers are what an assistant lifts; unmarked they were only prose.
+	@python3 scripts/faq-schema.py $(WEB_OUT)/messages
 	@# A news piece has to say what it is, who wrote it and what it reports on,
 	@# or an assistant answering the question it answers has nothing to cite.
 	@python3 scripts/article-schema.py $(WEB_OUT)

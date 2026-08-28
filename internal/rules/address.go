@@ -10,9 +10,14 @@ import (
 	"github.com/sebastienrousseau/askiso/internal/converter"
 )
 
-// From 14 November 2026, CBPR+ rejects fully unstructured postal addresses
-// outright, with no contingency. Any address that is present must be hybrid or
-// fully structured: town name and country in their own elements, at minimum.
+// CBPR+ rejects fully unstructured postal addresses outright, with no
+// contingency. Any address that is present must be hybrid or fully structured:
+// town name and country in their own elements, at minimum.
+//
+// Swift deferred the 14 November 2026 cutover on 27 August 2026 and will confirm
+// replacement timing by December, so no date is asserted in what this prints.
+// The requirement was agreed by the community in 2023 and stands; only when it
+// bites has moved.
 //
 // The requirement applies to every agent and party in a payment message, with a
 // short list of reporting and administration messages exempted.
@@ -28,7 +33,7 @@ const (
 	// ShapeHybrid keeps town and country structured while retaining address
 	// lines for the remainder. Permitted from November 2025 with no end date.
 	ShapeHybrid AddressShape = "hybrid"
-	// ShapeUnstructured carries address lines alone. Rejected from 14 Nov 2026.
+	// ShapeUnstructured carries address lines alone. Rejected by CBPR+.
 	ShapeUnstructured AddressShape = "unstructured"
 	// ShapeEmpty is an address element with nothing usable in it.
 	ShapeEmpty AddressShape = "empty"
@@ -125,8 +130,8 @@ var NoUnstructuredAddress = Rule{
 	ID:       "CBPR-ADDR-002",
 	Name:     "Unstructured address not accepted",
 	Severity: SeverityError,
-	Description: "From 14 November 2026 an address made only of address lines is " +
-		"rejected by CBPR+. Use a hybrid or fully structured address.",
+	Description: "An address made only of address lines is rejected by CBPR+. " +
+		"Use a hybrid or fully structured address.",
 	Remediation: "Move the town into <TwnNm> and the country into <Ctry>; keep the " +
 		"remainder in at most two <AdrLine> elements.",
 	Reference: addressReference,

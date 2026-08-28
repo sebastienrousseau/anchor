@@ -866,7 +866,7 @@ func (m Model) renderHelpPanel() string {
 	sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("238")).Render("   "+strings.Repeat("─", 68)) + "\n\n")
 
 	commands := [][]string{
-		{"[ctrl+k]", "Check the selected message: rules, schema, and Nov 2026"},
+		{"[ctrl+k]", "Check the selected message: rules, schema, and CBPR+"},
 		{"[ctrl+s]", "Open the selected message's schema"},
 		{"[ctrl+y]", "Copy the selected message's sample"},
 		{"[ctrl+a]", "Open the assistant"},

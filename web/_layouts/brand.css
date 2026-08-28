@@ -380,6 +380,25 @@ h3 {
   line-height: 1.55;
 }
 
+/* Who wrote this, and when. An article whose authorship exists only in the
+   metadata asks the reader to take it on trust; this is the same claim, said
+   where a person can see it, and rel="author" makes the link and the Person node
+   in the graph agree for a parser that reads only one of them. */
+.byline {
+  margin-block: 0 1.75rem;
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+}
+
+.byline a {
+  color: inherit;
+  text-decoration-color: var(--line);
+}
+
+.byline a:hover {
+  color: var(--accent);
+}
+
 .prose :not(pre) > code {
   background: var(--bg-soft);
   border: 1px solid var(--line-soft);

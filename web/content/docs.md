@@ -70,8 +70,9 @@ $ askiso translate payment.mt103 --report
        → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr
   ⚠️  :50K (address):  truncated
        → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr/AdrLine
-       MT addresses are unstructured; CBPR+ rejects those from 14
-       November 2026. Populate TwnNm and Ctry before then.
+       MT addresses are unstructured; CBPR+ rejects those once the
+       deferred structured address requirement takes effect. Populate
+       TwnNm and Ctry.
   ⚠️  :52:  derived
        → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/DbtrAgt
        taken from the message header
@@ -82,13 +83,14 @@ $ askiso translate payment.mt103 --report
        → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr
   ⚠️  :59 (address):  truncated
        → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr/AdrLine
-       MT addresses are unstructured; CBPR+ rejects those from 14
-       November 2026. Populate TwnNm and Ctry before then.
+       MT addresses are unstructured; CBPR+ rejects those once the
+       deferred structured address requirement takes effect. Populate
+       TwnNm and Ctry.
   ✅ :71A:  mapped
        → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/ChrgBr
 
   ⚠️  this conversion is lossy — review the entries above before relying on it
-  → check the 14 Nov 2026 address rules:  askiso lint <file> --profile cbpr-2026
+  → check the CBPR+ address rules:      askiso lint <file> --profile cbpr-2026
 ```
 
 Conversion between MT and MX is lossy in both directions. The report names

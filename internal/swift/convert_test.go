@@ -85,7 +85,8 @@ func TestConvert103ReportCoversEveryField(t *testing.T) {
 	}
 
 	// An MT103 carrying addresses can never be lossless, because those addresses
-	// are unstructured and CBPR+ stops accepting them on 14 November 2026.
+	// are unstructured and CBPR+ stops accepting them once the deferred
+	// structured address requirement takes effect.
 	if c.Lossless() {
 		t.Error("Lossless() = true for a message with unstructured addresses")
 	}
@@ -101,15 +102,22 @@ func TestConvert103ReportCoversEveryField(t *testing.T) {
 	}
 }
 
-func TestConvert103AddressFlagsTheDeadline(t *testing.T) {
+func TestConvert103AddressFlagsTheStructuredAddressRule(t *testing.T) {
 	c := convert(t, mt103)
 	r := fidelityOf(t, c, "50K (address)")
 
 	if r.Fidelity != FidelityTruncated {
 		t.Errorf("fidelity = %q", r.Fidelity)
 	}
-	if !strings.Contains(r.Note, "14 November 2026") {
-		t.Errorf("note does not name the deadline: %q", r.Note)
+	// The note has to name the rule the conversion cannot satisfy. It must not
+	// name a date: Swift deferred the 14 November 2026 cutover on 27 August 2026
+	// and has not replaced it, and a conversion report is exactly the wrong place
+	// to assert one.
+	if !strings.Contains(r.Note, "CBPR+") {
+		t.Errorf("note does not name the rule: %q", r.Note)
+	}
+	if strings.Contains(r.Note, "2026") {
+		t.Errorf("note asserts a date the requirement no longer has: %q", r.Note)
 	}
 	if !strings.Contains(c.XML, "<AdrLine>14 GRESHAM STREET</AdrLine>") {
 		t.Error("the address lines were not carried")

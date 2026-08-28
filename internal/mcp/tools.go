@@ -283,10 +283,12 @@ func checkProfileTool() Tool {
 		Name:  "askiso_check_profile",
 		Title: "Check a message against a scheme rule profile",
 		Description: "Apply a scheme rule profile to a message. The cbpr-2026 profile checks " +
-			"the CBPR+ structured-address requirement that takes effect on 14 November 2026: " +
-			"an address must carry a town name and a country, and fully unstructured " +
-			"addresses are rejected. Use this whenever the question involves the 2026 " +
-			"deadline or cross-border payment readiness.",
+			"the CBPR+ structured-address requirement: an address must carry a town name " +
+			"and a country, and fully unstructured addresses are rejected. Swift deferred " +
+			"the 14 November 2026 cutover on 27 August 2026 and will confirm replacement " +
+			"timing by December, so do not quote a date; the requirement itself stands. " +
+			"Use this whenever the question involves structured addresses or cross-border " +
+			"payment readiness.",
 		Schema: object(map[string]any{
 			"xml":     prop("string", "The full ISO 20022 XML message."),
 			"profile": prop("string", "Profile name. Call with an empty profile to list the available ones."),
@@ -425,8 +427,9 @@ func translateTool() Tool {
 			"MT940. Either way the result includes a fidelity report naming every source " +
 			"field and whether it was carried, shortened, inferred, or dropped -- nothing is " +
 			"dropped silently. With code: return the field-level cross-reference. " +
-			"MT to MX produces unstructured addresses, which CBPR+ stops accepting on " +
-			"14 November 2026; check the result with askiso_check_profile. MX to MT loses " +
+			"MT to MX produces unstructured addresses, which CBPR+ stops accepting once " +
+			"the deferred structured address requirement takes effect; check the result " +
+			"with askiso_check_profile. MX to MT loses " +
 			"purpose codes, legal entity identifiers and structured addresses outright.",
 		Schema: object(map[string]any{
 			"mt_message": prop("string", "A complete SWIFT MT message, including its {1:} and {2:} headers."),

@@ -122,8 +122,16 @@ func TestInitializeHandshake(t *testing.T) {
 	// The instructions are what tell a model when to reach for these tools
 	// rather than answering from memory, so their absence is a real defect.
 	instructions, _ := res["instructions"].(string)
-	if !strings.Contains(instructions, "14 November 2026") {
-		t.Errorf("the instructions do not mention the deadline: %q", instructions)
+	if !strings.Contains(instructions, "structured-address") {
+		t.Errorf("the instructions do not mention the address rule: %q", instructions)
+	}
+	// And that it has moved. A model told the requirement without the deferral
+	// repeats a date that stopped being true on 27 August 2026, which is worse
+	// than saying nothing: it is confidently wrong to somebody planning a
+	// migration around it.
+	if !strings.Contains(instructions, "deferred") {
+		t.Errorf("the instructions state the rule without stating that its timing "+
+			"was deferred: %q", instructions)
 	}
 
 	caps := res["capabilities"].(map[string]any)

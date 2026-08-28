@@ -54,13 +54,14 @@ what was shortened to fit, what was inferred, and what had nowhere to go.
 Nothing is dropped silently: every field in the source appears in the report.
 
 The two directions lose different things. MT to MX produces unstructured
-addresses, which CBPR+ stops accepting on 14 November 2026. MX to MT loses what
+addresses, which CBPR+ stops accepting once the deferred structured address
+requirement takes effect. MX to MT loses what
 was added since: purpose codes, legal entity identifiers, structured remittance,
 and the structured addresses themselves -- and cuts a 35-character reference to
 the 16 an MT field allows.
 
 MT addresses are unstructured, so a converted message will not satisfy the CBPR+
-structured-address requirement that takes effect on 14 November 2026. The report
+structured-address requirement once it takes effect. The report
 says so, and 'askiso lint --profile cbpr-2026' shows exactly which elements need
 enriching.`,
 	Example: `  askiso translate MT103
@@ -211,7 +212,7 @@ func printConversionReport(path string, conv *iso20022.Conversion) {
 	}
 	fmt.Printf("  %s this conversion is lossy — review the entries above before relying on it\n",
 		warnMark)
-	fmt.Printf("  %s check the 14 Nov 2026 address rules:  askiso lint <file> --profile cbpr-2026\n\n",
+	fmt.Printf("  %s check the CBPR+ address rules:      askiso lint <file> --profile cbpr-2026\n\n",
 		subtleStyle.Render("→"))
 }
 

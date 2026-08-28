@@ -353,7 +353,7 @@ func TestTranslateRoundTripThroughBothDirections(t *testing.T) {
 	}
 
 	// A structured address cannot survive a trip through MT, which is the
-	// point the 14 November 2026 rules exist to make.
+	// point the CBPR+ address rules exist to make.
 	if strings.Contains(round, "<TwnNm>") {
 		t.Error("a structured address survived a trip through MT")
 	}

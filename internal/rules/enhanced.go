@@ -10,7 +10,7 @@ import (
 	"github.com/sebastienrousseau/askiso/internal/converter"
 )
 
-// 14 November 2026 ends the unstructured address. November 2027 is the next
+// The deferred CBPR+ rule ends the unstructured address. November 2027 is the next
 // step: the point at which the data a payment carries has to be usable by a
 // machine rather than merely present. CHAPS mandates purpose codes and legal
 // entity identifiers for the payment types it names, and structured remittance

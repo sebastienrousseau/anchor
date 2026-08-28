@@ -16,7 +16,7 @@ import (
 
 // Browsing a catalogue tells you a message exists. What someone actually wants
 // to know is whether the one in front of them is correct, and whether it will
-// still be accepted after 14 November 2026. Both answers are one keystroke away
+// still be accepted once the deferred CBPR+ rule bites. Both answers are one keystroke away
 // here, from the same engine the CLI runs.
 
 // checkMessage runs every check AskISO has against a message's sample and puts

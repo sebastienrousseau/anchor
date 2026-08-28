@@ -424,15 +424,16 @@ func party(b *builder, m *Message, tag, path string) partyInfo {
 	}
 
 	// Address lines from an MT party are unstructured, which CBPR+ stops
-	// accepting on 14 November 2026.
+	// accepting once the deferred structured address requirement takes effect.
 	if len(info.Address) > 0 {
 		b.note(f.Name() + " (address)")
 		b.reports = append(b.reports, FieldReport{
 			Tag:      f.Name() + " (address)",
 			Path:     path + "/PstlAdr/AdrLine",
 			Fidelity: FidelityTruncated,
-			Note: "MT addresses are unstructured; CBPR+ rejects those from 14 November 2026. " +
-				"Populate TwnNm and Ctry before then.",
+			Note: "MT addresses are unstructured; CBPR+ rejects those once the deferred " +
+				"structured address requirement takes effect. " +
+				"Populate TwnNm and Ctry.",
 			Value: strings.Join(info.Address, " / "),
 		})
 	}
@@ -961,8 +962,9 @@ func partyFromField(b *builder, f Field, path, suffix string) partyInfo {
 			Tag:      f.Name() + suffix + " (address)",
 			Path:     path + "/PstlAdr/AdrLine",
 			Fidelity: FidelityTruncated,
-			Note: "MT addresses are unstructured; CBPR+ rejects those from 14 November 2026. " +
-				"Populate TwnNm and Ctry before then.",
+			Note: "MT addresses are unstructured; CBPR+ rejects those once the deferred " +
+				"structured address requirement takes effect. " +
+				"Populate TwnNm and Ctry.",
 			Value: strings.Join(info.Address, " / "),
 		})
 	}

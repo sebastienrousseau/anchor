@@ -6,7 +6,7 @@
 // It speaks the Language Server Protocol over stdin and stdout, so an editor
 // can show the same verdicts the CLI gives: business-rule diagnostics, schema
 // validation against the user's own downloaded XSDs, and the CBPR+ rules that
-// take effect on 14 November 2026 -- as the message is typed.
+// the deferred CBPR+ rule brings in -- as the message is typed.
 //
 // Neovim:
 //

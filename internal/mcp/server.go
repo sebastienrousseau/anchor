@@ -270,7 +270,9 @@ const instructions = `AskISO answers questions about ISO 20022 from the specific
 
 Use askiso_lint and askiso_check_profile before telling anyone a message is correct: the
 linter checks IBAN checksums, BIC structure, currency precision and UETR format, and the
-cbpr-2026 profile checks the structured-address rules that take effect on 14 November 2026.
+cbpr-2026 profile checks the CBPR+ structured-address rules. Swift deferred the
+14 November 2026 cutover on 27 August 2026 and confirms replacement timing by December,
+so state that the requirement stands rather than quoting a date that has moved.
 
 askiso_validate and askiso_diff read the user's own downloaded schemas and report
 Installed=false rather than guessing when a schema is absent. Everything else works with

@@ -462,6 +462,30 @@ func buildPage(reg *registry.Registry, m registry.Message, versions []string,
 			"of them, marked as breaking or compatible.\n\n", len(versions))
 	}
 
+	// --- Related ------------------------------------------------------------
+	// These 2,845 pages linked only to each other, which made the largest set of
+	// entities on the site an island: a reader arriving from a search for one
+	// message identifier had no route to what the tool does with it, and nothing
+	// tied the message to the rules that govern it. The links are chosen from
+	// what is true of this message rather than pasted onto every page — a
+	// payments message gets the address rule, one with an MT counterpart gets
+	// the conversion, and neither appears where it does not apply.
+	fmt.Fprintf(&b, "## Related\n\n")
+	fmt.Fprintf(&b, "- [Check a %s message](/workspace/) — paste one and see every "+
+		"finding, with the rule and the path behind it\n", m.BaseCode)
+	if isPayments(m.Domain) {
+		fmt.Fprintf(&b, "- [Structured addresses](/deadline/) — the CBPR+ rule that "+
+			"governs every address in a %s, and where its timing now stands\n", m.BaseCode)
+	}
+	if len(mtSrc) > 0 || mxToMT {
+		fmt.Fprintf(&b, "- [Converting between MT and ISO 20022](/solutions/) — what "+
+			"survives the trip in each direction, and what does not\n")
+	}
+	fmt.Fprintf(&b, "- [All %s messages](/messages/) — the rest of the %s area, and "+
+		"every other ISO 20022 message\n", domain, domain)
+	fmt.Fprintf(&b, "- [Documentation](/docs/) — installing AskISO, and every command "+
+		"it offers\n\n")
+
 	fmt.Fprintf(&b, "---\n\n")
 	fmt.Fprintf(&b, "*AskISO generates this page from its built-in index of the "+
 		"standard. The source of truth for ISO 20022 is "+
@@ -503,4 +527,16 @@ func plural(n int, one, many string) string {
 		return one
 	}
 	return many
+}
+
+// isPayments reports whether a message carries the postal addresses the CBPR+
+// structured address rule governs. pacs is interbank settlement, pain is
+// customer initiation, camt is the cash management that reports on both; the
+// securities and card domains carry addresses the rule does not reach.
+func isPayments(domain string) bool {
+	switch domain {
+	case "pacs", "pain", "camt":
+		return true
+	}
+	return false
 }

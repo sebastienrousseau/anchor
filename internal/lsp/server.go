@@ -5,7 +5,7 @@
 //
 // Someone editing a payment message wants the same answers the CLI gives, at
 // the moment they type: is this IBAN's checksum right, does this element belong
-// here, will this address still be accepted after 14 November 2026. A language
+// here, will this address still be accepted under CBPR+. A language
 // server is how an editor asks.
 //
 // The transport is the Language Server Protocol's own: JSON-RPC 2.0 framed with

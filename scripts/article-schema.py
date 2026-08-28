@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-"""Mark news articles as NewsArticle, with a named author and a cited source.
+"""Give news articles a byline and mark them as NewsArticle.
 
 The generator emits WebSite, Organization and WebPage for every page, which says
 a page exists but not what kind of thing it is, who stands behind it, or what it
@@ -18,6 +18,12 @@ Everything is read back out of the built page. Structured data that disagrees
 with the visible text is worse than none: it is grounds for a manual penalty, and
 a second hand-maintained copy of a headline drifts the moment somebody edits one.
 
+The byline is the visible half of the same claim. An article whose authorship
+exists only in metadata asks a reader to take it on trust and gives an assistant
+nothing to corroborate; the Person node carries the same name with links to where
+that person can be checked, so the expertise can be validated from more than one
+source rather than asserted here.
+
     python3 scripts/article-schema.py web/public
 """
 
@@ -30,6 +36,14 @@ import sys
 from pathlib import Path
 
 SITE = "https://askiso.io"
+
+# Where the author can be corroborated. Only places that genuinely identify the
+# same person belong here: a sameAs an assistant cannot verify is worse than
+# none, because it invites it to conflate two people.
+AUTHOR_SAME_AS = (
+    "https://sebastienrousseau.com/",
+    "https://github.com/sebastienrousseau",
+)
 
 # Where the news articles live. The index at /news/ is a hub, not an article.
 NEWS_DIR = "news"
@@ -92,7 +106,13 @@ def article_node(page: Path, out: Path, markup: str) -> dict | None:
 
     author = meta(markup, "author")
     if author:
-        article["author"] = {"@type": "Person", "name": author}
+        article["author"] = {
+            "@type": "Person",
+            "@id": f"{SITE}/#author",
+            "name": author,
+            "url": f"{SITE}/about/",
+            "sameAs": list(AUTHOR_SAME_AS),
+        }
     if published:
         article["datePublished"] = published
         article["dateModified"] = published
@@ -109,6 +129,37 @@ def article_node(page: Path, out: Path, markup: str) -> dict | None:
         article["citation"] = source
 
     return article
+
+
+def add_byline(markup: str, node: dict) -> str:
+    """Put the author and the date at the head of the article body.
+
+    Placed inside the content wrapper rather than the banner so it reads as part
+    of the piece, and marked with rel="author" so the link and the Person node
+    say the same thing to a parser that only reads one of them.
+    """
+    author = (node.get("author") or {}).get("name")
+    published = node.get("datePublished")
+    if not author or not published:
+        return markup
+
+    anchor = '<div lang="en">'
+    if anchor not in markup or 'class="byline"' in markup:
+        return markup
+
+    pretty = published
+    try:
+        from datetime import date
+        y, m, d = (int(part) for part in published.split("-")[:3])
+        pretty = date(y, m, d).strftime("%-d %B %Y")
+    except (ValueError, TypeError):
+        pass
+
+    html_byline = (
+        '<p class="byline">By <a rel="author" href="/about/">'
+        f'{author}</a> · <time datetime="{published}">{pretty}</time></p>'
+    )
+    return markup.replace(anchor, anchor + html_byline, 1)
 
 
 def main() -> int:
@@ -138,8 +189,9 @@ def main() -> int:
 
         graph["@graph"].append(node)
         rebuilt = block.group(1) + json.dumps(graph, indent=2) + block.group(3)
-        page.write_text(markup[:block.start()] + rebuilt + markup[block.end():],
-                        encoding="utf-8")
+        markup = markup[:block.start()] + rebuilt + markup[block.end():]
+        markup = add_byline(markup, node)
+        page.write_text(markup, encoding="utf-8")
         marked += 1
 
     print(f"article schema: {marked} news article(s) marked as NewsArticle")

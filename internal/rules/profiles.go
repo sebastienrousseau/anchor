@@ -18,8 +18,9 @@ var profiles = map[string]Profile{
 	},
 	"cbpr-2026": {
 		Name: "cbpr-2026",
-		Description: "CBPR+ requirements effective 14 November 2026: postal addresses " +
-			"must be hybrid or fully structured.",
+		Description: "CBPR+ structured address requirements: postal addresses must " +
+			"be hybrid or fully structured. Swift deferred the 14 November 2026 " +
+			"cutover on 27 August 2026 and confirms new timing by December.",
 		Rules: AddressRules,
 	},
 	"cbpr-plus": {
@@ -31,7 +32,7 @@ var profiles = map[string]Profile{
 		Name: "cbpr-2027",
 		Description: "Enhanced data for November 2027: purpose codes, structured " +
 			"remittance information, legal entity identifiers and end-to-end " +
-			"tracking references. Includes the 2026 address requirements.",
+			"tracking references. Includes the structured address requirements.",
 		Rules: append(append([]Rule{}, AddressRules...), EnhancedRules...),
 	},
 	"investigations": {

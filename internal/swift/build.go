@@ -33,7 +33,8 @@ func generateUETR() string {
 }
 
 // partyBlock renders a party. An MT address is unstructured, so it becomes
-// AdrLine -- which is exactly what CBPR+ stops accepting on 14 November 2026,
+// AdrLine -- which is exactly what CBPR+ stops accepting once the deferred
+// structured address requirement takes effect,
 // and what the conversion report flags.
 func partyBlock(p partyInfo, indent string) string {
 	var b strings.Builder

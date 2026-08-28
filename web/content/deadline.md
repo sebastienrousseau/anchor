@@ -51,7 +51,7 @@ one with a hard rejection behind it.
 
 | Measure | Figure |
 | :--- | :--- |
-| Banks not on track for the deadline | **44%** |
+| Banks not on track when the cutover was still November | **44%** |
 | Messages still non-compliant, mid-2026 | **~65%** |
 | Customer address records still unstructured, on average | **32%** |
 | Institutions reporting core banking gaps for structured addresses | **60%** |
@@ -94,7 +94,7 @@ $ askiso lint payment.xml --profile cbpr-2026
      • ISO 4217 Decimals       : Verified
      • RFC 4122 UUIDv4 UETR    : Verified
 
-    PROFILE   cbpr-2026 — CBPR+ requirements effective 14 November 2026: postal addresses must be hybrid or fully structured.
+    PROFILE   cbpr-2026 — CBPR+ structured address requirements: postal addresses must be hybrid or fully structured. Swift deferred the 14 November 2026 cutover on 27 August 2026 and confirms new timing by December.
 
   ❌ [CBPR-ADDR-002] the address is fully unstructured (2 address line(s), no structured element)
      at       /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr
@@ -218,8 +218,9 @@ $ askiso translate payment.mt103 --report
        → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr
   ⚠️  :50K (address):  truncated
        → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Dbtr/PstlAdr/AdrLine
-       MT addresses are unstructured; CBPR+ rejects those from 14
-       November 2026. Populate TwnNm and Ctry before then.
+       MT addresses are unstructured; CBPR+ rejects those once the
+       deferred structured address requirement takes effect. Populate
+       TwnNm and Ctry.
   ⚠️  :52:  derived
        → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/DbtrAgt
        taken from the message header
@@ -230,13 +231,14 @@ $ askiso translate payment.mt103 --report
        → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr
   ⚠️  :59 (address):  truncated
        → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/Cdtr/PstlAdr/AdrLine
-       MT addresses are unstructured; CBPR+ rejects those from 14
-       November 2026. Populate TwnNm and Ctry before then.
+       MT addresses are unstructured; CBPR+ rejects those once the
+       deferred structured address requirement takes effect. Populate
+       TwnNm and Ctry.
   ✅ :71A:  mapped
        → /Document/FIToFICstmrCdtTrf/CdtTrfTxInf/ChrgBr
 
   ⚠️  this conversion is lossy — review the entries above before relying on it
-  → check the 14 Nov 2026 address rules:  askiso lint <file> --profile cbpr-2026
+  → check the CBPR+ address rules:      askiso lint <file> --profile cbpr-2026
 ```
 
 The fidelity report names every field in the source and what became of it —

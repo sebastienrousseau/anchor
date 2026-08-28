@@ -175,7 +175,7 @@ func schemaMessage(e validator.Error) string {
 }
 
 // profileDiagnostics applies the scheme rule profile. This is where the
-// 14 November 2026 address rules surface, in the editor, before anything is
+// CBPR+ structured address rules surface, in the editor, before anything is
 // sent anywhere.
 func (s *Server) profileDiagnostics(doc *Document) []Diagnostic {
 	if s.Profile == "" {
