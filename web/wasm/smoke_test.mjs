@@ -220,9 +220,16 @@ check("the conversion reports every source field",
   conv.ok && conv.data.report.length >= 10 &&
   conv.data.report.some(f => f.tag === "23B" && f.fidelity === "unmapped"), conv.error);
 
-check("an MT-derived address is flagged against the 2026 deadline",
+// The note has to name the rule the conversion cannot satisfy, and must not name
+// a date: Swift deferred the 14 November 2026 cutover on 27 August 2026 without
+// replacing it, and a conversion report a bank reads is the wrong place to
+// assert one.
+check("an MT-derived address is flagged against the CBPR+ address rule",
   conv.ok && !conv.data.lossless &&
-  conv.data.report.some(f => (f.note || "").includes("14 November 2026")), conv.error);
+  conv.data.report.some(f => (f.note || "").includes("CBPR+")), conv.error);
+
+check("the conversion report asserts no deadline date",
+  conv.ok && !conv.data.report.some(f => /\b20\d\d\b/.test(f.note || "")), conv.error);
 
 check("the fidelity counts add up",
   conv.ok &&

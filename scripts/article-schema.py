@@ -102,6 +102,14 @@ def article_node(page: Path, out: Path, markup: str) -> dict | None:
         "inLanguage": "en-GB",
         "publisher": {"@id": f"{SITE}/#organization"},
         "isAccessibleForFree": True,
+        # What a voice assistant should read aloud if it reads anything: the
+        # headline and the standfirst, which are written to carry the whole
+        # answer on their own. Declared for news, where the property is defined;
+        # putting it on 2,845 reference pages would be markup for its own sake.
+        "speakable": {
+            "@type": "SpeakableSpecification",
+            "cssSelector": ["h1", ".page-banner .lead"],
+        },
     }
 
     author = meta(markup, "author")
