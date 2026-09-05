@@ -351,6 +351,10 @@ web:
 	@find $(WEB_OUT) -name '*.html' -exec sed -i.bak 's/ASKISO_RELEASE/v$(VERSION)/g' {} + 2>/dev/null || \
 	 find $(WEB_OUT) -name '*.html' -exec sed -i '' 's/ASKISO_RELEASE/v$(VERSION)/g' {} +
 	@find $(WEB_OUT) -name '*.html.bak' -delete 2>/dev/null || true
+	@# Social descriptions read the meta description rather than the first 160
+	@# characters of the body, plus breadcrumbs and a SoftwareApplication node.
+	@# After the release stamp, so the software markup can name the version.
+	@python3 scripts/seo-enrich.py $(WEB_OUT)
 	@printf 'askiso.io\n' > $(WEB_OUT)/CNAME
 	@# Without this GitHub Pages runs its Jekyll filter over the artefact and
 	@# drops anything beginning with a dot or an underscore — which silently

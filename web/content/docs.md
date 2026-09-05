@@ -27,18 +27,20 @@ lead: "Every command, what it needs, and how AskISO fits into your editor, your 
 go install github.com/sebastienrousseau/askiso/cmd/askiso@latest
 ```
 
-There is no tagged release yet, so `go install` is the way in. The Homebrew cask
-and Scoop manifest publish on the first tag.
+Tagged releases are on the [releases page](https://github.com/sebastienrousseau/askiso/releases).
+Each one carries signed archives for Linux, macOS and Windows, a software bill
+of materials, and a Sigstore signature over the checksums. Homebrew and Scoop
+carry nothing yet, so the archives and `go install` are the routes in.
 
-The two protocol servers are separate binaries, because a client launches each
-one and takes over its standard input and output:
+The two protocol servers are separate binaries. A client launches each one
+and takes over its standard input and output:
 
 ```bash
 go install github.com/sebastienrousseau/askiso/cmd/askiso-mcp@latest
 go install github.com/sebastienrousseau/askiso/cmd/askiso-lsp@latest
 ```
 
-Building from source needs **Go 1.26.6 or newer** — that release carries the
+Building from source needs **Go 1.26.6 or newer**. That release carries the
 standard library security fixes AskISO builds against.
 
 ## See it work
@@ -98,8 +100,8 @@ every field and what became of it, so nothing is dropped without saying so.
 
 ## Commands
 
-Commands marked ◆ read the actual XSD files and need a catalogue installed.
-Everything else works standalone, against the index embedded in the binary.
+Commands marked ◆ read the XSD files, so they need a catalogue on disk.
+Everything else works on its own, from the index built into the binary.
 
 | Command | What it does |
 | :--- | :--- |
@@ -136,18 +138,18 @@ any of them drops into a pipeline.
 ## Getting a catalogue
 
 AskISO ships no ISO 20022 specification content. Download the message sets you
-need from the Registration Authority and import them:
+need from the Registration Authority, then import them:
 
 ```bash
 askiso catalog fetch pacs.008     # opens the right page, imports what lands
 askiso catalog add ~/Downloads/*.zip
-askiso catalog status             # what you have against all 285 published sets
+askiso catalog status             # what you have against every published set
 askiso catalog where              # every location searched, and which won
 ```
 
-The search order is `--catalog`, then `$ASKISO_CATALOG`, then
-`$XDG_DATA_HOME/askiso/catalog`, the platform data directory, and finally the
-working directory and its parents.
+AskISO looks for a catalogue in this order: `--catalog`, then
+`$ASKISO_CATALOG`, then `$XDG_DATA_HOME/askiso/catalog`, then the platform
+data directory, and last the working directory and its parents.
 
 ## Rule profiles
 
@@ -171,28 +173,28 @@ askiso batch ./messages --profile all --format sarif > findings.sarif
 
 SARIF output uploads straight into GitHub code scanning.
 
-The embedded `cbpr-plus` rules cover the cross-message layer without a
-catalogue. Exact per-message restrictions remain defined by the applicable
-Swift MyStandards Usage Guidelines. A base ISO 20022 schema is not a CBPR+
-Usage Guideline.
+The built-in `cbpr-plus` rules cover the cross-message layer with no
+catalogue. The exact limits on each message still come from the Swift
+MyStandards Usage Guidelines that apply to you. A base ISO 20022 schema is not
+a CBPR+ Usage Guideline.
 
 ### Local CBPR+ packs
 
 The CBPR+ Usage Guideline workflow targets **Standards Release 2025
-(SR2025)**. The separate `cbpr-2026` profile is only a forward-looking
-structured-address readiness check and is not an SR2025 Usage Guideline pack.
+(SR2025)**. The separate `cbpr-2026` profile is a forward-looking address
+readiness check. It is not an SR2025 Usage Guideline pack.
 
-AskISO ships the engine, not Swift publications. An authorised user can point
-the CLI at a private folder of Usage Guideline PDFs:
+AskISO ships the engine, not Swift publications. If you hold the Usage
+Guidelines, point the CLI at a private folder of them.
 
-To obtain executable material, open **CBPR+ SR2025 (Combined)** in MyStandards,
-select all 31 Usage Guidelines, add them to **My Selection**, and request the
-**XML Schema Package** export. It contains one directory per selected Usage
-Guideline, including payload and BAH XSDs. A prepared export downloads
-immediately; a generated one appears under the **MyDownloads** icon at the top
-right. If multi-selection export is unavailable, use each Usage Guideline's
-**Documentation → Export** action with the XML Schema format. Keep specialised
-variant folders such as STP, COV, ADV, MLP and COL intact.
+**Getting the schemas.** Open **CBPR+ SR2025 (Combined)** in MyStandards.
+Select all 31 Usage Guidelines, add them to **My Selection**, and ask for the
+**XML Schema Package** export. The export holds one folder per guideline, with
+the payload and BAH schemas. A prepared export downloads at once. A generated
+one appears under **MyDownloads** at the top right. If you cannot export a
+selection, use each guideline's **Documentation → Export** action and pick the
+XML Schema format. Keep the variant folders as they are: STP, COV, ADV, MLP and
+COL.
 
 ```bash
 askiso ask "Where is UETR mandatory?" --cbpr-pack /secure/CBPRPlus-SR2025
@@ -216,68 +218,73 @@ askiso validate payment.xml pacs.008.001.08.xsd \
   --external-codes ~/Downloads/2Q2026_externalcodesets_v3.json
 ```
 
-The folder is compiled in memory with local `pdftotext`; it is not uploaded,
-copied, or cached. For repeated runs, `askiso cbpr-pack compile <folder>
---output private.cbpr-pack.json` creates an owner-readable local pack. Pack
-files are gitignored by default and must not be redistributed unless the user
-has the necessary rights.
+**Nothing leaves your machine.** The folder is compiled in memory with local
+`pdftotext`. It is not uploaded, copied or cached. For repeated runs,
+`askiso cbpr-pack compile <folder> --output private.cbpr-pack.json` writes an
+owner-readable local pack. Pack files are gitignored by default. Do not
+redistribute one unless you hold the rights.
 
-Local-only refers to AskISO's processing. A folder stored in iCloud Drive or
-another synchronised filesystem may still be uploaded by that provider under
-the user's operating-system settings.
+Local-only describes what AskISO does. A folder in iCloud Drive or another
+synced drive may still be uploaded by that provider, under your own system
+settings.
 
-`ask --cbpr-pack` performs local extractive search across PDF, MyStandards JSON,
-XML/XSD and XLSX files. Legacy `.xls` files are inventoried but must be saved as
-`.xlsx` to be searched. Results use relative local filenames and PDF pages where
-applicable. The command bypasses all model-provider code, including OpenAI and
-Ollama, even if provider credentials are configured.
+**Asking the pack a question.** `ask --cbpr-pack` runs a local extractive
+search across PDF, MyStandards JSON, XML, XSD and XLSX files. Legacy `.xls`
+files are listed, but must be saved as `.xlsx` to be searched. Results cite
+relative local filenames and PDF pages. The command bypasses every model
+provider, including OpenAI and Ollama, even when credentials are configured.
 
-Every result includes its pack fingerprint and coverage. PDF-derived checks
-cover explicit hierarchy/cardinality tables and supported lexical types, while
-clearly warning that narrative, conditional, external-code-set, and
-diagram-only rules may require separate validation.
+Every result names its pack fingerprint and its coverage. Checks read from a
+PDF cover the explicit hierarchy and cardinality tables and the supported
+lexical types. They warn that narrative, conditional, external-code-set and
+diagram-only rules may need separate validation.
 
-The workspace path adds a content-minimised manifest, exact source hashes and a
-versioned sample suite without copying the user's inputs. Registration Authority
-XLSX, record/group JSON and v3 JSON Schema code-set publications are supported;
-their enumerated values are enforced when matching external simple types appear
-in a local XSD. Suite expectations follow an explicit filename convention:
-`.invalid.`, `-invalid` or `_invalid` expects rejection, while other paired XML
-samples expect acceptance. This is a reproducible local baseline, not a Swift
-Readiness Portal verdict.
+**Building a workspace.** The workspace adds a content-minimised manifest, exact
+source hashes and a versioned sample suite. It copies none of your inputs.
+Registration Authority XLSX, record and group JSON, and v3 JSON Schema code-set
+publications are all supported. Their enumerated values are enforced wherever a
+matching external simple type appears in a local XSD.
 
-Use `lint --cbpr-workspace` or `batch --cbpr-workspace` to load that pinned
-baseline directly. Both commands verify its pack and external-code fingerprints;
-`batch --schema` applies the pinned external-code values to matching schema types.
-Workspace and ad-hoc pack flags are mutually exclusive.
+The suite reads its expectations from filenames. A name with `.invalid.`,
+`-invalid` or `_invalid` in it should be rejected. Any other paired XML sample
+should pass. This is a local baseline you can rerun. It is not a verdict from
+the Swift Readiness Portal.
 
-Private-source discovery supports PDF, Excel (`.xlsx`/`.xls`), MyStandards
-Usage Guideline JSON Schema, and XML. AskISO indexes the JSON export's release,
-message and Usage Guideline variant metadata without storing its schema body in
-the workspace. JSON Schema and XML Schema remain distinct: JSON exports count
-as guideline JSON, while only local XSD/XML schemas can be paired with XML
-samples. ZIP archives are intentionally ignored.
+`lint --cbpr-workspace` and `batch --cbpr-workspace` load that pinned baseline
+directly. Both verify its pack and external-code fingerprints. `batch --schema`
+applies the pinned external-code values to matching schema types. Workspace and
+ad-hoc pack flags are mutually exclusive.
 
-With `--generate-samples`, each entitled executable XSD produces an owner-only
-schema-valid positive and a well-formed wrong-namespace negative inside the
-private workspace. The suite hash-pins them, records `origin: generated` and
-the negative mutation, and verifies them before use. These derived fixtures are
-AskISO validator self-tests—not Swift-authored samples or certification.
+**What discovery reads.** Private-source discovery supports PDF, Excel
+(`.xlsx` and `.xls`), MyStandards Usage Guideline JSON Schema, and XML. AskISO
+indexes the release, message and variant metadata of a JSON export without
+storing its schema body. JSON Schema and XML Schema stay distinct. A JSON export
+counts as guideline JSON, and only a local XSD can be paired with XML samples.
+ZIP archives are ignored on purpose.
 
-Status reports overall guideline inventory separately from exact executable
-message/Business Service coverage. User-provided samples are paired by embedded
-`BizSvc` or filename variant markers; AskISO refuses ambiguous core/ADV/COV/STP
-matches instead of silently selecting the first schema.
+With `--generate-samples`, each entitled executable XSD yields two owner-only
+fixtures inside the private workspace: a schema-valid positive and a
+well-formed wrong-namespace negative. The suite hash-pins both, records
+`origin: generated` and the mutation applied, and verifies them before use.
+These are AskISO validator self-tests. They are not Swift-authored samples, and
+they are not certification.
 
-The strict conformance gate additionally checks private permissions,
-entitlement acknowledgement, 31/31 executable variants, positive and negative
-user cases, representative failure categories, the pinned external-code
-publication quarter, FINplus BAH/payload bindings, and optional content-free
-independent evidence. It never invokes an online validator itself.
+Status reports the overall guideline inventory separately from exact executable
+coverage per message and Business Service. Your own samples are paired by an
+embedded `BizSvc` or a variant marker in the filename. AskISO refuses an
+ambiguous core, ADV, COV or STP match rather than silently choosing the first
+schema.
 
-AskISO is an independent project and is not affiliated with, endorsed by, or
-certified by Swift. Swift and MyStandards are trademarks of S.W.I.F.T. SC. Do
-not publish a compiled pack unless the source licence permits it; this project
+**The strict gate.** The strict gate checks more. It wants private file
+permissions and a signed-off entitlement. It wants all 31 executable variants,
+your own passing and failing cases, and a spread of failure types. It pins the
+quarter of the external code publication, checks the FINplus BAH and payload
+bindings, and can take content-free evidence from an outside review. It never
+calls an online validator.
+
+AskISO is an independent project. It is not affiliated with, endorsed by or
+certified by Swift. Swift and MyStandards are trade marks of S.W.I.F.T. SC. Do
+not publish a compiled pack unless the source licence permits it. This
 documentation is not legal advice.
 
 ## In an editor
@@ -293,10 +300,10 @@ vim.lsp.start({ name = 'askiso', cmd = { 'askiso-lsp' } })
 
 ## In an AI assistant
 
-`askiso-mcp` speaks the Model Context Protocol over stdio, exposing eleven
-tools — lint, validate, translate, diff, generate, search, info, code, convert,
-and the profile check. An assistant set up this way works against the same engine as the command line,
-rather than leaning on its own memory of the standard.
+`askiso-mcp` speaks the Model Context Protocol over stdio and exposes ten
+tools: search, info, lint, check_profile, validate, generate, translate, code,
+diff and convert. An assistant set up this way works against the same engine
+as the command line, rather than leaning on its own memory of the standard.
 
 ```json
 {
@@ -320,11 +327,12 @@ rather than leaning on its own memory of the standard.
 
 The [repository README](https://github.com/sebastienrousseau/askiso#known-limitations)
 lists every one in detail, stated plainly because a validation tool that
-overstates itself is worse than no tool. In short, there are four of them. `translate` covers seven MT/MX pairs both
-ways, and the exception family in one direction only. MT940 transaction types
-fall back to `NMSC`, because no verified mapping exists for them. `diff` treats
-any pattern change as breaking, since deciding otherwise is not possible. And a
-message generated from a schema is minimal and synthetic rather than realistic.
+overstates itself is worse than no tool. Four matter most. `translate` covers
+seven MT and MX pairs both ways, and the exception family in one direction
+only. MT940 transaction types fall back to `NMSC`, because no verified mapping
+exists for them. `diff` treats any pattern change as breaking, since deciding
+otherwise is not possible. And a message generated from a schema is minimal
+and synthetic rather than realistic.
 
 ---
 

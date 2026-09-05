@@ -34,6 +34,10 @@ still stands, so what follows is what it asks for.
 
 ## What changes
 
+CBPR+ stands for Cross-Border Payments and Reporting Plus. It is the set of
+usage guidelines for ISO 20022 payment messages exchanged over Swift, and it
+sits above the standard itself.
+
 The rule applies to everyone sending cross-border payments. That covers banks
 and corporates using SWIFT CBPR+, and the main payment market infrastructures.
 Wherever an address appears, it must be **hybrid or fully structured**.
@@ -83,9 +87,14 @@ bites where a name and address are used in place of one.
 
 | Date | What it brings |
 | :--- | :--- |
-| Deferred, timing by December | Structured address mandate. Unstructured addresses rejected. |
-| November 2027 | Enhanced data: purpose codes, LEI, structured remittance move from optional to expected. |
-| November 2028 | MT retirement. The coexistence period ends. |
+| November 2025 | Done. Coexistence ended, and cross-border payment instructions moved from MT to ISO 20022. |
+| Deferred, timing by December | Structured address mandate. Unstructured addresses rejected. MT101 retirement was in the same release. |
+| November 2027 | Exceptions and investigations. MT n95 and n99 give way to camt.110, camt.111, camt.056 and camt.029. |
+| November 2028 | Statements, direct debits and charges. MT940, MT942, MT950, MT104, MT107 and MT204 retire. |
+
+Swift's deferral covers the payments changes in Standards Release 2026 only.
+The later phases stand as published, and the timeline above follows the CBPR+
+roadmap as [RedCompass Labs summarises it](https://www.redcompasslabs.com/insights/what-now-iso-20022-deadlines-in-2026-onwards/).
 
 Treating 2026 as a one-off project is the expensive path. The same data quality
 work — structured parties, verifiable identifiers, coded reasons instead of
@@ -206,8 +215,9 @@ The `cbpr-2026` profile carries five address rules, `CBPR-ADDR-001` through
 what to do about it, so you can hand it straight to whoever owns the data
 instead of interpreting it first.
 
-`--profile cbpr-2027` checks the enhanced-data expectations that follow a year
-later, and `--profile all` runs everything.
+`--profile cbpr-2027` checks the enhanced-data expectations CBPR+ is moving
+towards: purpose codes, legal entity identifiers and structured remittance.
+`--profile all` runs everything.
 
 ## If you are converting from MT
 

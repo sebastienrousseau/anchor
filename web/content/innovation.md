@@ -30,12 +30,12 @@ documents, accepting the same 1,035 and rejecting the same 3,711.
 **Linting.** Checks that need no schema at all: IBAN checksums, BIC structure, currency precision, UETR format and date order. Every finding names the rule,
 the path, what was expected and what to change.
 
-**Scheme rules.** Focused profiles that sit above the schema: structural checks,
-the live CBPR+ SR2025 message set and cross-message rules, deferred
-structured-address readiness, enhanced-data expectations, investigations and
-verification of payee. Exact per-message cardinalities and patterns still come
-from the operator's Usage Guideline schema rather than being guessed from a base
-ISO 20022 schema.
+**Scheme rules.** Focused profiles that sit above the schema. They cover
+structural checks, the live CBPR+ SR2025 message set and its cross-message
+rules, structured-address readiness, enhanced-data expectations,
+investigations and verification of payee. Exact per-message cardinalities and
+patterns still come from the operator's Usage Guideline schema. They are not
+guessed from a base ISO 20022 schema.
 
 **Conversion.** Seven SWIFT MT types convert to ISO 20022 and back, each with a
 fidelity report describing what was mapped, derived, shortened or lost.
@@ -58,9 +58,8 @@ a message linted here gets the answer it would get in a terminal.
 
 ## What is being worked on
 
-**More scheme profiles.** CBPR+ 2027 enhanced data is partially covered, and
-the market infrastructure profiles differ enough from one another to be worth
-separating.
+**More scheme profiles.** CBPR+ enhanced data is partly covered. The market
+infrastructure profiles differ enough from one another to be worth separating.
 
 **Deeper remediation.** Findings currently explain what to change. Where a
 correction can be derived without guessing, as with IBAN check digits, AskISO
@@ -72,7 +71,9 @@ against a published source is one this project will not ship.
 
 ## How priorities are decided
 
-By what fails in production. A message AskISO handles incorrectly moves straight to the front of the queue, because a validator that is wrong is worse than one that is merely incomplete.
+By what fails in production. A message AskISO handles incorrectly goes to the
+front of the queue. A validator that is wrong is worse than one that is merely
+incomplete.
 
 Everything else is discussed in the open. The
 [issue tracker](https://github.com/sebastienrousseau/askiso/issues) is the
@@ -80,7 +81,9 @@ roadmap, and the reasoning behind a decision sits beside it.
 
 ## What will not be built
 
-Anything that requires guesswork. Rewriting an unstructured address means deciding which line is the town and which the country, and a tool that decides wrongly on a payment has caused real harm. Where correctness cannot be
+Anything that requires guesswork. Rewriting an unstructured address means
+deciding which line is the town and which the country. A tool that decides
+wrongly on a payment has caused real harm. Where correctness cannot be
 established, AskISO reports the gap and stops.
 
 ## Why any of this

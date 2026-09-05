@@ -68,7 +68,7 @@ reports.
 ## Give an AI assistant something it can cite
 
 An assistant questioned about ISO 20022 answers from memory, confidently, and occasionally incorrectly. AskISO ships a Model Context Protocol server exposing the
-same engine as eleven tools, so the assistant looks the answer up and cites the
+same engine as ten tools, so the assistant looks the answer up and cites the
 rule identifier it used.
 
 Beyond looking things up, thirteen further [MCP servers](/mcp/) let an assistant

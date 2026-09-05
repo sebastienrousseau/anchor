@@ -53,13 +53,17 @@ one.
 
 ### Is that the only deadline?
 
-No. There are three, and they are separate:
+No. The CBPR+ roadmap runs to 2028, and each phase is separate:
 
 | Date | What changes |
 | --- | --- |
+| November 2025 | Coexistence ended. Cross-border payment instructions moved from MT to ISO 20022 |
 | Deferred, timing by December | Structured or hybrid addresses become mandatory for CBPR+ |
-| November 2027 | Enhanced data requirements take effect |
-| November 2028 | The SWIFT MT retirement date for cross-border payments |
+| November 2027 | Exceptions and investigations move from MT n95 and n99 to camt.110, camt.111, camt.056 and camt.029 |
+| November 2028 | Statements, direct debits and charges retire from MT: MT940, MT942, MT950, MT104, MT107 and MT204 |
+
+Swift's deferral covers the payments changes in Standards Release 2026 only.
+The 2027 and 2028 phases stand as published.
 
 The [November 2026 page](/deadline/) covers the address rules in detail, with
 the rule identifiers AskISO reports so you can trace a finding to the rule that

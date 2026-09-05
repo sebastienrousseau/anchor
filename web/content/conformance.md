@@ -28,7 +28,9 @@ architect actually asks is *how do you know*, and most tools in this space have
 no answer beyond a test suite nobody outside can run.
 
 Each measure below names the command that produces it. Run it yourself: the
-commands are in the repository, and three of the four run on every commit.
+commands are in the repository. Coverage, the vulnerability scan, fuzzing and
+the WCAG check run on every commit. The differential and conformance suites
+need a catalogue, so they run before a release.
 
 ## Correctness
 
@@ -77,10 +79,10 @@ make conformance
 
 ### Test coverage
 
-**95.2%**, enforced at a 95% floor, and measured on a runner with **no
-catalogue installed**. That last part is the honest bit: measuring on a
-developer machine credits code that only runs when a catalogue happens to be
-present, which flatters the number by roughly a point.
+**95.7%** at the last verified run, measured on a runner with **no catalogue
+installed**. The build fails below its floor. Measuring without a catalogue is
+the honest choice. A developer machine credits code that only runs when a
+catalogue happens to be present, which flatters the number by about a point.
 
 ```bash
 make cover
@@ -115,8 +117,9 @@ make fuzz
 
 ### Accessibility
 
-This site passes **WCAG 2.2 with zero issues across all 2,847 pages**, checked
-on every deploy. It fails the deploy rather than the claim going stale.
+This site passes **WCAG 2.2 with zero issues on every page**, 2,867 of them
+at the last deploy, checked on each one. A failure stops the deploy rather
+than letting the claim go stale.
 
 ## Coverage of the standard
 
@@ -124,17 +127,19 @@ on every deploy. It fails the deploy rather than the claim going stale.
 | :--- | :--- |
 | Message definitions indexed offline | 2,845 |
 | Message sets | 285 |
-| Business areas | 56 |
+| Business areas (four-letter domains) | 30 |
+| Message set categories | 56 |
 | Schemas generated, validated and linted | 4,746 |
-| MT types converting to MX | 10 |
+| MT types converting to MX and back | 7 |
+| MT exception types converting to MX, one way | 3 |
 | MX families converting back to MT | 6 |
 | Specification content redistributed | 0 bytes |
 
 ## What is not measured here
 
-The figures above cover correctness against schemas and rules. They say nothing
-about whether a given scheme, correspondent or market infrastructure will accept
-a message — that depends on agreements AskISO has no visibility of.
+The figures above cover correctness against schemas and rules. They do not say
+whether a given scheme, correspondent or market infrastructure will accept a
+message. That depends on agreements AskISO cannot see.
 
 Where a mapping cannot be verified against a published source, AskISO reports
 the gap rather than guessing. MT940 transaction types fall back to `NMSC` and
@@ -145,6 +150,6 @@ list every such case.
 
 ---
 
-*Figures were last verified on 25 August 2026. The coverage, vulnerability and
-accessibility numbers are enforced on every commit; the differential and
-conformance suites need a catalogue and run before a release.*
+*Figures were last verified on 5 September 2026. Coverage, the vulnerability
+scan and the WCAG check run on every commit. The differential and conformance
+suites need a catalogue, so they run before a release.*

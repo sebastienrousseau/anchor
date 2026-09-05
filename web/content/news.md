@@ -38,9 +38,18 @@ To follow along without visiting: subscribe to the [feed](/rss.xml) in any
 reader, watch releases on GitHub, or ask on the [contact page](/contact/) to be
 told by email when something changes that affects the messages you send.
 
-## v0.0.1 — the first release
+## v0.0.2 — 28 August 2026
 
-The first tagged release, published in August 2026. It establishes what the project does, and the standard it holds itself accountable to.
+The website release, which introduced the commercial navigation, four hub
+pages, a contact page, the vision and knowledge centre pages, a dedicated 404
+page and the analysis of Swift's deferral. Every page acquired a photographic
+masthead, and an accessibility gate now fails the deployment rather than
+letting the WCAG 2.2 claim go stale. The tool itself stopped asserting a
+cutover date the requirement no longer has.
+
+## v0.0.1 — 26 August 2026
+
+The first tagged release. It establishes what the project does, and the standard it holds itself accountable to.
 
 Validation agreeing with libxml2 on the whole catalogue. Linting that names the
 rule, the path and the remediation. The CBPR+ scheme profiles including the
@@ -62,9 +71,14 @@ rejected outright. Swift deferred the 14 November 2026 cutover and will confirm
 new timing by December, so the [briefing](/deadline/) says what the rule
 requires rather than when it starts.
 
-**November 2027.** Enhanced data requirements take effect.
+**November 2027.** Exceptions and investigations move to ISO 20022. The MT
+n95 and n99 enquiry messages give way to camt.110, camt.111, camt.056 and
+camt.029.
 
-**November 2028.** The SWIFT MT retirement date for cross-border payments.
+**November 2028.** The remaining MT categories retire: statements (MT940,
+MT942, MT950), direct debits (MT104, MT107, MT204) and charges. Swift's
+deferral covers the 2026 payments changes only; the later phases stand as
+published.
 
 ## Reporting something
 

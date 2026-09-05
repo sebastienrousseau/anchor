@@ -70,7 +70,7 @@ order in which the work actually arrives.
 **[iso20022-mcp](https://github.com/sebastienrousseau/iso20022-mcp)** — the
 gateway. Seven meta-tools (`search`, `list_families`, `list_servers`,
 `describe`, `validate`, `generate`, `parse`) route to whichever server owns the
-answer, so an assistant sees seven verbs instead of a hundred and thirty. Start
+answer, so an assistant sees seven verbs instead of more than a hundred. Start
 here unless you know exactly which family you need.
 
 ### Make a payment
@@ -81,18 +81,18 @@ validation, cross-version migration, and an MT101 converter. Seventeen tools.
 
 **[pacs008-mcp](https://github.com/sebastienrousseau/pacs008-mcp)** — FI-to-FI
 credit transfers, returns (`pacs.004`) and status reports (`pacs.002`), with
-the structured-address toolkit and an MT103 converter. Sixteen tools.
+the structured-address toolkit and an MT103 converter. Fifteen tools.
 
 ### Read what came back
 
 **[camt053-mcp](https://github.com/sebastienrousseau/camt053-mcp)** —
 bank-to-customer statements. Parses entries and balances into structured data,
-validates them, and converts legacy MT94x. Twenty-four tools, the largest
+validates them, and converts legacy MT94x. Twenty-two tools, the largest
 surface in the suite.
 
 **[bankstatementparser-mcp](https://github.com/sebastienrousseau/bankstatementparser-mcp)**
-— the same job for everything that is not ISO 20022 yet: MT940, CSV, OFX and
-QFX. Detects the format, then returns the same shape of answer.
+— the same job for everything that is not ISO 20022 yet: MT940, MT942, BAI2,
+CSV and OFX. Detects the format, then returns the same shape of answer.
 
 **[reconcile-mcp](https://github.com/sebastienrousseau/reconcile-mcp)** — match
 statement entries against the payments you expected. Exact, short, over,
@@ -128,8 +128,8 @@ beside the public ones without being published.
 — compiles findings, remediation diffs and simulated responses into a sealed
 pack. The seal is a deterministic SHA-256 over the pack's canonical JSON, so
 re-sealing identical content gives an identical digest and any change breaks
-verification. Signing through AWS KMS or Vault, export to S3, and SLSA
-provenance and cosign verification are included.
+verification. A pack can also be signed with an Ed25519 key you hold, and the
+detached signature verified by anyone you hand the public key to.
 
 **[acmt001-mcp](https://github.com/sebastienrousseau/acmt001-mcp)** — account
 management messaging: open, maintain and verify accounts from plain data.

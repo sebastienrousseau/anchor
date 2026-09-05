@@ -21,6 +21,15 @@ headline: "Start wherever your question is"
 lead: "Everything published here, organised by whatever you are trying to establish rather than by what it happens to be called."
 ---
 
+## What ISO 20022 is
+
+ISO 20022 is the international standard for financial messaging. It is
+maintained by ISO Technical Committee 68, and Swift acts as its Registration
+Authority. The standard defines XML message definitions, such as `pacs.008` for
+a bank-to-bank credit transfer, `pain.001` for a payment initiation and
+`camt.053` for a statement. Swift's CBPR+ guidelines, SEPA and the major
+payment market infrastructures all build on it.
+
 ## I have a message and I do not know what is wrong with it
 
 Paste it into the [workspace](/workspace/). It identifies the format automatically and lints it. It applies the November 2026 rules, and validates against your schemas when you have selected a catalogue. Every finding names the rule, the exact field, and what to change.

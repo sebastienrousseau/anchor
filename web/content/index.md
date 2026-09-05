@@ -3,7 +3,7 @@ name: "AskISO"
 short_name: "AskISO"
 theme_color: "#ffffff"
 title: "AskISO — ISO 20022 validator and CBPR+ SR2025 workspace"
-description: "Validate, lint and convert ISO 20022 and SWIFT MT messages, use private CBPR+ SR2025 Usage Guidelines, and check 2026 address readiness. Free, open source, nothing uploaded."
+description: "Validate, lint and convert ISO 20022 and SWIFT MT messages, and check CBPR+ structured address readiness. Free, open source, and nothing is uploaded."
 keywords: "ISO 20022, pacs.008, pain.001, camt.053, CBPR+, structured address, SWIFT MT to MX, ISO 20022 validator, ISO 20022 CLI, MT103 converter, November 2026 deadline"
 author: "Sebastien Rousseau"
 date: "2026-08-25"
@@ -22,6 +22,10 @@ eyebrow: "ISO 20022 · CBPR+ structured addresses"
 headline: "Know your ISO 20022 messages will be accepted"
 lead: "Paste one. See which rule failed, in which field, and what to change. Nothing is uploaded."
 ---
+
+AskISO is a free, open-source toolchain for ISO 20022 financial messaging. It
+validates, lints and converts payment messages on your own machine, and every
+finding names the rule, the field and the fix.
 
 ## Start with a single message
 
