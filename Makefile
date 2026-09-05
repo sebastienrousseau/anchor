@@ -4,7 +4,11 @@
 # Versions increment by 0.0.1 and only by 0.0.1: v0.1.0 follows v0.0.999, not
 # v0.0.9. The slow climb is the point — maturity is earned across releases
 # rather than declared by a version number. See CONTRIBUTING.md.
-VERSION ?= 0.0.1
+#
+# Defaults to the newest tag, which is what the Pages workflow resolves too,
+# so a local build stamps the same version into the footer as the live site.
+# CI passes VERSION explicitly when it builds a tag or a release.
+VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo 0.0.0)
 BINARY_NAME = askiso
 CMD_PATH = ./cmd/askiso
 MCP_BINARY = askiso-mcp
