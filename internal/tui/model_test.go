@@ -482,3 +482,116 @@ func TestShortcutsDoNotShadowFiltering(t *testing.T) {
 		t.Error("/ask should open the assistant")
 	}
 }
+
+func TestRemainingTableViewerAndAskBranches(t *testing.T) {
+	m := newSizedModel(t)
+	for i, msg := range m.filteredMsgs {
+		if msg.XMLSamplePath != "" {
+			m.table.SetCursor(i)
+			break
+		}
+	}
+	m = send(m, "ctrl+y")
+	if !strings.Contains(m.cmdErr, "XML sample") {
+		t.Fatalf("ctrl+y did not take the sample-copy path: %q", m.cmdErr)
+	}
+
+	m.mode = modeAsk
+	m.width = 20
+	m.textInput.SetValue("pacs.008")
+	m = send(m, "enter")
+	if len(m.askHistory) < 2 {
+		t.Fatal("narrow ask view did not append the response")
+	}
+
+	m.mode = modeViewer
+	m.viewingContent = "content"
+	m = send(m, "y")
+	if m.mode != modeViewer {
+		t.Fatal("copying viewer content should remain in the viewer")
+	}
+}
+
+func TestRemainingSlashCommandBranches(t *testing.T) {
+	m := newSizedModel(t)
+	if cmd := m.executeSlashCommand("   "); cmd != nil {
+		t.Fatal("empty command should be ignored")
+	}
+	m.filteredMsgs = nil
+	m.executeSlashCommand("/check")
+	if !strings.Contains(m.cmdErr, "Nothing to check") {
+		t.Fatalf("empty check result = %q", m.cmdErr)
+	}
+
+	m = newSizedModel(t)
+	m.askHistory = append(m.askHistory, askMsg{sender: "You", content: "question"})
+	m.executeSlashCommand("/clear")
+	if len(m.askHistory) != 1 {
+		t.Fatalf("clear retained %d conversation entries", len(m.askHistory))
+	}
+	m.executeSlashCommand("/doctor")
+	if m.mode != modeViewer || !strings.Contains(m.viewingContent, "Clipboard Engine") {
+		t.Fatalf("doctor output missing environment diagnostics: %q", m.viewingContent)
+	}
+}
+
+func TestNarrowViewsAndFooterFallbacks(t *testing.T) {
+	m := newSizedModel(t)
+	m.viewport.Width = 8
+	m.openMarkdown("# Heading\n\nText", "markdown")
+	if m.viewingContent == "" {
+		t.Fatal("narrow markdown did not render")
+	}
+
+	t.Setenv("ASKISO_SHOW_LOGO", "0")
+	m.mode = modeTable
+	m.filter = "/help"
+	view := m.View()
+	if !strings.Contains(view, "AskISO — ISO 20022 Explorer") || !strings.Contains(view, "Command:") {
+		t.Fatalf("compact command view missing fallback header or label: %q", view)
+	}
+
+	oldVersion := Version
+	Version = ""
+	t.Cleanup(func() { Version = oldVersion })
+	m.width = 5
+	for _, currentMode := range []mode{modeTable, modeAsk, modeViewer} {
+		m.mode = currentMode
+		if footer := m.renderFooter(); strings.TrimSpace(footer) == "" {
+			t.Errorf("mode %v produced an empty footer", currentMode)
+		}
+	}
+	m.mode = modeTable
+	m.showHelp = true
+	if footer := m.renderFooter(); strings.TrimSpace(footer) == "" {
+		t.Fatal("help mode produced an empty footer")
+	}
+}
+
+func TestDoctorFallbacks(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	m := newSizedModel(t)
+	m.executeSlashCommand("/doctor")
+	if !strings.Contains(m.viewingContent, "pure-Go fallback") ||
+		!strings.Contains(m.viewingContent, "Standard clipboard interface") {
+		t.Fatalf("doctor did not explain missing optional tools: %q", m.viewingContent)
+	}
+}
+
+func TestInvalidFlowPresetIsReported(t *testing.T) {
+	m := newSizedModel(t)
+	m.executeSlashCommand("/flow not-a-preset")
+	if !strings.Contains(m.cmdErr, "Flow simulation failed") || !strings.Contains(m.cmdErr, "unknown preset") {
+		t.Fatalf("invalid flow preset was not reported: %q", m.cmdErr)
+	}
+}
+
+func TestCheckCommandRecoversFromAStaleTableCursor(t *testing.T) {
+	m := newSizedModel(t)
+	m.table.SetCursor(2)
+	m.filteredMsgs = m.filteredMsgs[:1]
+	m.executeSlashCommand("/check")
+	if m.mode != modeViewer {
+		t.Fatalf("stale cursor left mode %v, want viewer", m.mode)
+	}
+}

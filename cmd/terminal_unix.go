@@ -7,16 +7,9 @@ package cmd
 
 import (
 	"os"
-	"syscall"
-	"unsafe"
-)
 
-type winsize struct {
-	Row    uint16
-	Col    uint16
-	Xpixel uint16
-	Ypixel uint16
-}
+	"golang.org/x/sys/unix"
+)
 
 // controllingTerminalWidth asks the controlling terminal for its width, which
 // works even when stdout is redirected. Returns 0 when there is no terminal.
@@ -27,13 +20,8 @@ func controllingTerminalWidth() int {
 	}
 	defer func() { _ = f.Close() }()
 
-	var ws winsize
-	if _, _, errno := syscall.Syscall(
-		syscall.SYS_IOCTL,
-		f.Fd(),
-		uintptr(syscall.TIOCGWINSZ),
-		uintptr(unsafe.Pointer(&ws)),
-	); errno == 0 && ws.Col > 0 {
+	ws, err := unix.IoctlGetWinsize(int(f.Fd()), unix.TIOCGWINSZ)
+	if err == nil && ws.Col > 0 {
 		return int(ws.Col)
 	}
 	return 0

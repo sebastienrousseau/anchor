@@ -364,7 +364,7 @@ func TestBaseTypes(t *testing.T) {
 	res := build(t, parse(t, body), schemagen.DefaultOptions())
 	for _, want := range []string{
 		"<ADate>2026-11-14</ADate>",
-		"<ADateTime>2026-11-14T09:00:00Z</ADateTime>",
+		"<ADateTime>2026-11-14T09:00:00+00:00</ADateTime>",
 		"<ABool>true</ABool>",
 		"<AYear>2026</AYear>",
 	} {

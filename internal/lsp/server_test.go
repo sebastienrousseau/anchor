@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/sebastienrousseau/askiso/internal/lsp"
 	"github.com/sebastienrousseau/askiso/pkg/iso20022"
@@ -170,7 +171,7 @@ func TestInitializeAdvertisesCapabilities(t *testing.T) {
 
 	result := replies[0]["result"].(map[string]any)
 	caps := result["capabilities"].(map[string]any)
-	for _, want := range []string{"hoverProvider", "completionProvider", "documentSymbolProvider", "textDocumentSync"} {
+	for _, want := range []string{"hoverProvider", "completionProvider", "documentSymbolProvider", "diagnosticProvider", "textDocumentSync"} {
 		if _, ok := caps[want]; !ok {
 			t.Errorf("%s is not advertised", want)
 		}
@@ -186,6 +187,22 @@ func TestInitializeAdvertisesCapabilities(t *testing.T) {
 	info := result["serverInfo"].(map[string]any)
 	if info["name"] != "askiso-lsp" || info["version"] != "test" {
 		t.Errorf("serverInfo = %v", info)
+	}
+}
+
+func TestPullDiagnosticsMatchesPublishedDiagnostics(t *testing.T) {
+	replies := sessionWith(t, noCatalogue, initialize,
+		openDoc(t, "file:///a.xml", addressInstance),
+		request(t, 2, "textDocument/diagnostic", map[string]any{
+			"textDocument": map[string]any{"uri": "file:///a.xml"},
+		}))
+	result := replies[len(replies)-1]["result"].(map[string]any)
+	if result["kind"] != "full" {
+		t.Fatalf("diagnostic report kind = %v", result["kind"])
+	}
+	items := result["items"].([]any)
+	if len(items) == 0 {
+		t.Fatal("pull diagnostics returned no address findings")
 	}
 }
 
@@ -400,6 +417,39 @@ func TestConfigurationChangesTheProfile(t *testing.T) {
 		if strings.HasPrefix(d["code"].(string), "CBPR-ADDR") {
 			t.Errorf("an address rule fired under the base profile: %v", d)
 		}
+	}
+}
+
+func TestConfigurationCanDisableTheProfile(t *testing.T) {
+	replies := sessionWith(t, noCatalogue, initialize,
+		openDoc(t, "file:///a.xml", addressInstance),
+		notify(t, "workspace/didChangeConfiguration", map[string]any{
+			"settings": map[string]any{"askiso": map[string]any{"profile": ""}},
+		}))
+	diags := diagnosticsFor(t, replies, "file:///a.xml")
+	for _, d := range diags {
+		if strings.HasPrefix(d["code"].(string), "CBPR-ADDR") {
+			t.Errorf("empty profile did not disable address rules: %v", d)
+		}
+	}
+}
+
+func TestServeCancellationInterruptsBlockedRead(t *testing.T) {
+	reader, writer := io.Pipe()
+	defer func() { _ = writer.Close() }()
+	var out bytes.Buffer
+	s := lsp.New(reader, &out, io.Discard)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- s.Serve(ctx) }()
+	cancel()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("Serve returned %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Serve stayed blocked after cancellation")
 	}
 }
 

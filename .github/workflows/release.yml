@@ -36,7 +36,7 @@ jobs:
 
       # Delegated to the Makefile so the floor and the package list have one
       # definition. This step had its own copy of both, and drifted: it still
-      # enforced 95 after the floor moved to 95.5, and it counted packages the
+      # enforced a stale floor after the main gate moved, and it counted packages the
       # Makefile had already excluded.
       - name: Test with the coverage floor
         run: make cover

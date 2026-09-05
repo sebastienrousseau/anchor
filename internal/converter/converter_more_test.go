@@ -5,6 +5,8 @@ package converter
 
 import (
 	"encoding/json"
+	"encoding/xml"
+	"io"
 	"strings"
 	"testing"
 )
@@ -137,6 +139,8 @@ func TestJSONToXMLRejectsStructuralProblems(t *testing.T) {
 		"truncated array":  `{"A":[1,`,
 		"bad token":        `{"A":@}`,
 		"unterminated":     `{"A":{"B":"c"}`,
+		"multiple roots":   `{"A":"1","B":"2"}`,
+		"trailing value":   `{"A":"1"} {"B":"2"}`,
 	}
 	for name, doc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -144,6 +148,50 @@ func TestJSONToXMLRejectsStructuralProblems(t *testing.T) {
 				t.Errorf("JSONToXML should reject %s", name)
 			}
 		})
+	}
+}
+
+func TestRoundTripPreservesNamespacePrefixes(t *testing.T) {
+	src := []byte(`<env:Envelope xmlns:env="urn:envelope" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="urn:payment"><p:Document xsi:nil="true"><p:Amt Ccy="EUR">1.00</p:Amt></p:Document></env:Envelope>`)
+	j, err := XMLToJSON(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{`"env:Envelope"`, `"@xmlns:env"`, `"@xmlns:xsi"`, `"p:Document"`, `"@xsi:nil"`} {
+		if !strings.Contains(string(j), want) {
+			t.Errorf("namespace name %s missing from JSON:\n%s", want, j)
+		}
+	}
+	back, err := JSONToXML(j)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dec := xml.NewDecoder(strings.NewReader(string(back)))
+	var sawEnvelope, sawDocument, sawNil bool
+	for {
+		tok, err := dec.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("round-tripped XML is malformed: %v\n%s", err, back)
+		}
+		if start, ok := tok.(xml.StartElement); ok {
+			if start.Name.Local == "Envelope" && start.Name.Space == "urn:envelope" {
+				sawEnvelope = true
+			}
+			if start.Name.Local == "Document" && start.Name.Space == "urn:payment" {
+				sawDocument = true
+				for _, attr := range start.Attr {
+					if attr.Name.Local == "nil" && attr.Name.Space == "http://www.w3.org/2001/XMLSchema-instance" {
+						sawNil = true
+					}
+				}
+			}
+		}
+	}
+	if !sawEnvelope || !sawDocument || !sawNil {
+		t.Errorf("namespace semantics changed: envelope=%v document=%v nil=%v\n%s", sawEnvelope, sawDocument, sawNil, back)
 	}
 }
 
@@ -213,5 +261,26 @@ func TestArrayOfObjectsRoundTrips(t *testing.T) {
 	}
 	if strings.Count(string(back), "<Tx>") != 2 {
 		t.Errorf("both entries should survive:\n%s", back)
+	}
+}
+
+func TestParseRetainsResolvedNamespaces(t *testing.T) {
+	root, err := Parse([]byte(`<e:Envelope xmlns:e="urn:env" xmlns="urn:business"><AppHdr xmlns="urn:header"><BizSvc>x</BizSvc></AppHdr><Document><p:Foreign xmlns:p="urn:foreign"/></Document></e:Envelope>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if root.Space != "urn:env" {
+		t.Errorf("Envelope namespace = %q", root.Space)
+	}
+	header := root.Children[0]
+	if header.Space != "urn:header" || header.Children[0].Space != "urn:header" {
+		t.Errorf("default header namespace was not inherited: %+v", header)
+	}
+	document := root.Children[1]
+	if document.Space != "urn:business" {
+		t.Errorf("Document namespace = %q", document.Space)
+	}
+	if document.Children[0].Space != "urn:foreign" {
+		t.Errorf("prefixed namespace = %q", document.Children[0].Space)
 	}
 }

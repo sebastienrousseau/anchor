@@ -22,6 +22,7 @@ package iso20022
 
 import (
 	"bytes"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -30,6 +31,7 @@ import (
 	"strings"
 
 	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/cbprworkspace"
 	"github.com/sebastienrousseau/askiso/internal/codes"
 	"github.com/sebastienrousseau/askiso/internal/converter"
 	"github.com/sebastienrousseau/askiso/internal/diff"
@@ -58,10 +60,56 @@ type (
 	Severity = linter.IssueSeverity
 	// CodeItem is an ISO 20022 external code definition.
 	CodeItem = codes.CodeItem
+	// ExternalCodeSets is a locally imported Registration Authority publication.
+	ExternalCodeSets = codes.ExternalSets
 	// LifecycleChain is a linked four-stage payment flow.
 	LifecycleChain = flow.LifecycleChain
 	// Mapping is a SWIFT MT to ISO 20022 MX cross-reference.
 	Mapping = translator.Mapping
+	// CBPRPack is a locally compiled, content-minimised CBPR+ rule pack.
+	CBPRPack = rules.CBPRPack
+	// CBPRPackSource is disclosure-safe provenance for one local source file.
+	CBPRPackSource = rules.CBPRPackSource
+	// CBPRPackConstraint is one compiled local cardinality or lexical rule.
+	CBPRPackConstraint = rules.CBPRPackConstraint
+	// CBPRPackInfo is disclosure-safe provenance attached to a local pack result.
+	CBPRPackInfo = rules.CBPRPackInfo
+	// CBPRPackHit is one extractive result from a private local PDF.
+	CBPRPackHit = rules.CBPRPackHit
+	// CBPRWorkspaceOptions selects private local CBPR+ inputs and output.
+	CBPRWorkspaceOptions = cbprworkspace.Options
+	// CBPRWorkspaceManifest describes a private local CBPR+ workspace.
+	CBPRWorkspaceManifest = cbprworkspace.Manifest
+	// CBPRWorkspaceRuntime is the verified executable state of a workspace.
+	CBPRWorkspaceRuntime = cbprworkspace.Runtime
+	// CBPRVerification is a content-free local conformance-suite result.
+	CBPRVerification = cbprworkspace.Verification
+	// CBPRSampleExport reports locally exported synthetic positive fixtures.
+	CBPRSampleExport = cbprworkspace.SampleExport
+	// CBPRSampleExportOptions selects the local wrapper for exported fixtures.
+	CBPRSampleExportOptions = cbprworkspace.SampleExportOptions
+	// CBPRNegativeExport reports locally exported synthetic rejection fixtures.
+	CBPRNegativeExport = cbprworkspace.NegativeExport
+	// CBPRReviewChecklist inventories independently sourced evidence still needed.
+	CBPRReviewChecklist = cbprworkspace.ReviewChecklist
+	// CBPRSampleAudit is a content-free sample intake assessment.
+	CBPRSampleAudit = cbprworkspace.SampleAudit
+	// CBPRAnonymisationReport records local transformations by hash only.
+	CBPRAnonymisationReport = cbprworkspace.AnonymisationReport
+	// CBPRSampleAttestation pins a human review claim to sample hashes.
+	CBPRSampleAttestation = cbprworkspace.SampleAttestation
+	// CBPROverlay is an operator-authored conditional rule overlay.
+	CBPROverlay = rules.CBPROverlay
+	// CBPRReleaseDiff is a content-free comparison of two local release exports.
+	CBPRReleaseDiff = cbprworkspace.ReleaseDiff
+	// CBPRConformanceOptions selects strict local release-gate requirements.
+	CBPRConformanceOptions = cbprworkspace.ConformanceOptions
+	// CBPRConformanceReport is a content-free strict release-gate result.
+	CBPRConformanceReport = cbprworkspace.ConformanceReport
+	// CBPRExternalEvidence pins an independently obtained verdict.
+	CBPRExternalEvidence = cbprworkspace.ExternalEvidence
+	// CBPRSourceSearch is an in-memory multi-format local evidence result.
+	CBPRSourceSearch = cbprworkspace.SearchResult
 	// MessageSet is a message set as published by the Registration Authority.
 	MessageSet = registry.Set
 )
@@ -380,6 +428,12 @@ func AllCodes() []CodeItem { return codes.GetAllCodes() }
 // publication.
 type ExternalCode = codes.ExternalCode
 
+// ReadExternalCodeSets parses a local Registration Authority XLSX or JSON
+// publication without storing or uploading it.
+func ReadExternalCodeSets(path string) (*ExternalCodeSets, error) {
+	return codes.ImportExternalSets(path)
+}
+
 // ExternalCodes returns the external code sets the user imported into this
 // catalogue, or nil when they have imported none.
 //
@@ -451,8 +505,8 @@ func ParseMT(data []byte) (*MTMessage, error) { return swift.Parse(data) }
 // returned report names every field that was carried, shortened, inferred, or
 // dropped, so nothing disappears without being accounted for.
 //
-// MT parties carry unstructured addresses, which CBPR+ stops accepting on
-// 14 November 2026. Converted messages are schema-valid but will fail
+// MT parties carry unstructured addresses, which CBPR+ stops accepting once
+// the deferred structured-address requirement takes effect. Converted messages will fail
 // CheckProfile with the cbpr-2026 profile until the addresses are enriched.
 func TranslateMT(data []byte) (*Conversion, error) {
 	m, err := swift.Parse(data)
@@ -519,20 +573,32 @@ const StreamThreshold = 8 << 20 // 8 MiB
 // covering a corporate's month can be validated on a machine that could not
 // hold it.
 func ValidateStream(r io.Reader, schemaPath string) (*SchemaResult, error) {
+	return ValidateStreamWithExternalCodes(r, schemaPath, nil)
+}
+
+// ValidateStreamWithExternalCodes validates a stream and enforces locally
+// supplied external code values in addition to the XSD.
+func ValidateStreamWithExternalCodes(r io.Reader, schemaPath string, external *ExternalCodeSets) (*SchemaResult, error) {
 	schema, err := xsd.ParseFile(schemaPath)
 	if err != nil {
 		return nil, err
 	}
-	return validator.ValidateReader(r, schema), nil
+	return validator.ValidateReaderWithExternalSets(r, schema, external), nil
 }
 
 // ValidateFile checks an instance against the schema at schemaPath.
 func ValidateFile(instance []byte, schemaPath string) (*SchemaResult, error) {
+	return ValidateFileWithExternalCodes(instance, schemaPath, nil)
+}
+
+// ValidateFileWithExternalCodes validates buffered XML and enforces locally
+// supplied external code values in addition to the XSD.
+func ValidateFileWithExternalCodes(instance []byte, schemaPath string, external *ExternalCodeSets) (*SchemaResult, error) {
 	schema, err := xsd.ParseFile(schemaPath)
 	if err != nil {
 		return nil, err
 	}
-	return validator.Validate(instance, schema), nil
+	return validator.ValidateWithExternalSets(instance, schema, external), nil
 }
 
 // ValidateAgainst checks an instance against a schema supplied as bytes. This is
@@ -556,7 +622,7 @@ func (c *Catalogue) Validate(instance []byte) (*SchemaResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ValidateFile(instance, path)
+	return ValidateFileWithExternalCodes(instance, path, codes.ExternalSetsFor(c.idx.RootDir))
 }
 
 // SchemaGenOptions configures a message generated from its schema.
@@ -635,17 +701,45 @@ func (c *Catalogue) Diff(fromID, toID string) (*SchemaDiff, error) {
 
 // isoNamespace matches the ISO 20022 namespace form, which carries the message
 // identifier: urn:iso:std:iso:20022:tech:xsd:pacs.008.001.10
-var isoNamespace = regexp.MustCompile(`urn:iso:std:iso:20022:tech:xsd:([a-z]{4}\.\d{3}\.\d{3}\.\d{2})`)
+var isoNamespace = regexp.MustCompile(`^urn:iso:std:iso:20022:tech:xsd:([a-z]{4}\.\d{3}\.\d{3}\.\d{2})$`)
 
 // MessageIDFromInstance reads the message identifier from a document's
 // namespace declaration.
 func MessageIDFromInstance(instance []byte) (string, error) {
-	head := instance
-	if len(head) > 8192 {
-		head = head[:8192]
+	dec := xml.NewDecoder(bytes.NewReader(instance))
+	var firstISO string
+	depth := 0
+	for {
+		tok, err := dec.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return "", fmt.Errorf("could not determine the message type: malformed XML: %w", err)
+		}
+		switch token := tok.(type) {
+		case xml.StartElement:
+			depth++
+			match := isoNamespace.FindStringSubmatch(token.Name.Space)
+			if match == nil {
+				continue
+			}
+			id := match[1]
+			if firstISO == "" {
+				firstISO = id
+			}
+			// An application header and Document can be siblings in an envelope.
+			// Prefer the business Document rather than accidentally validating the
+			// envelope as head.001.
+			if token.Name.Local == "Document" || depth == 1 {
+				return id, nil
+			}
+		case xml.EndElement:
+			depth--
+		}
 	}
-	if m := isoNamespace.FindSubmatch(head); m != nil {
-		return string(m[1]), nil
+	if firstISO != "" {
+		return firstISO, nil
 	}
 	return "", errors.New("could not determine the message type: no ISO 20022 namespace declaration found")
 }
@@ -684,6 +778,136 @@ func CheckProfile(instance []byte, profile, filename string) (*RuleResult, error
 	return rules.Run(p, root, msgID, filename), nil
 }
 
+// CompileCBPRPack reads an authorised local PDF or directory and compiles its
+// supported restrictions in memory. It performs no network access and does not
+// persist or embed the source documents.
+func CompileCBPRPack(source string) (*CBPRPack, error) {
+	return rules.CompileCBPRPack(source)
+}
+
+// WriteCBPRPack writes a user-requested reusable local pack with owner-only
+// permissions. Applications should not redistribute it without the necessary
+// rights to the source standards material.
+func WriteCBPRPack(path string, pack *CBPRPack) error {
+	return rules.WriteCBPRPack(path, pack)
+}
+
+// CheckCBPRPack applies the embedded live CBPR+ profile plus a user-supplied
+// local pack. Source may be a PDF directory or a compiled .cbpr-pack.json file.
+func CheckCBPRPack(instance []byte, source, filename string) (*RuleResult, error) {
+	pack, err := rules.CompileCBPRPack(source)
+	if err != nil {
+		return nil, err
+	}
+	base, err := rules.Get("cbpr-plus")
+	if err != nil {
+		return nil, err
+	}
+	profile, err := pack.Augment(base)
+	if err != nil {
+		return nil, err
+	}
+	root, err := converter.Parse(instance)
+	if err != nil {
+		return nil, err
+	}
+	msgID, _ := MessageIDFromInstance(instance)
+	return rules.Run(profile, root, msgID, filename), nil
+}
+
+// SearchCBPRPack performs extractive full-text retrieval against private local
+// PDFs. It never calls AskISO's OpenAI, Ollama, or other model-provider paths.
+func SearchCBPRPack(source, query string, limit int) ([]CBPRPackHit, error) {
+	return rules.SearchCBPRPack(source, query, limit)
+}
+
+// SearchCBPRSources searches local PDF, JSON, XML/XSD, and XLSX files without
+// persisting extracts or invoking a model or network provider.
+func SearchCBPRSources(source, query string, limit int) (*CBPRSourceSearch, error) {
+	return cbprworkspace.SearchLocalSources(source, query, limit)
+}
+
+// ImportCBPRWorkspace indexes user-entitled artefacts and writes only
+// content-minimised derived files into a private local workspace.
+func ImportCBPRWorkspace(options CBPRWorkspaceOptions) (*CBPRWorkspaceManifest, error) {
+	return cbprworkspace.Import(options)
+}
+
+// LoadCBPRWorkspace verifies and loads a private workspace manifest.
+func LoadCBPRWorkspace(path string) (*CBPRWorkspaceManifest, error) {
+	return cbprworkspace.LoadManifest(path)
+}
+
+// LoadCBPRWorkspaceRuntime verifies the manifest and loads its private compiled
+// rules and external-code index without accessing the original source folder.
+func LoadCBPRWorkspaceRuntime(path string) (*CBPRWorkspaceRuntime, error) {
+	return cbprworkspace.LoadRuntime(path)
+}
+
+// VerifyCBPRWorkspace runs the workspace's pinned local sample suite.
+func VerifyCBPRWorkspace(source, workspace string) (*CBPRVerification, error) {
+	return cbprworkspace.Verify(source, workspace)
+}
+
+// ExportCBPRValidSamples writes one AskISO-generated positive BAH-plus-payload
+// fixture per executable Usage Guideline into the private source tree.
+func ExportCBPRValidSamples(source, workspace, output string) (*CBPRSampleExport, error) {
+	return cbprworkspace.ExportValidSamples(source, workspace, output)
+}
+
+// ExportCBPRValidSamplesWithOptions exports fixtures using an envelope,
+// FINplus request-payload, or DataPDU transport template.
+func ExportCBPRValidSamplesWithOptions(source, workspace, output string, options CBPRSampleExportOptions) (*CBPRSampleExport, error) {
+	return cbprworkspace.ExportValidSamplesWithOptions(source, workspace, output, options)
+}
+
+// ExportCBPRInvalidSamples derives multiple validated rejection scenarios from
+// AskISO-generated positive fixtures. They remain synthetic evidence.
+func ExportCBPRInvalidSamples(source, workspace, output string) (*CBPRNegativeExport, error) {
+	return cbprworkspace.ExportNegativeSamples(source, workspace, output)
+}
+
+// WriteCBPRReviewChecklist writes the 31-positive/31-negative review inventory.
+func WriteCBPRReviewChecklist(workspace, output, createdAt string) (*CBPRReviewChecklist, error) {
+	return cbprworkspace.WriteReviewChecklist(workspace, output, createdAt)
+}
+
+// AuditCBPRSamples checks provenance, duplicates, pairing and common live-data patterns.
+func AuditCBPRSamples(source, workspace string) (*CBPRSampleAudit, error) {
+	return cbprworkspace.AuditSamples(source, workspace)
+}
+
+// AnonymiseCBPRSamples creates clearly labelled local copies with common IBAN
+// and long-account-number shapes replaced.
+func AnonymiseCBPRSamples(source, workspace, output string) (*CBPRAnonymisationReport, error) {
+	return cbprworkspace.AnonymiseSamples(source, workspace, output)
+}
+
+// WriteCBPRSampleAttestation records an explicit human independent-review
+// assertion. AskISO cannot establish that assertion itself.
+func WriteCBPRSampleAttestation(source, workspace, output, reviewer, provider, reviewedAt string, acknowledge bool) (*CBPRSampleAttestation, error) {
+	return cbprworkspace.WriteSampleAttestation(source, workspace, output, reviewer, provider, reviewedAt, acknowledge)
+}
+
+// WriteCBPRExternalEvidence records a content-free externally obtained verdict.
+func WriteCBPRExternalEvidence(workspace, output, provider, testedAt string, cases int, passed, acknowledge bool) (*CBPRExternalEvidence, error) {
+	return cbprworkspace.WriteExternalEvidence(workspace, output, provider, testedAt, cases, passed, acknowledge)
+}
+
+// CompileCBPROverlay validates an explicitly authored non-XSD rule overlay.
+func CompileCBPROverlay(path string) (*CBPRPack, error) { return rules.CompileCBPROverlay(path) }
+
+// CompareCBPRReleaseSources compares two local entitled exports by hashes and identifiers.
+func CompareCBPRReleaseSources(fromSource, toSource, fromRelease, toRelease string) (*CBPRReleaseDiff, error) {
+	return cbprworkspace.CompareReleaseSources(fromSource, toSource, fromRelease, toRelease)
+}
+
+// CheckCBPRConformance runs the strict local workspace, sample, code-release,
+// permission, entitlement, and optional external-evidence gate.
+func CheckCBPRConformance(options CBPRConformanceOptions) (*CBPRConformanceReport, error) {
+	return cbprworkspace.CheckConformance(options)
+}
+
 // SARIF renders rule results as a SARIF 2.1.0 log.
 //
 // SARIF is what a code-scanning pipeline reads, so this is the shape a rule
@@ -701,7 +925,7 @@ func SARIF(results ...*RuleResult) (string, error) {
 }
 
 // ClassifyAddresses reports the shape of every postal address in a message,
-// which is the question the November 2026 CBPR+ change turns on.
+// which is the question the deferred CBPR+ structured-address change turns on.
 func ClassifyAddresses(instance []byte) (map[string]string, error) {
 	root, err := converter.Parse(instance)
 	if err != nil {

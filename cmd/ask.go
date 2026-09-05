@@ -19,15 +19,19 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/sebastienrousseau/askiso/internal/ai"
 	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/cbprworkspace"
+	"github.com/sebastienrousseau/askiso/internal/rules"
 	"github.com/sebastienrousseau/askiso/internal/tui"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
 
 var (
-	rawOutput   bool
-	textOutput  bool
-	plainOutput bool
+	rawOutput    bool
+	textOutput   bool
+	plainOutput  bool
+	askCBPRPack  string
+	askCBPRLimit int
 
 	stripMarkdownBoldRegex   = regexp.MustCompile(`\*\*([^*]+)\*\*`)
 	stripMarkdownItalicRegex = regexp.MustCompile(`\*([^*]+)\*`)
@@ -48,12 +52,6 @@ with local or connected AI models.`,
 // runAsk answers a question or opens the REPL. The root command shares it,
 // so `askiso ask "…"` and a bare `askiso <question>` take the same path.
 func runAsk(cmd *cobra.Command, args []string) error {
-	idx, err := loadCatalog()
-	if err != nil {
-		return err
-	}
-
-	aiEng := ai.New(idx)
 	prompt := strings.Join(args, " ")
 
 	// Check if input is being piped
@@ -68,6 +66,28 @@ func runAsk(cmd *cobra.Command, args []string) error {
 		}
 		prompt = strings.TrimSpace(sb.String())
 	}
+
+	// A local pack query is intentionally resolved before an AI engine exists.
+	// This is a hard privacy boundary: neither OpenAI nor Ollama is called, even
+	// when provider environment variables are configured.
+	if askCBPRPack != "" {
+		if prompt == "" {
+			return fmt.Errorf("--cbpr-pack needs a question; interactive pack sessions are not supported")
+		}
+		result, err := cbprworkspace.SearchLocalSources(askCBPRPack, prompt, askCBPRLimit)
+		if err != nil {
+			return err
+		}
+		printLocalCBPRHits(prompt, result.Hits)
+		printLocalCBPRWarnings(result.Warnings)
+		return nil
+	}
+
+	idx, err := loadCatalog()
+	if err != nil {
+		return err
+	}
+	aiEng := ai.New(idx)
 
 	// Direct One-shot Execution with Actionable Follow-up Loop
 	if prompt != "" {
@@ -98,6 +118,57 @@ func runAsk(cmd *cobra.Command, args []string) error {
 
 	askLoop(aiEng, idx, os.Stdin, nil, true)
 	return nil
+}
+
+func printLocalCBPRHits(query string, hits []rules.CBPRPackHit) {
+	if rawOutput || textOutput || plainOutput {
+		fmt.Println("Local CBPR+ evidence (no model or network provider used)")
+		if len(hits) == 0 {
+			fmt.Printf("No matching passage found for %q.\n", query)
+			return
+		}
+		for i, hit := range hits {
+			location := hit.Source
+			if hit.Page > 0 {
+				location += fmt.Sprintf(", page %d", hit.Page)
+			}
+			fmt.Printf("\n%d. %s\n%s\n", i+1, location, hit.Snippet)
+		}
+		return
+	}
+
+	fmt.Printf("\n%s Local CBPR+ evidence\n", headStyle.Render(" PRIVATE "))
+	fmt.Println("  No model or network provider was used; results are extracts from your local files.")
+	if len(hits) == 0 {
+		fmt.Printf("\n  No matching passage found for %q.\n\n", query)
+		return
+	}
+	for i, hit := range hits {
+		location := titleStyle.Render(hit.Source)
+		if hit.Page > 0 {
+			location += fmt.Sprintf(" — page %d", hit.Page)
+		} else if hit.Kind != "" {
+			location += " — " + hit.Kind
+		}
+		fmt.Printf("\n  %d. %s\n", i+1, location)
+		for _, line := range wrapAt(hit.Snippet, 76) {
+			fmt.Printf("     %s\n", line)
+		}
+	}
+	fmt.Println()
+}
+
+func printLocalCBPRWarnings(warnings []string) {
+	for _, warning := range warnings {
+		fmt.Printf("warning: %s\n", warning)
+	}
+}
+
+func init() {
+	askCmd.Flags().StringVar(&askCBPRPack, "cbpr-pack", "",
+		"Search private local CBPR+ PDF, JSON, XML/XSD, and XLSX sources without a model")
+	askCmd.Flags().IntVar(&askCBPRLimit, "cbpr-limit", 5,
+		"Maximum local CBPR+ evidence passages (1-20)")
 }
 
 // askLoop is the interactive conversation: numbered follow-ups, slash commands
@@ -304,6 +375,9 @@ func renderAnswerWithContext(ans ai.MessageAnswer, isRepl bool) {
 	if isPlain {
 		fmt.Println()
 		fmt.Printf("=== %s ===\n\n", ans.Summary)
+		if ans.ProviderWarning != "" {
+			fmt.Printf("Provider warning: %s\n\n", ans.ProviderWarning)
+		}
 		plainText := renderPlainText(ans.Details, wrapWidth)
 		fmt.Println(plainText)
 		fmt.Println()
@@ -358,6 +432,11 @@ func renderAnswerWithContext(ans ai.MessageAnswer, isRepl bool) {
 	fmt.Println()
 	fmt.Println(" " + headerBadge)
 	fmt.Println()
+	if ans.ProviderWarning != "" {
+		warning := lipgloss.NewStyle().Foreground(lipgloss.Color("#F59E0B")).Render("Provider warning: " + ans.ProviderWarning)
+		fmt.Println(applyVerticalDelimiter(warning, "#F59E0B"))
+		fmt.Println()
+	}
 
 	// Line-by-line vertical delimiter (never truncates or clips!)
 	fmt.Println(applyVerticalDelimiter(renderedDetails, "#06B6D4"))

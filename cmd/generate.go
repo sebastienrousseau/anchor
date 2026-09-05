@@ -60,15 +60,18 @@ is asserted across the whole catalogue, not claimed.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		msgType := args[0]
+		preset, err := normalizeChoice("preset", genPreset, generator.Presets()...)
+		if err != nil {
+			return err
+		}
 
 		if genFromSchema || !generator.HasTemplate(msgType) {
 			return generateFromSchema(msgType)
 		}
 
 		opts := generator.DefaultOptions(msgType)
-		if genPreset != "" {
-			opts.Preset = genPreset
-		}
+		opts.Preset = preset
+		opts.ApplyPreset()
 		if genAmount != "" {
 			opts.Amount = genAmount
 		}
@@ -205,7 +208,7 @@ func init() {
 	generateCmd.Flags().StringVar(&genCreditor, "creditor", "", "Beneficiary customer / creditor name")
 	generateCmd.Flags().StringVar(&genDebtorIBAN, "debtor-iban", "", "Debtor IBAN account")
 	generateCmd.Flags().StringVar(&genCreditorIBAN, "creditor-iban", "", "Creditor IBAN account")
-	generateCmd.Flags().StringVarP(&genPreset, "preset", "p", "standard", "Regional clearing preset (sepa, fednow, target2, chaps, standard)")
+	generateCmd.Flags().StringVarP(&genPreset, "preset", "p", "standard", "Regional clearing preset (standard, sepa, fednow, fedwire, target2, chaps)")
 	generateCmd.Flags().BoolVar(&genWithBAH, "bah", false, "Wrap generated message in Business Application Header (head.001.001.02)")
 	generateCmd.Flags().BoolVarP(&genCopy, "copy", "y", false, "Copy generated XML to system clipboard")
 	generateCmd.Flags().StringVarP(&genOutputFile, "output", "o", "", "Write generated XML to file instead of stdout")

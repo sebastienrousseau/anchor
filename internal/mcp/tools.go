@@ -29,8 +29,9 @@ type Tool struct {
 }
 
 func (s *Server) toolDescriptors() []map[string]any {
-	out := make([]map[string]any, 0, len(s.tools))
-	for _, t := range s.tools {
+	tools := s.Tools()
+	out := make([]map[string]any, 0, len(tools))
+	for _, t := range tools {
 		desc := t.Description
 		if t.ReadsCatalogue {
 			desc += "\n\nNeeds the ISO 20022 schemas the user downloaded from iso20022.org. " +
@@ -55,7 +56,9 @@ func (s *Server) callTool(ctx context.Context, params json.RawMessage) (any, *rp
 		return nil, &rpcError{Code: codeInvalidParams, Message: "the parameters are not an object", Data: err.Error()}
 	}
 
+	s.mu.RLock()
 	tool, ok := s.byName[p.Name]
+	s.mu.RUnlock()
 	if !ok {
 		return nil, &rpcError{Code: codeInvalidParams, Message: "no such tool: " + p.Name}
 	}
@@ -282,9 +285,11 @@ func checkProfileTool() Tool {
 	return Tool{
 		Name:  "askiso_check_profile",
 		Title: "Check a message against a scheme rule profile",
-		Description: "Apply a scheme rule profile to a message. The cbpr-2026 profile checks " +
-			"the CBPR+ structured-address requirement: an address must carry a town name " +
-			"and a country, and fully unstructured addresses are rejected. Swift deferred " +
+		Description: "Apply a scheme rule profile to a message. The cbpr-plus profile checks " +
+			"the live SR2025 message definitions and Usage Identifiers, Business Application " +
+			"Header consistency, formal cross-message rules and message variants. The " +
+			"cbpr-2026 profile checks structured-address readiness: an address must carry a " +
+			"town name and country, and fully unstructured addresses are rejected. Swift deferred " +
 			"the 14 November 2026 cutover on 27 August 2026 and will confirm replacement " +
 			"timing by December, so do not quote a date; the requirement itself stands. " +
 			"Use this whenever the question involves structured addresses or cross-border " +
@@ -603,8 +608,9 @@ func convertTool() Tool {
 // ToolNames lists the registered tools, sorted. Useful for tests and for the
 // CLI's own description of what the server offers.
 func (s *Server) ToolNames() []string {
-	out := make([]string, 0, len(s.tools))
-	for _, t := range s.tools {
+	tools := s.Tools()
+	out := make([]string, 0, len(tools))
+	for _, t := range tools {
 		out = append(out, t.Name)
 	}
 	sort.Strings(out)

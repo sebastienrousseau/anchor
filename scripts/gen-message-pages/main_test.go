@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -298,6 +299,59 @@ func TestRunRejectsAnUnwritableDirectory(t *testing.T) {
 	}
 	if err := run(filepath.Join(blocked, "sub"), "2026-08-25"); err == nil {
 		t.Error("writing into a file path should be an error")
+	}
+}
+
+func TestRunReportsPageAndIndexWriteFailures(t *testing.T) {
+	reg := testRegistry(t)
+	dir := t.TempDir()
+	blockedPage := filepath.Join(dir, reg.Messages[0].ID+".md")
+	if err := os.Mkdir(blockedPage, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := run(dir, "2026-08-25"); err == nil {
+		t.Fatal("a directory in place of a message page was accepted")
+	}
+
+	blocked := filepath.Join(t.TempDir(), "not-a-directory")
+	if err := os.WriteFile(blocked, []byte("blocked"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeIndex(reg, blocked, "2026-08-25"); err == nil {
+		t.Fatal("index write failure was hidden")
+	}
+}
+
+func TestPageHandlesLongUnknownDomainsAndMissingSets(t *testing.T) {
+	reg := &registry.Registry{}
+	m := registry.Message{
+		ID:       "zzzz.001.001.01",
+		BaseCode: "zzzz.001",
+		Domain:   strings.Repeat("unusually-long-domain-", 6),
+	}
+	page := buildPage(reg, m, []string{m.ID}, nil, false, false, "2026-08-25")
+	if !strings.Contains(page, "records no message set") {
+		t.Fatalf("missing-set explanation absent:\n%s", page)
+	}
+	description := regexp.MustCompile(`(?m)^description: "(.*)"$`).FindStringSubmatch(page)
+	if description == nil || len(description[1]) > 160 || strings.Contains(description[1], strings.ToUpper(m.Domain)) {
+		t.Fatalf("description was not shortened: %v", description)
+	}
+}
+
+func TestMainExitCodes(t *testing.T) {
+	var stderr bytes.Buffer
+	if code := mainExit([]string{"-not-a-flag"}, &stderr); code != 2 || stderr.Len() == 0 {
+		t.Fatalf("parse failure = exit %d, stderr %q", code, stderr.String())
+	}
+
+	stderr.Reset()
+	blocked := filepath.Join(t.TempDir(), "blocked")
+	if err := os.WriteFile(blocked, []byte("blocked"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if code := mainExit([]string{"-out", filepath.Join(blocked, "child")}, &stderr); code != 1 || !strings.Contains(stderr.String(), "gen-message-pages") {
+		t.Fatalf("runtime failure = exit %d, stderr %q", code, stderr.String())
 	}
 }
 

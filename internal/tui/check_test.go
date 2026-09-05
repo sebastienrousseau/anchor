@@ -6,11 +6,13 @@ package tui
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/registry"
 )
 
 // checkableIndex builds a catalogue whose sample is a real message with a real
@@ -357,6 +359,88 @@ func TestCheckPaneListsLintIssues(t *testing.T) {
 	}
 	if !strings.Contains(got, "❌") && !strings.Contains(got, "⚠️") {
 		t.Errorf("the finding carries no severity: %q", got)
+	}
+}
+
+func TestSchemaPaneCapsLongDiagnosticLists(t *testing.T) {
+	dir := t.TempDir()
+	schemaPath := filepath.Join(dir, "pacs.008.001.10.xsd")
+	var schema strings.Builder
+	schema.WriteString(`<?xml version="1.0"?><xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.10" xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.10" elementFormDefault="qualified"><xs:element name="Document" type="Doc"/><xs:complexType name="Doc"><xs:sequence>`)
+	for i := 0; i < 30; i++ {
+		schema.WriteString(`<xs:element name="E`)
+		schema.WriteString(strconv.Itoa(i))
+		schema.WriteString(`" type="Code"/>`)
+	}
+	schema.WriteString(`</xs:sequence></xs:complexType><xs:simpleType name="Code"><xs:restriction base="xs:string"><xs:enumeration value="A"/></xs:restriction></xs:simpleType></xs:schema>`)
+	if err := os.WriteFile(schemaPath, []byte(schema.String()), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var body strings.Builder
+	body.WriteString(`<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.10">`)
+	for i := 0; i < 30; i++ {
+		body.WriteString(`<E`)
+		body.WriteString(strconv.Itoa(i))
+		body.WriteString(`>X</E`)
+		body.WriteString(strconv.Itoa(i))
+		body.WriteString(`>`)
+	}
+	body.WriteString("</Document>")
+	got := (&Model{}).renderSchema([]byte(body.String()), catalog.Message{XSDPath: schemaPath})
+	if !strings.Contains(got, "... and") {
+		t.Fatalf("long schema report was not capped:\n%s", got)
+	}
+}
+
+func TestCatalogueViewCountsCompleteAndPartialSets(t *testing.T) {
+	reg, err := registry.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(reg.Sets) < 2 {
+		t.Skip("registry has too few sets")
+	}
+	counts := map[string]int{}
+	for _, msg := range reg.Messages {
+		for _, setID := range msg.SetIDs {
+			counts[setID]++
+		}
+	}
+	completeID, partialID := "", ""
+	for _, set := range reg.Sets {
+		if counts[set.ID] > 0 {
+			completeID = set.ID
+			break
+		}
+	}
+	for _, set := range reg.Sets {
+		if set.ID != completeID && counts[set.ID] > 1 {
+			partialID = set.ID
+			break
+		}
+	}
+	if completeID == "" || partialID == "" {
+		t.Skip("registry has no multi-message set for partial coverage")
+	}
+	idx := &catalog.Index{RootDir: "/local/catalogue"}
+	partialAdded := false
+	for _, msg := range reg.Messages {
+		for _, setID := range msg.SetIDs {
+			if setID == completeID || (setID == partialID && !partialAdded) {
+				idx.Messages = append(idx.Messages, catalog.Message{ID: msg.ID})
+				if setID == partialID {
+					partialAdded = true
+				}
+				break
+			}
+		}
+	}
+	if !partialAdded {
+		t.Skip("selected registry set has no messages")
+	}
+	report := (&Model{idx: idx}).renderCatalogue()
+	if !strings.Contains(report, "complete") || !strings.Contains(report, "partial") || !strings.Contains(report, "✅") || !strings.Contains(report, "◐") {
+		t.Fatalf("catalogue status did not render complete and partial states:\n%s", report)
 	}
 }
 

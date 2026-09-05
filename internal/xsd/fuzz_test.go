@@ -4,6 +4,7 @@
 package xsd_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -48,6 +49,9 @@ func FuzzParse(f *testing.F) {
 	f.Add("<")
 
 	f.Fuzz(func(t *testing.T, data string) {
+		if len(data) > 1<<20 {
+			return
+		}
 		schema, err := xsd.Parse(strings.NewReader(data))
 		if err != nil {
 			if schema != nil {
@@ -72,6 +76,66 @@ func FuzzParse(f *testing.F) {
 		if len(schema.ElementOrder) > len(schema.Elements) {
 			t.Fatalf("ElementOrder has %d entries for %d elements",
 				len(schema.ElementOrder), len(schema.Elements))
+		}
+	})
+}
+
+// FuzzStructuredSchema explores occurrence, compositor and facet combinations
+// while guaranteeing syntactically valid XSD. The same schema must parse
+// deterministically and preserve every generated semantic constraint.
+func FuzzStructuredSchema(f *testing.F) {
+	f.Add(uint16(35), false, false, uint8(1))
+	f.Add(uint16(1), true, true, uint8(3))
+	f.Add(^uint16(0), false, true, uint8(255))
+
+	f.Fuzz(func(t *testing.T, rawMax uint16, optional, choice bool, rawEnums uint8) {
+		maxLength := int(rawMax%256) + 1
+		minOccurs := 1
+		if optional {
+			minOccurs = 0
+		}
+		enumCount := int(rawEnums%8) + 1
+
+		var enums strings.Builder
+		for i := range enumCount {
+			fmt.Fprintf(&enums, `<xs:enumeration value="C%02d"/>`, i)
+		}
+		particle := fmt.Sprintf(`<xs:element name="Value" type="Code" minOccurs="%d"/>`, minOccurs)
+		if choice {
+			particle = `<xs:choice><xs:element name="A" type="Code"/><xs:element name="B" type="Code"/></xs:choice>`
+		}
+
+		source := fmt.Sprintf(`<xs:schema xmlns:xs="%s" targetNamespace="urn:fuzz">
+  <xs:element name="Document" type="DocumentType"/>
+  <xs:complexType name="DocumentType"><xs:sequence>%s</xs:sequence></xs:complexType>
+  <xs:simpleType name="Code"><xs:restriction base="xs:string">
+    <xs:maxLength value="%d"/>%s
+  </xs:restriction></xs:simpleType>
+</xs:schema>`, xsd.NSSchema, particle, maxLength, enums.String())
+
+		first, err := xsd.Parse(strings.NewReader(source))
+		if err != nil {
+			t.Fatalf("generated schema rejected: %v\n%s", err, source)
+		}
+		second, err := xsd.Parse(strings.NewReader(source))
+		if err != nil {
+			t.Fatalf("deterministic reparse failed: %v", err)
+		}
+		root, ok := first.RootElement()
+		if !ok || root.Name != "Document" || root.Type != "DocumentType" {
+			t.Fatalf("root declaration lost: %#v", root)
+		}
+		facets, base := first.EffectiveFacets("Code")
+		if base != "string" || facets.MaxLength == nil || *facets.MaxLength != maxLength {
+			t.Fatalf("facet mismatch: base=%q facets=%+v", base, facets)
+		}
+		if len(facets.Enumeration) != enumCount {
+			t.Fatalf("enumerations=%d want %d", len(facets.Enumeration), enumCount)
+		}
+		facets2, base2 := second.EffectiveFacets("Code")
+		if base2 != base || facets2.MaxLength == nil || *facets2.MaxLength != *facets.MaxLength ||
+			strings.Join(facets2.Enumeration, "\x00") != strings.Join(facets.Enumeration, "\x00") {
+			t.Fatalf("nondeterministic parse: first=%+v second=%+v", facets, facets2)
 		}
 	})
 }

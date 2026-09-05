@@ -69,8 +69,14 @@ enriching.`,
   askiso translate payment.mt103
   askiso translate request.mt101 --out pain001.xml --report
   askiso translate payment.xml --report          # ISO 20022 back to MT
-  askiso translate statement.mt940 --format json`,
+	  askiso translate statement.mt940 --format json`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		format, err := normalizeChoice("format", translateFormat, "text", "json")
+		if err != nil {
+			return err
+		}
+		translateFormat = format
 		if showMatrix || len(args) == 0 {
 			printMatrix()
 			return nil

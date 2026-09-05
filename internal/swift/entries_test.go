@@ -413,6 +413,7 @@ func TestParseStatementLineRejects(t *testing.T) {
 		"269999C25000,00NTRFREF-1", // an impossible value date
 		"2608240899C1,00NTRFREF-1", // an impossible entry date
 		"260824C,NTRFREF-1",        // no amount
+		"260824C1,2,3NTRFREF-1",    // more than one decimal separator
 		"260824X25000,00NTRFREF-1", // not a debit or credit mark
 	} {
 		if _, err := ParseStatementLine(in); err == nil {

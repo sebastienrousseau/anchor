@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode/utf8"
 )
 
 // The Language Server Protocol frames messages with headers rather than
@@ -52,13 +53,29 @@ const (
 
 // conn reads and writes framed messages.
 type conn struct {
-	r  *bufio.Reader
-	w  io.Writer
-	mu sync.Mutex
+	r      *bufio.Reader
+	closer io.Closer
+	w      io.Writer
+	mu     sync.Mutex
 }
 
 func newConn(r io.Reader, w io.Writer) *conn {
-	return &conn{r: bufio.NewReaderSize(r, 64<<10), w: w}
+	c := &conn{r: bufio.NewReaderSize(r, 64<<10), w: w}
+	if closer, ok := r.(io.Closer); ok {
+		c.closer = closer
+	}
+	return c
+}
+
+func (c *conn) canInterruptRead() bool { return c.closer != nil }
+
+// interruptRead releases a Read blocked in the transport. New treats a
+// supplied io.ReadCloser as owned by Serve for precisely this reason.
+func (c *conn) interruptRead() error {
+	if c.closer == nil {
+		return nil
+	}
+	return c.closer.Close()
 }
 
 // read returns the next message, or io.EOF when the stream ends.
@@ -121,6 +138,9 @@ func (e *parseError) Error() string { return e.err.Error() }
 
 // write frames and sends a message.
 func (c *conn) write(msg message) error {
+	if !utf8.ValidString(msg.Method) {
+		return fmt.Errorf("JSON-RPC method is not valid UTF-8")
+	}
 	msg.JSONRPC = "2.0"
 	body, err := json.Marshal(msg)
 	if err != nil {

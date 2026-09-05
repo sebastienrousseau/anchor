@@ -125,6 +125,9 @@ Everything else works standalone, against the index embedded in the binary.
 | `askiso stats` ◆ | Catalogue metrics and domain distribution |
 | `askiso list` | The 56 message set categories |
 | `askiso catalog` | Manage the local catalogue: `fetch`, `add`, `status`, `where` |
+| `askiso cbpr-pack import` | Build a private release manifest and local conformance sample suite |
+| `askiso cbpr-pack status` | Show present and missing CBPR+ Usage Guideline variants |
+| `askiso cbpr-pack verify` | Verify pinned local samples, schemas and external codes |
 | `askiso doctor` | Diagnostics: what was found, and where it looked |
 
 Every command takes `--json`. Exit status is 0 on success and 1 on failure, so
@@ -153,9 +156,9 @@ clearing system will accept it. Profiles are the rules on top:
 
 | Profile | What it checks |
 | :--- | :--- |
-| `base` | Rules that apply everywhere |
-| `cbpr-plus` | CBPR+ requirements in force today |
-| `cbpr-2026` | The CBPR+ structured address mandate (cutover deferred; see the [briefing](/deadline/)) |
+| `base` | Structural sanity checks that apply everywhere |
+| `cbpr-plus` | Live SR2025 message and Usage Identifier dispatch, BAH consistency, party/address rules, totals, UETRs, currencies and pacs.009 variants |
+| `cbpr-2026` | Readiness for the deferred structured-address requirement; no replacement date is assumed ([briefing](/deadline/)) |
 | `cbpr-2027` | Enhanced data: purpose codes, LEI, structured remittance |
 | `investigations` | The camt exceptions and investigations family |
 | `verification-of-payee` | VoP requirements |
@@ -167,6 +170,115 @@ askiso batch ./messages --profile all --format sarif > findings.sarif
 ```
 
 SARIF output uploads straight into GitHub code scanning.
+
+The embedded `cbpr-plus` rules cover the cross-message layer without a
+catalogue. Exact per-message restrictions remain defined by the applicable
+Swift MyStandards Usage Guidelines. A base ISO 20022 schema is not a CBPR+
+Usage Guideline.
+
+### Local CBPR+ packs
+
+The CBPR+ Usage Guideline workflow targets **Standards Release 2025
+(SR2025)**. The separate `cbpr-2026` profile is only a forward-looking
+structured-address readiness check and is not an SR2025 Usage Guideline pack.
+
+AskISO ships the engine, not Swift publications. An authorised user can point
+the CLI at a private folder of Usage Guideline PDFs:
+
+To obtain executable material, open **CBPR+ SR2025 (Combined)** in MyStandards,
+select all 31 Usage Guidelines, add them to **My Selection**, and request the
+**XML Schema Package** export. It contains one directory per selected Usage
+Guideline, including payload and BAH XSDs. A prepared export downloads
+immediately; a generated one appears under the **MyDownloads** icon at the top
+right. If multi-selection export is unavailable, use each Usage Guideline's
+**Documentation → Export** action with the XML Schema format. Keep specialised
+variant folders such as STP, COV, ADV, MLP and COL intact.
+
+```bash
+askiso ask "Where is UETR mandatory?" --cbpr-pack /secure/CBPRPlus-SR2025
+askiso lint payment.xml --cbpr-pack /secure/CBPRPlus-SR2025
+askiso batch ./messages --cbpr-pack /secure/CBPRPlus-SR2025 --format sarif
+
+askiso cbpr-pack import /secure/CBPRPlus-SR2025 \
+  --workspace ~/.askiso-cbpr/sr2025 \
+  --release SR2025 \
+  --external-codes ~/Downloads/2Q2026_externalcodesets_v3.json \
+  --generate-samples \
+  --acknowledge-entitlement
+askiso cbpr-pack status ~/.askiso-cbpr/sr2025
+askiso cbpr-pack verify /secure/CBPRPlus-SR2025 \
+  --workspace ~/.askiso-cbpr/sr2025
+askiso cbpr-pack conformance /secure/CBPRPlus-SR2025 \
+  --workspace ~/.askiso-cbpr/sr2025 --as-of 2026-09-05
+askiso lint payment.xml --cbpr-workspace ~/.askiso-cbpr/sr2025
+askiso batch ./messages --cbpr-workspace ~/.askiso-cbpr/sr2025 --schema
+askiso validate payment.xml pacs.008.001.08.xsd \
+  --external-codes ~/Downloads/2Q2026_externalcodesets_v3.json
+```
+
+The folder is compiled in memory with local `pdftotext`; it is not uploaded,
+copied, or cached. For repeated runs, `askiso cbpr-pack compile <folder>
+--output private.cbpr-pack.json` creates an owner-readable local pack. Pack
+files are gitignored by default and must not be redistributed unless the user
+has the necessary rights.
+
+Local-only refers to AskISO's processing. A folder stored in iCloud Drive or
+another synchronised filesystem may still be uploaded by that provider under
+the user's operating-system settings.
+
+`ask --cbpr-pack` performs local extractive search across PDF, MyStandards JSON,
+XML/XSD and XLSX files. Legacy `.xls` files are inventoried but must be saved as
+`.xlsx` to be searched. Results use relative local filenames and PDF pages where
+applicable. The command bypasses all model-provider code, including OpenAI and
+Ollama, even if provider credentials are configured.
+
+Every result includes its pack fingerprint and coverage. PDF-derived checks
+cover explicit hierarchy/cardinality tables and supported lexical types, while
+clearly warning that narrative, conditional, external-code-set, and
+diagram-only rules may require separate validation.
+
+The workspace path adds a content-minimised manifest, exact source hashes and a
+versioned sample suite without copying the user's inputs. Registration Authority
+XLSX, record/group JSON and v3 JSON Schema code-set publications are supported;
+their enumerated values are enforced when matching external simple types appear
+in a local XSD. Suite expectations follow an explicit filename convention:
+`.invalid.`, `-invalid` or `_invalid` expects rejection, while other paired XML
+samples expect acceptance. This is a reproducible local baseline, not a Swift
+Readiness Portal verdict.
+
+Use `lint --cbpr-workspace` or `batch --cbpr-workspace` to load that pinned
+baseline directly. Both commands verify its pack and external-code fingerprints;
+`batch --schema` applies the pinned external-code values to matching schema types.
+Workspace and ad-hoc pack flags are mutually exclusive.
+
+Private-source discovery supports PDF, Excel (`.xlsx`/`.xls`), MyStandards
+Usage Guideline JSON Schema, and XML. AskISO indexes the JSON export's release,
+message and Usage Guideline variant metadata without storing its schema body in
+the workspace. JSON Schema and XML Schema remain distinct: JSON exports count
+as guideline JSON, while only local XSD/XML schemas can be paired with XML
+samples. ZIP archives are intentionally ignored.
+
+With `--generate-samples`, each entitled executable XSD produces an owner-only
+schema-valid positive and a well-formed wrong-namespace negative inside the
+private workspace. The suite hash-pins them, records `origin: generated` and
+the negative mutation, and verifies them before use. These derived fixtures are
+AskISO validator self-tests—not Swift-authored samples or certification.
+
+Status reports overall guideline inventory separately from exact executable
+message/Business Service coverage. User-provided samples are paired by embedded
+`BizSvc` or filename variant markers; AskISO refuses ambiguous core/ADV/COV/STP
+matches instead of silently selecting the first schema.
+
+The strict conformance gate additionally checks private permissions,
+entitlement acknowledgement, 31/31 executable variants, positive and negative
+user cases, representative failure categories, the pinned external-code
+publication quarter, FINplus BAH/payload bindings, and optional content-free
+independent evidence. It never invokes an online validator itself.
+
+AskISO is an independent project and is not affiliated with, endorsed by, or
+certified by Swift. Swift and MyStandards are trademarks of S.W.I.F.T. SC. Do
+not publish a compiled pack unless the source licence permits it; this project
+documentation is not legal advice.
 
 ## In an editor
 

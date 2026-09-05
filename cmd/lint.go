@@ -10,18 +10,18 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sebastienrousseau/askiso/internal/converter"
 	"github.com/sebastienrousseau/askiso/internal/linter"
 	"github.com/sebastienrousseau/askiso/internal/rules"
-	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 	"github.com/spf13/cobra"
 )
 
 var (
-	lintProfile string
-	lintFormat  string
-	lintJSON    bool
-	lintStrict  bool
+	lintProfile       string
+	lintFormat        string
+	lintJSON          bool
+	lintStrict        bool
+	lintCBPRPack      string
+	lintCBPRWorkspace string
 )
 
 var lintCmd = &cobra.Command{
@@ -35,6 +35,11 @@ currency decimal precision, and RFC 4122 UUIDv4 UETR formats.`,
   askiso lint sample.xml --json`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		format, err := normalizeChoice("format", lintFormat, "text", "json", "sarif")
+		if err != nil {
+			return err
+		}
+		lintFormat = format
 		filePath := filepath.Clean(args[0])
 		data, err := os.ReadFile(filePath)
 		if err != nil {
@@ -48,8 +53,13 @@ currency decimal precision, and RFC 4122 UUIDv4 UETR formats.`,
 
 		// Scheme-level rules run on top of the business-rule checks.
 		var ruleRes *rules.Result
-		if lintProfile != "" {
-			ruleRes, err = runProfile(data, filePath, lintProfile)
+		if lintProfile != "" || lintCBPRPack != "" || lintCBPRWorkspace != "" {
+			profile, _, profileErr := resolveRuleProfileWithWorkspace(lintProfile, lintCBPRPack, lintCBPRWorkspace)
+			if profileErr != nil {
+				return profileErr
+			}
+			lintProfile = profile.Name
+			ruleRes, err = runResolvedProfile(data, filePath, profile)
 			if err != nil {
 				return err
 			}
@@ -139,20 +149,6 @@ currency decimal precision, and RFC 4122 UUIDv4 UETR formats.`,
 	},
 }
 
-// runProfile parses the message and applies a named rule profile.
-func runProfile(data []byte, filePath, profile string) (*rules.Result, error) {
-	p, err := rules.Get(profile)
-	if err != nil {
-		return nil, err
-	}
-	root, err := converter.Parse(data)
-	if err != nil {
-		return nil, fmt.Errorf("parsing %s: %w", filepath.Base(filePath), err)
-	}
-	msgID, _ := iso20022.MessageIDFromInstance(data)
-	return rules.Run(p, root, msgID, filePath), nil
-}
-
 // printProfileFindings renders scheme-level findings beneath the business rules.
 // printIssueDetail writes the parts of a finding that make it checkable and
 // fixable: where it is, what was expected, and what to do. The scheme rule
@@ -203,8 +199,20 @@ func printProfileFindings(res *rules.Result) {
 		return
 	}
 
+	description := res.Description
+	if description == "" {
+		description = rules.Describe(res.Profile)
+	}
 	fmt.Printf("  %s %s — %s\n\n",
-		badgeStyle.Render(" PROFILE "), titleStyle.Render(res.Profile), rules.Describe(res.Profile))
+		badgeStyle.Render(" PROFILE "), titleStyle.Render(res.Profile), description)
+	if res.Pack != nil {
+		fmt.Printf("  local pack %s: %d constraint(s), %d Usage Guideline(s), %s\n",
+			res.Pack.Fingerprint, res.Pack.Constraints, res.Pack.UsageGuidelines, res.Pack.Coverage)
+		for _, warning := range res.Pack.Warnings {
+			fmt.Printf("  %s %s\n", subtleStyle.Render("warning:"), warning)
+		}
+		fmt.Println()
+	}
 
 	if len(res.Findings) == 0 {
 		if res.Checked == 0 {
@@ -265,5 +273,9 @@ func init() {
 		"Scheme rule profile to apply ("+strings.Join(rules.Names(), ", ")+")")
 	lintCmd.Flags().BoolVar(&lintJSON, "json", false, "Output lint results as JSON")
 	lintCmd.Flags().BoolVar(&lintStrict, "strict", false, "Treat warnings as errors")
+	lintCmd.Flags().StringVar(&lintCBPRPack, "cbpr-pack", "",
+		"Local CBPR+ PDF directory or compiled .cbpr-pack.json (implies --profile cbpr-plus)")
+	lintCmd.Flags().StringVar(&lintCBPRWorkspace, "cbpr-workspace", "",
+		"Verified private CBPR+ workspace (implies --profile cbpr-plus)")
 	RootCmd.AddCommand(lintCmd)
 }

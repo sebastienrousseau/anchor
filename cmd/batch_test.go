@@ -9,7 +9,52 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/sebastienrousseau/askiso/internal/rules"
+	"github.com/sebastienrousseau/askiso/pkg/iso20022"
 )
+
+func TestBatchSARIFDiagnosticsCoversEveryEngineAndFallback(t *testing.T) {
+	report := &BatchReport{
+		Profile: "cbpr-2026",
+		Reports: []FileReport{
+			{
+				File: "checked.xml",
+				Lint: &iso20022.LintResult{Issues: []iso20022.LintIssue{
+					{Rule: "Error rule", Severity: iso20022.SeverityError, Message: "bad", Path: "/Document/A", Expected: "good", Remediation: "fix"},
+					{Rule: "Warning rule", Severity: iso20022.SeverityWarning, Message: "warn"},
+					{Rule: "Info rule", Severity: iso20022.SeverityInfo, Message: "note"},
+				}},
+				Schema: &iso20022.SchemaResult{Errors: []iso20022.SchemaError{{Rule: "sequence", Message: "wrong order", Path: "/Document/B"}}},
+				Profile: &rules.Result{Findings: []rules.Finding{{
+					RuleID: "CBPR-ADDR-001", Rule: "Structured address", Severity: rules.SeverityError,
+					Message: "unstructured", Path: "/Document/C",
+				}}},
+			},
+			{File: "unreadable.xml", Err: "permission denied\nmore detail", ErrorCount: 1},
+		},
+	}
+	diagnostics := batchSARIFDiagnostics(report)
+	if len(diagnostics) != 6 {
+		t.Fatalf("diagnostics = %d, want 6: %+v", len(diagnostics), diagnostics)
+	}
+	if diagnostics[1].Description != "Warning rule" || diagnostics[1].Help == "" {
+		t.Errorf("lint fallbacks were not populated: %+v", diagnostics[1])
+	}
+	if diagnostics[4].Help == "" {
+		t.Errorf("profile remediation fallback was not populated: %+v", diagnostics[4])
+	}
+	if diagnostics[5].Message != "permission denied" {
+		t.Errorf("input error should be reduced to one line: %+v", diagnostics[5])
+	}
+}
+
+func TestCheckOneReportsUnreadableInput(t *testing.T) {
+	rep := checkOne(filepath.Join(t.TempDir(), "missing.xml"), nil)
+	if rep.ErrorCount != 1 || rep.Err == "" || rep.Lint != nil {
+		t.Errorf("unexpected unreadable-input report: %+v", rep)
+	}
+}
 
 // batchFixture writes a directory of messages: two clean, two faulty.
 func batchFixture(t *testing.T) string {
@@ -121,6 +166,16 @@ func TestBatchSARIF(t *testing.T) {
 	}
 	if len(doc.Runs[0].Results) == 0 {
 		t.Error("expected address findings in the SARIF output")
+	}
+	seen := map[string]bool{}
+	for _, result := range doc.Runs[0].Results {
+		seen[result.RuleID] = true
+	}
+	if !seen["lint/iso-13616-iban-checksum"] {
+		t.Errorf("core linter findings are missing from SARIF: %v", seen)
+	}
+	if !seen["CBPR-ADDR-001"] {
+		t.Errorf("profile findings are missing from SARIF: %v", seen)
 	}
 }
 
@@ -236,5 +291,12 @@ func TestBatchSingleWorker(t *testing.T) {
 	dir := batchFixture(t)
 	if _, err := run(t, "batch", dir, "--workers", "1", "--format", "json"); err == nil {
 		t.Error("the fixture contains faults; expected a non-zero exit")
+	}
+}
+
+func TestRunBatchWithProfileEmptyInput(t *testing.T) {
+	report := runBatchWithProfile(nil, nil, nil)
+	if report.Files != 0 || len(report.Reports) != 0 || report.Failed != 0 {
+		t.Fatalf("empty batch report = %+v", report)
 	}
 }

@@ -5,11 +5,15 @@ package codes
 
 import (
 	"bufio"
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/sebastienrousseau/askiso/internal/atomicfile"
 )
 
 // An imported publication lives beside the catalogue it belongs to, in a form
@@ -36,26 +40,30 @@ func SaveExternalSets(root string, sets *ExternalSets) (string, error) {
 	}
 
 	path := ExternalCodesPath(root)
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return "", fmt.Errorf("creating %s: %w", filepath.Dir(path), err)
 	}
-
-	f, err := os.Create(path)
-	if err != nil {
-		return "", fmt.Errorf("writing %s: %w", path, err)
+	if err := os.Chmod(filepath.Dir(path), 0o700); err != nil {
+		return "", fmt.Errorf("protecting %s: %w", filepath.Dir(path), err)
 	}
-	defer func() { _ = f.Close() }()
+	if info, err := os.Lstat(path); err == nil && info.Mode()&os.ModeSymlink != 0 {
+		return "", fmt.Errorf("refusing to overwrite symlinked external code store: %s", path)
+	} else if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return "", fmt.Errorf("checking %s: %w", path, err)
+	}
 
-	w := bufio.NewWriter(f)
-	_, _ = fmt.Fprintf(w, "# ISO 20022 external code sets, imported by AskISO from %s\n",
+	var w bytes.Buffer
+	_, _ = fmt.Fprintf(&w, "# ISO 20022 external code sets, imported by AskISO from %s\n",
 		filepath.Base(sets.Source))
-	_, _ = fmt.Fprintln(w, "# set\tcode\tname\tdefinition")
+	_, _ = fmt.Fprintf(&w, "# format=%s publication=%s sha256=%s\n",
+		clean(sets.Format), clean(sets.Publication), clean(sets.SHA256))
+	_, _ = fmt.Fprintln(&w, "# set\tcode\tname\tdefinition")
 
 	for _, c := range sets.Codes {
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
+		_, _ = fmt.Fprintf(&w, "%s\t%s\t%s\t%s\n",
 			clean(c.Set), clean(c.Code), clean(c.Name), clean(c.Definition))
 	}
-	if err := w.Flush(); err != nil {
+	if err := atomicfile.Write(path, w.Bytes(), 0o600); err != nil {
 		return "", fmt.Errorf("writing %s: %w", path, err)
 	}
 	return path, nil
@@ -92,6 +100,23 @@ func LoadExternalSets(root string) (*ExternalSets, error) {
 	sc.Buffer(make([]byte, 0, 64<<10), 1<<20)
 	for sc.Scan() {
 		line := sc.Text()
+		if strings.HasPrefix(line, "# format=") {
+			for _, field := range strings.Fields(strings.TrimPrefix(line, "# ")) {
+				key, value, ok := strings.Cut(field, "=")
+				if !ok {
+					continue
+				}
+				switch key {
+				case "format":
+					out.Format = value
+				case "publication":
+					out.Publication = value
+				case "sha256":
+					out.SHA256 = value
+				}
+			}
+			continue
+		}
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
@@ -135,7 +160,7 @@ func ExternalSetsFor(root string) *ExternalSets {
 
 	key := filepath.Clean(root)
 	if cached, ok := externalCache[key]; ok {
-		return cached
+		return cloneExternalSets(cached)
 	}
 	loaded, err := LoadExternalSets(root)
 	if err != nil {
@@ -143,7 +168,7 @@ func ExternalSetsFor(root string) *ExternalSets {
 		loaded = nil
 	}
 	externalCache[key] = loaded
-	return loaded
+	return cloneExternalSets(loaded)
 }
 
 // ForgetExternalSets drops the cached publication for a root, so a fresh import

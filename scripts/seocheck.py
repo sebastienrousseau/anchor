@@ -21,6 +21,7 @@ import argparse
 import html
 import re
 import sys
+import xml.etree.ElementTree as ET
 from collections import Counter
 from pathlib import Path
 
@@ -172,6 +173,24 @@ def main() -> int:
         print("\nduplicate titles:")
         for t, n in sorted(duplicates.items(), key=lambda kv: -kv[1]):
             print(f"  {n} pages share {t!r}")
+
+    news_path = root / "news-sitemap.xml"
+    try:
+        news_root = ET.parse(news_path).getroot()
+        ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9",
+              "n": "http://www.google.com/schemas/sitemap-news/0.9"}
+        news_urls = news_root.findall("s:url", ns)
+        if not news_urls:
+            raise ValueError("contains no articles")
+        for item in news_urls:
+            loc = item.findtext("s:loc", default="", namespaces=ns)
+            date = item.findtext("n:news/n:publication_date", default="", namespaces=ns)
+            title = item.findtext("n:news/n:title", default="", namespaces=ns)
+            if "/news/" not in loc or not date or not title:
+                raise ValueError(f"invalid news entry: loc={loc!r}, date={date!r}, title={title!r}")
+    except (OSError, ET.ParseError, ValueError) as exc:
+        failures += 1
+        print(f"\nnews sitemap: {exc}")
 
     checked = len(editorial) + len(generated)
     if failures:

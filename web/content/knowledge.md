@@ -2,7 +2,7 @@
 name: "AskISO"
 short_name: "AskISO"
 title: "ISO 20022 knowledge centre"
-description: "Everything AskISO publishes about ISO 20022 in one place: the message reference, the November 2026 rules, the documentation and the evidence."
+description: "Everything AskISO publishes about ISO 20022 in one place: the CBPR+ SR2025 message guidance, 2026 readiness rules, documentation and evidence."
 keywords: "ISO 20022 knowledge centre, ISO 20022 learning, pacs.008 explained, CBPR+ guidance, ISO 20022 documentation, ISO 20022 reference"
 author: "Sebastien Rousseau"
 date: "2026-08-26"

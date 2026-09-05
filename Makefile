@@ -14,19 +14,14 @@ LSP_PATH = ./cmd/askiso-lsp
 LDFLAGS = -s -w -X github.com/sebastienrousseau/askiso/internal/tui.Version=$(VERSION)
 SERVER_LDFLAGS = -s -w -X main.version=$(VERSION)
 WASM_LDFLAGS = -s -w -X main.buildVersion=$(VERSION)
-# 95.5, not 95 and not 98. The measurement is taken on a runner with no
-# catalogue installed, which is the honest environment but also the one where
-# the terminal UI, the browser opener and the AI client cannot run at all.
-#
-# What is left uncovered is 427 statements in 377 blocks across 63 files, and
-# 338 of those blocks are a single `if err != nil { return err }`. Reaching 98%
-# would mean contriving roughly 239 individual failure injections to assert
-# that errors propagate — tests that make the suite slower and more brittle
-# without making the tool more correct. The floor is set where it protects
-# against regression rather than where it forces that work.
-COVERAGE_FLOOR = 95.5
+# Whole-repository statement coverage, measured without requiring a private
+# catalogue. Keep this aligned with CI so local and hosted gates mean the same
+# thing; raise it only alongside executable tests that protect useful behavior.
+COVERAGE_FLOOR = 98.0
+GOVULNCHECK_VERSION ?= v1.7.0
+GOSEC_VERSION ?= v2.22.8
 
-.PHONY: all build install test race cover conformance differential fuzz ci fmt vet lint no-binaries readability a11y seo vuln clean run catalog-info web web-test web-interact a11y-axe banner-contrast reflow terminal-swap sitemap-check focus-order web-console web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
+.PHONY: all build install test race property checkptr asan msan reliability cover conformance cbpr-local-conformance cbpr-strict-conformance differential fuzz ci fmt vet lint no-binaries readability a11y seo vuln clean run catalog-info web web-test web-interact a11y-axe banner-contrast reflow terminal-swap sitemap-check focus-order web-console web-serve wasm sessions sessions-record links mcp lsp mcp-check lsp-check servers
 
 all: build
 
@@ -77,7 +72,27 @@ test:
 	go test ./...
 
 race:
-	go test -race ./...
+	go test -race -timeout 20m ./...
+
+property:
+	go test ./internal/lsp -run '^TestProtocolStateMachineMatchesOracle$$' -rapid.checks=10000
+	go test ./internal/mcp -run '^TestProtocolStateMachineMatchesOracle$$' -rapid.checks=10000
+	go test ./internal/cbprworkspace -run '^TestGenerationStateMachineMatchesOracle$$' -rapid.checks=250
+
+checkptr:
+	go test -gcflags=all=-d=checkptr=2 -timeout 20m ./...
+
+# Go's sanitizers are mutually exclusive and ASan/MSan are Linux-only. Keep
+# these separate from race so a green target proves which runtime ran.
+asan:
+	@test "$$(go env GOOS)" = linux || { echo "asan requires Linux"; exit 2; }
+	CGO_ENABLED=1 go test -asan -timeout 20m ./...
+
+msan:
+	@test "$$(go env GOOS)" = linux || { echo "msan requires Linux with Clang"; exit 2; }
+	CGO_ENABLED=1 CC=clang go test -msan -timeout 20m ./...
+
+reliability: race property checkptr
 
 # -coverpkg=./... credits code executed by any package's tests, not just its
 # own, which is the honest measure for a project where the CLI drives the
@@ -158,15 +173,24 @@ differential:
 	ASKISO_DIFF_LIMIT=0 go test ./internal/validator/ -run Differential -v -timeout 30m
 
 # The parsers all take input nobody vetted: a schema the user downloaded, a
-# message that arrived over a wire, an MT file from another bank's system. These
-# targets assert the one property that matters -- they always return -- and have
-# already found one off-by-one slice that would have crashed the CLI.
+# message that arrived over a wire, an MT file from another bank's system. The
+# structured validator target mutates semantic fields and checks an exact
+# validity oracle plus tree/stream equivalence; converter fuzzing checks stable
+# bidirectional conversion, while the malformed-input targets harden framing.
 FUZZTIME ?= 60s
 fuzz:
 	go test ./internal/xsd/       -run '^$$' -fuzz FuzzParse     -fuzztime $(FUZZTIME)
+	go test ./internal/xsd/       -run '^$$' -fuzz FuzzStructuredSchema -fuzztime $(FUZZTIME)
 	go test ./internal/validator/ -run '^$$' -fuzz FuzzValidate  -fuzztime $(FUZZTIME)
+	go test ./internal/validator/ -run '^$$' -fuzz FuzzStructuredValidation -fuzztime $(FUZZTIME)
 	go test ./internal/swift/     -run '^$$' -fuzz FuzzParse     -fuzztime $(FUZZTIME)
+	go test ./internal/swift/     -run '^$$' -fuzz FuzzStructuredMT103 -fuzztime $(FUZZTIME)
 	go test ./internal/converter/ -run '^$$' -fuzz FuzzRoundTrip -fuzztime $(FUZZTIME)
+	go test ./internal/converter/ -run '^$$' -fuzz FuzzStructuredRoundTrip -fuzztime $(FUZZTIME)
+	go test ./internal/lsp/       -run '^$$' -fuzz FuzzConnFrameRoundTrip -fuzztime $(FUZZTIME)
+	go test ./internal/rules/     -run '^$$' -fuzz FuzzCBPRPackMergeAlgebra -fuzztime $(FUZZTIME)
+	go test ./internal/codes/     -run '^$$' -fuzz FuzzExternalJSONSemanticShapes -fuzztime $(FUZZTIME)
+	go test ./internal/cbprworkspace/ -run '^$$' -fuzz FuzzWorkspaceMetadataRoundTrip -fuzztime $(FUZZTIME)
 
 conformance:
 	@command -v xmllint >/dev/null || { echo "xmllint not found - install libxml2"; exit 1; }
@@ -177,6 +201,29 @@ conformance:
 	ASKISO_CATALOG="$$askiso_catalog" go test ./internal/swift/ -run 'ConvertedMessagesValidate' -v; \
 	ASKISO_CATALOG="$$askiso_catalog" ASKISO_GEN_LIMIT=0 go test ./internal/schemagen/ -run 'Installed|LintClean' -v -timeout 20m; \
 	ASKISO_CATALOG="$$askiso_catalog" go test ./internal/validator/ -run 'StreamingAgrees' -v
+
+# Run against an operator-owned MyStandards export without retaining source
+# artefacts in the repository. The generated workspace is deliberately placed
+# in a temporary directory and can be inspected or removed by the operator.
+CBPR_SOURCE ?=
+CBPR_EXTERNAL_CODES ?=
+CBPR_EVIDENCE ?=
+cbpr-local-conformance:
+	@test -n "$(CBPR_SOURCE)" || { echo "set CBPR_SOURCE to the private export directory"; exit 1; }
+	@ws=$$(mktemp -d "$${TMPDIR:-/tmp}/askiso-cbpr-local.XXXXXX"); \
+	trap 'echo "workspace: $$ws"' EXIT; \
+	if test -n "$(CBPR_EXTERNAL_CODES)"; then \
+	 go run ./cmd/askiso cbpr-pack import "$(CBPR_SOURCE)" --workspace "$$ws" --external-codes "$(CBPR_EXTERNAL_CODES)" --acknowledge-entitlement --generate-samples >/dev/null; \
+	else \
+	 go run ./cmd/askiso cbpr-pack import "$(CBPR_SOURCE)" --workspace "$$ws" --acknowledge-entitlement --generate-samples >/dev/null; \
+	fi; \
+	go run ./cmd/askiso cbpr-pack verify "$(CBPR_SOURCE)" --workspace "$$ws"
+
+cbpr-strict-conformance:
+	@test -n "$(CBPR_SOURCE)" || { echo "set CBPR_SOURCE to the private export directory"; exit 1; }
+	@test -n "$(CBPR_WORKSPACE)" || { echo "set CBPR_WORKSPACE to the imported private workspace"; exit 1; }
+	@test -n "$(CBPR_EVIDENCE)" || { echo "set CBPR_EVIDENCE to the content-free external evidence JSON"; exit 1; }
+	go run ./cmd/askiso cbpr-pack conformance "$(CBPR_SOURCE)" --workspace "$(CBPR_WORKSPACE)" --evidence "$(CBPR_EVIDENCE)" --require-user-samples --require-external-evidence
 
 # The terminal sessions on the website are executable. Every ```console block
 # whose commands are `askiso` is replayed against testdata/sessions and its
@@ -286,6 +333,7 @@ web:
 	@# A news piece has to say what it is, who wrote it and what it reports on,
 	@# or an assistant answering the question it answers has nothing to cite.
 	@python3 scripts/article-schema.py $(WEB_OUT)
+	@python3 scripts/gen-news-sitemap.py web/content/news $(WEB_OUT)/news-sitemap.xml
 	@# The social card. og:image pointed at images/screenshot.png, which was
 	@# never built, so every share of every page showed a broken image.
 	@mkdir -p $(WEB_OUT)/images/banners
@@ -501,7 +549,7 @@ lint:
 	golangci-lint run --max-issues-per-linter 0 --max-same-issues 0
 
 vuln:
-	@command -v govulncheck >/dev/null || go install golang.org/x/vuln/cmd/govulncheck@latest
+	@command -v govulncheck >/dev/null || go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
 	govulncheck ./...
 
 # The full gate CI runs, minus the catalogue-dependent conformance suite.

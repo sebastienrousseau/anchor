@@ -19,10 +19,12 @@ inputs:
     default: '.'
   profile:
     description: >-
-      Scheme rule profile to apply. cbpr-2026 checks the CBPR+ structured-address
-      requirement that takes effect on 14 November 2026. Empty applies none.
+      Scheme rule profile to apply. cbpr-plus checks the live SR2025 message
+      definitions, Usage Identifiers, Business Application Header, formal
+      cross-message rules and message variants. Use cbpr-2026 explicitly for
+      deferred structured-address readiness. Empty applies none.
     required: false
-    default: 'cbpr-2026'
+    default: 'cbpr-plus'
   version:
     description: 'AskISO version to install, or "latest".'
     required: false
@@ -92,10 +94,7 @@ runs:
         askiso batch "${args[@]}"
         status=$?
 
-        failed=0
-        if [ "$status" -ne 0 ]; then
-          failed=1
-        fi
+        failed="$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1], encoding="utf-8")); print(len({r.get("locations", [{}])[0].get("physicalLocation", {}).get("artifactLocation", {}).get("uri", "") for run in d.get("runs", []) for r in run.get("results", []) if r.get("level") == "error"}))' "$ASKISO_SARIF")"
         echo "failed=$failed" >> "$GITHUB_OUTPUT"
 
         if [ "$sarif_status" -ne 0 ] && [ ! -s "$ASKISO_SARIF" ]; then

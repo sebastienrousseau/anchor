@@ -30,8 +30,12 @@ documents, accepting the same 1,035 and rejecting the same 3,711.
 **Linting.** Checks that need no schema at all: IBAN checksums, BIC structure, currency precision, UETR format and date order. Every finding names the rule,
 the path, what was expected and what to change.
 
-**Scheme rules.** Profiles that sit above the schema, including the CBPR+
-requirements and the November 2026 structured address mandate.
+**Scheme rules.** Focused profiles that sit above the schema: structural checks,
+the live CBPR+ SR2025 message set and cross-message rules, deferred
+structured-address readiness, enhanced-data expectations, investigations and
+verification of payee. Exact per-message cardinalities and patterns still come
+from the operator's Usage Guideline schema rather than being guessed from a base
+ISO 20022 schema.
 
 **Conversion.** Seven SWIFT MT types convert to ISO 20022 and back, each with a
 fidelity report describing what was mapped, derived, shortened or lost.

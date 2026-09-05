@@ -61,7 +61,7 @@ No. There are three, and they are separate:
 | November 2027 | Enhanced data requirements take effect |
 | November 2028 | The SWIFT MT retirement date for cross-border payments |
 
-The [November 2026 page](../deadline/) covers the address rules in detail, with
+The [November 2026 page](/deadline/) covers the address rules in detail, with
 the rule identifiers AskISO reports so you can trace a finding to the rule that
 produced it.
 

@@ -46,6 +46,10 @@ func generateUUIDv4() string {
 
 // GenerateLifecycle builds a complete connected 4-stage transaction chain.
 func GenerateLifecycle(opt generator.Options) (*LifecycleChain, error) {
+	if !generator.ValidPreset(opt.Preset) {
+		return nil, fmt.Errorf("unknown preset %q (available: %s)",
+			opt.Preset, strings.Join(generator.Presets(), ", "))
+	}
 	// Fill blanks from the same defaults the generator uses, so the chain's
 	// metadata always describes the payloads it carries. Without this a caller
 	// passing bare options gets empty party names beside XML that has them.
@@ -82,6 +86,10 @@ func GenerateLifecycle(opt generator.Options) (*LifecycleChain, error) {
 	if opt.Currency == "" {
 		opt.Currency = "EUR"
 	}
+	if err := generator.ValidateOptions(opt); err != nil {
+		return nil, fmt.Errorf("invalid lifecycle option: %w", err)
+	}
+	rawOpt := opt
 
 	chain := &LifecycleChain{
 		UETR:         opt.UETR,
@@ -95,6 +103,19 @@ func GenerateLifecycle(opt generator.Options) (*LifecycleChain, error) {
 		Preset:       opt.Preset,
 		Steps:        make([]Step, 4),
 	}
+
+	// Keep the public chain metadata as the caller supplied it, but encode every
+	// value before placing it in a hand-written XML template.
+	opt.Amount = generator.EscapeText(opt.Amount)
+	opt.Currency = generator.EscapeText(opt.Currency)
+	opt.Debtor = generator.EscapeText(opt.Debtor)
+	opt.Creditor = generator.EscapeText(opt.Creditor)
+	opt.DebtorIBAN = generator.EscapeText(opt.DebtorIBAN)
+	opt.CreditorIBAN = generator.EscapeText(opt.CreditorIBAN)
+	opt.DebtorBIC = generator.EscapeText(opt.DebtorBIC)
+	opt.CreditorBIC = generator.EscapeText(opt.CreditorBIC)
+	opt.EndToEndID = generator.EscapeText(opt.EndToEndID)
+	opt.UETR = generator.EscapeText(opt.UETR)
 
 	now := time.Now().UTC().Format("2006-01-02T15:04:05Z")
 	today := time.Now().UTC().Format("2006-01-02")
@@ -123,12 +144,12 @@ func GenerateLifecycle(opt generator.Options) (*LifecycleChain, error) {
       </Dbtr>
       <DbtrAcct>
         <Id>
-          <IBAN>%s</IBAN>
+%s
         </Id>
       </DbtrAcct>
       <DbtrAgt>
         <FinInstnId>
-          <BICFI>%s</BICFI>
+%s
         </FinInstnId>
       </DbtrAgt>
       <CdtTrfTxInf>
@@ -141,7 +162,7 @@ func GenerateLifecycle(opt generator.Options) (*LifecycleChain, error) {
         </Amt>
         <CdtrAgt>
           <FinInstnId>
-            <BICFI>%s</BICFI>
+%s
           </FinInstnId>
         </CdtrAgt>
         <Cdtr>
@@ -149,13 +170,19 @@ func GenerateLifecycle(opt generator.Options) (*LifecycleChain, error) {
         </Cdtr>
         <CdtrAcct>
           <Id>
-            <IBAN>%s</IBAN>
+%s
           </Id>
         </CdtrAcct>
       </CdtTrfTxInf>
     </PmtInf>
   </CstmrCdtTrfInitn>
-</Document>`, baseTime, now, opt.Debtor, opt.EndToEndID, today, opt.Debtor, opt.DebtorIBAN, opt.DebtorBIC, opt.EndToEndID, opt.UETR, opt.Currency, opt.Amount, opt.CreditorBIC, opt.Creditor, opt.CreditorIBAN)
+</Document>`, baseTime, now, opt.Debtor, opt.EndToEndID, today, opt.Debtor,
+		generator.AccountBlock(rawOpt, rawOpt.DebtorIBAN, rawOpt.DebtorAccountID, "          "),
+		generator.AgentBlock(rawOpt, rawOpt.DebtorBIC, rawOpt.DebtorMemberID, "          "),
+		opt.EndToEndID, opt.UETR, opt.Currency, opt.Amount,
+		generator.AgentBlock(rawOpt, rawOpt.CreditorBIC, rawOpt.CreditorMemberID, "            "),
+		opt.Creditor,
+		generator.AccountBlock(rawOpt, rawOpt.CreditorIBAN, rawOpt.CreditorAccountID, "            "))
 
 	chain.Steps[0] = Step{
 		Index:       1,
@@ -170,6 +197,8 @@ func GenerateLifecycle(opt generator.Options) (*LifecycleChain, error) {
 	clearingSys := "TARGET2"
 	if strings.ToLower(opt.Preset) == "fednow" {
 		clearingSys = "FDNW"
+	} else if strings.ToLower(opt.Preset) == "fedwire" {
+		clearingSys = "FEDWIRE"
 	} else if strings.ToLower(opt.Preset) == "chaps" {
 		clearingSys = "CHAPS"
 	} else if strings.ToLower(opt.Preset) == "sepa" {
@@ -203,17 +232,17 @@ func GenerateLifecycle(opt generator.Options) (*LifecycleChain, error) {
       </Dbtr>
       <DbtrAcct>
         <Id>
-          <IBAN>%s</IBAN>
+%s
         </Id>
       </DbtrAcct>
       <DbtrAgt>
         <FinInstnId>
-          <BICFI>%s</BICFI>
+%s
         </FinInstnId>
       </DbtrAgt>
       <CdtrAgt>
         <FinInstnId>
-          <BICFI>%s</BICFI>
+%s
         </FinInstnId>
       </CdtrAgt>
       <Cdtr>
@@ -221,12 +250,17 @@ func GenerateLifecycle(opt generator.Options) (*LifecycleChain, error) {
       </Cdtr>
       <CdtrAcct>
         <Id>
-          <IBAN>%s</IBAN>
+%s
         </Id>
       </CdtrAcct>
     </CdtTrfTxInf>
   </FIToFICstmrCdtTrf>
-</Document>`, baseTime+1, now, clearingSys, opt.EndToEndID, opt.UETR, opt.Currency, opt.Amount, today, opt.Debtor, opt.DebtorIBAN, opt.DebtorBIC, opt.CreditorBIC, opt.Creditor, opt.CreditorIBAN)
+</Document>`, baseTime+1, now, clearingSys, opt.EndToEndID, opt.UETR, opt.Currency, opt.Amount, today, opt.Debtor,
+		generator.AccountBlock(rawOpt, rawOpt.DebtorIBAN, rawOpt.DebtorAccountID, "          "),
+		generator.AgentBlock(rawOpt, rawOpt.DebtorBIC, rawOpt.DebtorMemberID, "          "),
+		generator.AgentBlock(rawOpt, rawOpt.CreditorBIC, rawOpt.CreditorMemberID, "          "),
+		opt.Creditor,
+		generator.AccountBlock(rawOpt, rawOpt.CreditorIBAN, rawOpt.CreditorAccountID, "          "))
 
 	chain.Steps[1] = Step{
 		Index:       2,
@@ -286,7 +320,7 @@ func GenerateLifecycle(opt generator.Options) (*LifecycleChain, error) {
       <CreDtTm>%s</CreDtTm>
       <Acct>
         <Id>
-          <IBAN>%s</IBAN>
+%s
         </Id>
       </Acct>
       <Bal>
@@ -324,7 +358,9 @@ func GenerateLifecycle(opt generator.Options) (*LifecycleChain, error) {
       </Ntry>
     </Stmt>
   </BkToCstmrStmt>
-</Document>`, baseTime+3, now, today, now, opt.CreditorIBAN, opt.Currency, opt.Amount, today, opt.Currency, opt.Amount, opt.EndToEndID, opt.UETR, opt.Currency, opt.Amount)
+</Document>`, baseTime+3, now, today, now,
+		generator.AccountBlock(rawOpt, rawOpt.CreditorIBAN, rawOpt.CreditorAccountID, "          "),
+		opt.Currency, opt.Amount, today, opt.Currency, opt.Amount, opt.EndToEndID, opt.UETR, opt.Currency, opt.Amount)
 
 	chain.Steps[3] = Step{
 		Index:       4,

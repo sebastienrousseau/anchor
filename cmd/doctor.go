@@ -21,8 +21,9 @@ var doctorCmd = &cobra.Command{
 	Short: "Run system diagnostics, catalog health checks, and toolchain verification",
 	Long: `Doctor performs a comprehensive diagnostic audit of AskISO including 
 catalog index integrity, binary cache status, system toolchain dependencies 
-(xmllint, clipboard), and local AI LLM connectivity.`,
+	(xmllint, clipboard), and local AI LLM connectivity.`,
 	Example: `  askiso doctor`,
+	Args:    cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Printf("\n%s AskISO Environment & System Diagnostics\n\n", headStyle.Render(" ASKISO DOCTOR "))
 
@@ -105,7 +106,7 @@ func checkOllamaConnectivity(host string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 800*time.Millisecond)
 	defer cancel()
 
-	url := fmt.Sprintf("%s/api/tags", host)
+	url := fmt.Sprintf("%s/api/tags", strings.TrimRight(host, "/"))
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		fmt.Printf("  ℹ️  [Ollama Assistant] Local Ollama not reachable at %s (offline RAG active)\n", host)
@@ -114,9 +115,11 @@ func checkOllamaConnectivity(host string) {
 
 	client := &http.Client{Timeout: 800 * time.Millisecond}
 	resp, err := client.Do(req)
+	if err == nil {
+		defer func() { _ = resp.Body.Close() }()
+	}
 	if err == nil && resp.StatusCode == http.StatusOK {
 		fmt.Printf("  ✅ [Ollama Assistant] Connected to local Ollama instance at %s\n", host)
-		_ = resp.Body.Close()
 	} else {
 		fmt.Printf("  ℹ️  [Ollama Assistant] Local Ollama not running at %s (offline RAG active)\n", host)
 	}

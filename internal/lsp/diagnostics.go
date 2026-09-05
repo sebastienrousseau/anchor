@@ -178,10 +178,13 @@ func schemaMessage(e validator.Error) string {
 // CBPR+ structured address rules surface, in the editor, before anything is
 // sent anywhere.
 func (s *Server) profileDiagnostics(doc *Document) []Diagnostic {
-	if s.Profile == "" {
+	s.mu.RLock()
+	profile := s.Profile
+	s.mu.RUnlock()
+	if profile == "" {
 		return nil
 	}
-	res, err := iso20022.CheckProfile([]byte(doc.Text), s.Profile, "")
+	res, err := iso20022.CheckProfile([]byte(doc.Text), profile, "")
 	if err != nil {
 		return nil
 	}
@@ -216,7 +219,7 @@ func (s *Server) profileDiagnostics(doc *Document) []Diagnostic {
 			Range:    rng,
 			Severity: severity,
 			Code:     f.RuleID,
-			Source:   "askiso/" + s.Profile,
+			Source:   "askiso/" + profile,
 			Message:  message,
 		})
 	}

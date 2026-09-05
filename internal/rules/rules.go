@@ -64,22 +64,54 @@ type Context struct {
 	Profile string
 }
 
+// Walk returns every element in document order, paired with its absolute path.
+// Unlike FindAll it is useful for rules that apply to a class of values rather
+// than to one element name (for example every amount carrying a Ccy attribute).
+func Walk(root *converter.Node) []Located {
+	if root == nil {
+		return nil
+	}
+	var out []Located
+	var walk func(n *converter.Node, path string)
+	walk = func(n *converter.Node, path string) {
+		out = append(out, Located{Node: n, Path: path})
+		counts := map[string]int{}
+		for _, c := range n.Children {
+			counts[c.Name]++
+		}
+		seen := map[string]int{}
+		for _, c := range n.Children {
+			childPath := path + "/" + c.Name
+			if counts[c.Name] > 1 {
+				seen[c.Name]++
+				childPath = fmt.Sprintf("%s/%s[%d]", path, c.Name, seen[c.Name])
+			}
+			walk(c, childPath)
+		}
+	}
+	walk(root, "/"+root.Name)
+	return out
+}
+
 // Profile is a named set of rules.
 type Profile struct {
 	Name        string
 	Description string
 	Rules       []Rule
+	Pack        *CBPRPackInfo
 }
 
 // Result is the outcome of running a profile.
 type Result struct {
-	Profile  string    `json:"profile"`
-	File     string    `json:"file"`
-	Findings []Finding `json:"findings"`
-	Errors   int       `json:"error_count"`
-	Warnings int       `json:"warning_count"`
-	Checked  int       `json:"rules_checked"`
-	Skipped  int       `json:"rules_skipped"`
+	Profile     string        `json:"profile"`
+	File        string        `json:"file"`
+	Description string        `json:"description,omitempty"`
+	Pack        *CBPRPackInfo `json:"cbpr_pack,omitempty"`
+	Findings    []Finding     `json:"findings"`
+	Errors      int           `json:"error_count"`
+	Warnings    int           `json:"warning_count"`
+	Checked     int           `json:"rules_checked"`
+	Skipped     int           `json:"rules_skipped"`
 }
 
 // Valid reports whether the message passed with no errors.
@@ -87,7 +119,7 @@ func (r *Result) Valid() bool { return r.Errors == 0 }
 
 // Run applies a profile to a parsed message.
 func Run(p Profile, root *converter.Node, msgID, filename string) *Result {
-	res := &Result{Profile: p.Name, File: filename, Findings: []Finding{}}
+	res := &Result{Profile: p.Name, File: filename, Description: p.Description, Pack: p.Pack, Findings: []Finding{}}
 	ctx := &Context{Root: root, MsgID: msgID, Profile: p.Name}
 
 	for _, rule := range p.Rules {
@@ -98,8 +130,12 @@ func Run(p Profile, root *converter.Node, msgID, filename string) *Result {
 		res.Checked++
 
 		for _, f := range rule.Check(ctx) {
-			f.RuleID = rule.ID
-			f.Rule = rule.Name
+			if f.RuleID == "" {
+				f.RuleID = rule.ID
+			}
+			if f.Rule == "" {
+				f.Rule = rule.Name
+			}
 			if f.Severity == "" {
 				f.Severity = rule.Severity
 			}
@@ -140,7 +176,6 @@ type Located struct {
 func FindAll(root *converter.Node, name string) []Located {
 	var out []Located
 	var walk func(n *converter.Node, path string)
-
 	walk = func(n *converter.Node, path string) {
 		if n.Name == name {
 			out = append(out, Located{Node: n, Path: path})
@@ -159,8 +194,9 @@ func FindAll(root *converter.Node, name string) []Located {
 			walk(c, childPath)
 		}
 	}
-
-	walk(root, "/"+root.Name)
+	if root != nil {
+		walk(root, "/"+root.Name)
+	}
 	return out
 }
 

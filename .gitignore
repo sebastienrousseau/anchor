@@ -24,6 +24,10 @@ web/public/
 # Local catalogue cache (catalogue lives outside the repo)
 .askiso.cache
 
+# Local licensed CBPR+ source/compiled packs. These must not be redistributed.
+.askiso-cbpr/
+*.cbpr-pack.json
+
 # macOS
 .DS_Store
 

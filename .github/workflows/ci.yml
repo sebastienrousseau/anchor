@@ -24,7 +24,7 @@ env:
   # GOTOOLCHAIN is local, so a bare '1.26' resolves to whatever patch the runner
   # image happens to ship and cannot satisfy a go.mod requiring a newer one.
   GO_VERSION: '1.26.6'
-  COVERAGE_FLOOR: '95.5'
+  COVERAGE_FLOOR: '98.0'
 
 jobs:
   lint:
@@ -84,9 +84,14 @@ jobs:
           cache: true
 
       - name: Test with race detector
-        # Explicit shell: this step runs on the Windows runner too, where the
-        # default is PowerShell and the command substitution below would not
-        # parse.
+        run: go test -race ./...
+
+      - name: Measure coverage
+        if: matrix.os == 'ubuntu-latest' && matrix.go == '1.26.6'
+        # Race detection and whole-repository instrumentation are deliberately
+        # separate. Combining them makes each test binary instrument every
+        # package under the race detector, which can exceed Go's test timeout
+        # and leave a misleadingly incomplete coverage profile.
         shell: bash
         # The examples are excluded from the coverage denominator, and only
         # from it: they are demonstration mains proven by examples_test
@@ -96,7 +101,7 @@ jobs:
         # local build had already satisfied.
         run: |
           coverpkg="$(go list ./... | grep -v '/examples' | paste -sd, -)"
-          go test -race -coverpkg="$coverpkg" -coverprofile=coverage.out -covermode=atomic ./...
+          go test -coverpkg="$coverpkg" -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Build
         run: |
@@ -189,6 +194,57 @@ jobs:
           awk -v p="$pct" -v f="$COVERAGE_FLOOR" \
             'BEGIN { if (p+0 < f+0) { print "::error::coverage " p "% is below floor " f "%"; exit 1 } }'
 
+  reliability:
+    name: Fuzz, model and sanitizer verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Race-hostile concurrency repetitions
+        run: |
+          go test -race -count=25 -timeout=10m \
+            ./internal/atomicfile ./internal/lsp ./internal/mcp ./internal/catalog ./internal/codes ./internal/mock ./internal/rules
+          go test -race -count=10 -timeout=10m ./internal/cbprworkspace \
+            -run '^Test(WorkspaceRefreshIsOneSnapshotForConcurrentReaders|WorkspacePublicationAcrossProcesses|FailedActivationRetainsPreviousGeneration|GenerationInventoryAndRollback|PruneGenerationsRequiresConfirmationAndRetainsActive|GenerationInventoryIgnoresCrashStagingDirectory)$'
+
+      - name: State-machine model exploration
+        run: |
+          go test ./internal/lsp -run '^TestProtocolStateMachineMatchesOracle$' -rapid.checks=10000
+          go test ./internal/mcp -run '^TestProtocolStateMachineMatchesOracle$' -rapid.checks=10000
+          go test ./internal/cbprworkspace -run '^TestGenerationStateMachineMatchesOracle$' -rapid.checks=250
+
+      - name: Native fuzz smoke campaign
+        run: |
+          go test ./internal/xsd       -run '^$' -fuzz '^FuzzParse$' -fuzztime 15s -parallel 4
+          go test ./internal/xsd       -run '^$' -fuzz '^FuzzStructuredSchema$' -fuzztime 15s -parallel 4
+          go test ./internal/validator -run '^$' -fuzz '^FuzzValidate$' -fuzztime 15s -parallel 4
+          go test ./internal/validator -run '^$' -fuzz '^FuzzStructuredValidation$' -fuzztime 15s -parallel 4
+          go test ./internal/swift     -run '^$' -fuzz '^FuzzParse$' -fuzztime 15s -parallel 4
+          go test ./internal/swift     -run '^$' -fuzz '^FuzzStructuredMT103$' -fuzztime 15s -parallel 4
+          go test ./internal/converter -run '^$' -fuzz '^FuzzRoundTrip$' -fuzztime 15s -parallel 4
+          go test ./internal/converter -run '^$' -fuzz '^FuzzStructuredRoundTrip$' -fuzztime 15s -parallel 4
+          go test ./internal/lsp       -run '^$' -fuzz '^FuzzConnFrameRoundTrip$' -fuzztime 15s -parallel 4
+          go test ./internal/rules     -run '^$' -fuzz '^FuzzCBPRPackMergeAlgebra$' -fuzztime 15s -parallel 4
+          go test ./internal/codes     -run '^$' -fuzz '^FuzzExternalJSONSemanticShapes$' -fuzztime 15s -parallel 4
+          go test ./internal/cbprworkspace -run '^$' -fuzz '^FuzzWorkspaceMetadataRoundTrip$' -fuzztime 15s -parallel 4
+
+      - name: Aggressive pointer checking
+        run: go test -gcflags=all=-d=checkptr=2 -timeout 20m ./...
+
+      # Race, ASan and MSan are distinct compiler modes and cannot be combined.
+      - name: AddressSanitizer
+        run: CGO_ENABLED=1 go test -asan -timeout 20m ./...
+
+      - name: MemorySanitizer
+        run: CGO_ENABLED=1 CC=clang go test -msan -timeout 20m ./...
+
   security:
     name: Security
     runs-on: ubuntu-latest
@@ -207,8 +263,21 @@ jobs:
 
       - name: govulncheck
         run: |
-          go install golang.org/x/vuln/cmd/govulncheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
           govulncheck ./...
+
+      # Keep static taint findings visible without turning intentional
+      # user-selected paths, configured endpoints, and example inputs into a
+      # false release blocker. Findings are triaged as CodeQL alerts.
+      - name: gosec SARIF
+        continue-on-error: true
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@v2.22.8
+          gosec -fmt sarif -out gosec.sarif ./...
+      - uses: github/codeql-action/upload-sarif@42947a340483f03ba47bb1a039b2c519aab3df85 # v3
+        if: always()
+        with:
+          sarif_file: gosec.sarif
 
       - uses: github/codeql-action/init@42947a340483f03ba47bb1a039b2c519aab3df85 # v3
         with:

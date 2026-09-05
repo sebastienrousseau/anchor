@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/text/currency"
 )
 
 // IssueSeverity represents the severity level of a lint issue.
@@ -64,13 +66,7 @@ var (
 	bicRegex  = regexp.MustCompile(`^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$`)
 	uetrRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$`)
 
-	// ISO 4217 known currency decimals mapping
-	currencyDecimals = map[string]int{
-		"EUR": 2, "USD": 2, "GBP": 2, "CHF": 2, "CAD": 2, "AUD": 2,
-		"JPY": 0, "KRW": 0, "BHD": 3, "KWD": 3, "OMR": 3, "JOD": 3,
-		"SEK": 2, "NOK": 2, "DKK": 2, "PLN": 2, "SGD": 2, "HKD": 2,
-		"CNY": 2, "INR": 2, "BRL": 2, "ZAR": 2, "NZD": 2, "MXN": 2,
-	}
+	amountRegex = regexp.MustCompile(`^\d+(\.\d+)?$`)
 )
 
 // IBANReport is the outcome of inspecting one IBAN.
@@ -211,27 +207,26 @@ func ValidateUETR(uetr string) (bool, string) {
 // ValidateCurrencyAmount verifies ISO 4217 currency code and decimal fraction count.
 func ValidateCurrencyAmount(ccy, amtStr string) (bool, string) {
 	cleanCCY := strings.ToUpper(strings.TrimSpace(ccy))
-	if len(cleanCCY) != 3 {
-		return false, fmt.Sprintf("invalid ISO 4217 currency code '%s' (must be 3 letters)", ccy)
+	unit, err := currency.ParseISO(cleanCCY)
+	if err != nil {
+		return false, fmt.Sprintf("invalid or unrecognised ISO 4217 currency code '%s'", ccy)
+	}
+	expectedDecimals, _ := currency.Standard.Rounding(unit)
+
+	cleanAmount := strings.TrimSpace(amtStr)
+	if cleanAmount == "" {
+		return true, ""
+	}
+	if !amountRegex.MatchString(cleanAmount) {
+		return false, fmt.Sprintf("amount '%s' is not a valid non-negative decimal", amtStr)
 	}
 
-	expectedDecimals, known := currencyDecimals[cleanCCY]
-	if !known {
-		expectedDecimals = 2 // Default expectation
+	actualDecimals := 0
+	if dot := strings.IndexByte(cleanAmount, '.'); dot >= 0 {
+		actualDecimals = len(cleanAmount) - dot - 1
 	}
-
-	if amtStr != "" {
-		parts := strings.Split(amtStr, ".")
-		var actualDecimals int
-		if len(parts) == 2 {
-			actualDecimals = len(parts[1])
-		} else {
-			actualDecimals = 0
-		}
-
-		if actualDecimals > expectedDecimals {
-			return false, fmt.Sprintf("currency %s permits maximum %d decimal places (got %d in '%s')", cleanCCY, expectedDecimals, actualDecimals, amtStr)
-		}
+	if actualDecimals > expectedDecimals {
+		return false, fmt.Sprintf("currency %s permits maximum %d decimal places (got %d in '%s')", cleanCCY, expectedDecimals, actualDecimals, amtStr)
 	}
 
 	return true, ""
@@ -308,7 +303,7 @@ func Lint(data []byte, filename string) (*Result, error) {
 	}
 
 	decoder := xml.NewDecoder(bytes.NewReader(data))
-	var creDtTmStr, sttlmDtStr string
+	var creationTimes, settlementDates []string
 
 	// An empty file and a JSON payload both walk to EOF without producing a
 	// single element, and used to come back as "no findings" -- indistinguishable
@@ -444,7 +439,9 @@ func Lint(data []byte, filename string) (*Result, error) {
 				if currentElem.ccy != "" {
 					if ok, msg := ValidateCurrencyAmount(currentElem.ccy, val); !ok {
 						ccy := strings.ToUpper(strings.TrimSpace(currentElem.ccy))
-						places, known := currencyDecimals[ccy]
+						unit, parseErr := currency.ParseISO(ccy)
+						places, _ := currency.Standard.Rounding(unit)
+						known := parseErr == nil
 						issue := Issue{
 							Rule:     "ISO 4217 Currency Precision",
 							Severity: SeverityError,
@@ -480,9 +477,9 @@ func Lint(data []byte, filename string) (*Result, error) {
 				}
 
 			case "CreDtTm":
-				creDtTmStr = val
+				creationTimes = append(creationTimes, val)
 			case "IntrBkSttlmDt":
-				sttlmDtStr = val
+				settlementDates = append(settlementDates, val)
 			}
 		}
 	}
@@ -492,32 +489,35 @@ func Lint(data []byte, filename string) (*Result, error) {
 	}
 
 	// Temporal check
-	if creDtTmStr != "" && sttlmDtStr != "" {
+	if len(creationTimes) > 0 && len(settlementDates) > 0 {
+		creDtTmStr := creationTimes[0]
 		creDt, err1 := time.Parse(time.RFC3339, creDtTmStr)
 		if err1 != nil {
-			creDt, _ = time.Parse("2006-01-02T15:04:05", creDtTmStr)
+			creDt, err1 = time.Parse("2006-01-02T15:04:05", creDtTmStr)
 		}
-		sttlmDt, err2 := time.Parse("2006-01-02", sttlmDtStr)
-		if err1 == nil && err2 == nil {
-			// Settlement date shouldn't be strictly earlier than creation date (ignoring timezone)
-			if sttlmDt.Before(creDt.AddDate(0, 0, -1)) {
-				res.Issues = append(res.Issues, Issue{
-					Rule:     "Temporal Sequence Sanity",
-					Severity: SeverityWarning,
-					Field:    "IntrBkSttlmDt",
-					Value:    sttlmDtStr,
-					Expected: "on or after the creation timestamp",
-					Actual:   sttlmDtStr,
-					Message: fmt.Sprintf(
-						"the settlement date %s is before the message was created (%s)",
-						sttlmDtStr, creDtTmStr),
-					Remediation: "A payment cannot settle before it was instructed. Either the " +
-						"settlement date is wrong, or <CreDtTm> carries the wrong timestamp — " +
-						"a stale clock on the originating system is the usual cause.",
-				})
-				res.Warnings++
-			} else {
-				res.Passed++
+		creationDate := time.Date(creDt.Year(), creDt.Month(), creDt.Day(), 0, 0, 0, 0, time.UTC)
+		for _, sttlmDtStr := range settlementDates {
+			sttlmDt, err2 := time.Parse("2006-01-02", sttlmDtStr)
+			if err1 == nil && err2 == nil {
+				if sttlmDt.Before(creationDate) {
+					res.Issues = append(res.Issues, Issue{
+						Rule:     "Temporal Sequence Sanity",
+						Severity: SeverityWarning,
+						Field:    "IntrBkSttlmDt",
+						Value:    sttlmDtStr,
+						Expected: "on or after the creation timestamp",
+						Actual:   sttlmDtStr,
+						Message: fmt.Sprintf(
+							"the settlement date %s is before the message was created (%s)",
+							sttlmDtStr, creDtTmStr),
+						Remediation: "A payment cannot settle before it was instructed. Either the " +
+							"settlement date is wrong, or <CreDtTm> carries the wrong timestamp — " +
+							"a stale clock on the originating system is the usual cause.",
+					})
+					res.Warnings++
+				} else {
+					res.Passed++
+				}
 			}
 		}
 	}

@@ -80,6 +80,21 @@ type sarifLogic struct {
 	Kind               string `json:"kind"`
 }
 
+// SARIFDiagnostic is a source-independent finding. It lets batch reporting put
+// linter, schema, and scheme-profile failures in the same SARIF document.
+type SARIFDiagnostic struct {
+	RuleID      string
+	Name        string
+	Description string
+	HelpURI     string
+	Help        string
+	Severity    Severity
+	Message     string
+	File        string
+	Path        string
+	Properties  map[string]string
+}
+
 // sarifLevel maps a severity onto the three levels SARIF defines.
 func sarifLevel(s Severity) string {
 	switch s {
@@ -97,13 +112,6 @@ func sarifLevel(s Severity) string {
 // Several results may be passed, so a batch run over a directory produces one
 // document rather than one per file.
 func WriteSARIF(w io.Writer, results ...*Result) error {
-	driver := sarifDriver{
-		Name:           "askiso",
-		InformationURI: "https://github.com/sebastienrousseau/askiso",
-	}
-
-	// Describe every rule that produced a result, once.
-	described := map[string]bool{}
 	byID := map[string]Rule{}
 	for _, p := range profiles {
 		for _, r := range p.Rules {
@@ -111,48 +119,57 @@ func WriteSARIF(w io.Writer, results ...*Result) error {
 		}
 	}
 
-	run := sarifRun{Results: []sarifResult{}}
-
+	var diagnostics []SARIFDiagnostic
 	for _, res := range results {
 		if res == nil {
 			continue
 		}
 		for _, f := range res.Findings {
-			if !described[f.RuleID] {
-				described[f.RuleID] = true
-				rule := byID[f.RuleID]
-				help := rule.Remediation
-				if help == "" {
-					help = f.Remediation
-				}
-				driver.Rules = append(driver.Rules, sarifRule{
-					ID:               f.RuleID,
-					Name:             f.Rule,
-					ShortDescription: sarifText{Text: f.Rule},
-					FullDescription:  sarifText{Text: rule.Description},
-					HelpURI:          f.Reference,
-					Help:             sarifText{Text: help},
-					Properties:       map[string]string{"profile": res.Profile},
-				})
+			rule := byID[f.RuleID]
+			help := rule.Remediation
+			if help == "" {
+				help = f.Remediation
 			}
-
-			run.Results = append(run.Results, sarifResult{
-				RuleID:  f.RuleID,
-				Level:   sarifLevel(f.Severity),
-				Message: sarifText{Text: f.Message},
-				Locations: []sarifLocation{{
-					PhysicalLocation: sarifPhysical{
-						ArtifactLocation: sarifArtifact{URI: res.File},
-					},
-					// The XPath is the useful location in an XML document;
-					// SARIF carries it as a logical location.
-					LogicalLocations: []sarifLogic{{
-						FullyQualifiedName: f.Path,
-						Kind:               "member",
-					}},
-				}},
+			diagnostics = append(diagnostics, SARIFDiagnostic{
+				RuleID: f.RuleID, Name: f.Rule, Description: rule.Description,
+				HelpURI: f.Reference, Help: help, Severity: f.Severity,
+				Message: f.Message, File: res.File, Path: f.Path,
+				Properties: map[string]string{"profile": res.Profile},
 			})
 		}
+	}
+	return WriteDiagnosticsSARIF(w, diagnostics)
+}
+
+// WriteDiagnosticsSARIF renders diagnostics from every AskISO checking engine.
+func WriteDiagnosticsSARIF(w io.Writer, diagnostics []SARIFDiagnostic) error {
+	driver := sarifDriver{
+		Name:           "askiso",
+		InformationURI: "https://github.com/sebastienrousseau/askiso",
+	}
+	run := sarifRun{Results: []sarifResult{}}
+	described := map[string]bool{}
+	for _, d := range diagnostics {
+		if !described[d.RuleID] {
+			described[d.RuleID] = true
+			driver.Rules = append(driver.Rules, sarifRule{
+				ID: d.RuleID, Name: d.Name,
+				ShortDescription: sarifText{Text: d.Name},
+				FullDescription:  sarifText{Text: d.Description},
+				HelpURI:          d.HelpURI, Help: sarifText{Text: d.Help},
+				Properties: d.Properties,
+			})
+		}
+		location := sarifLocation{
+			PhysicalLocation: sarifPhysical{ArtifactLocation: sarifArtifact{URI: d.File}},
+		}
+		if d.Path != "" {
+			location.LogicalLocations = []sarifLogic{{FullyQualifiedName: d.Path, Kind: "member"}}
+		}
+		run.Results = append(run.Results, sarifResult{
+			RuleID: d.RuleID, Level: sarifLevel(d.Severity), Message: sarifText{Text: d.Message},
+			Locations: []sarifLocation{location},
+		})
 	}
 
 	sort.Slice(driver.Rules, func(i, j int) bool { return driver.Rules[i].ID < driver.Rules[j].ID })

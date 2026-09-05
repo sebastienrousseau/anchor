@@ -5,12 +5,15 @@ package codes
 
 import (
 	"archive/zip"
+	"crypto/sha256"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -46,6 +49,14 @@ type ExternalCode struct {
 type ExternalSets struct {
 	// Source names the file the codes were imported from.
 	Source string `json:"source"`
+	// Format identifies the source representation that was recognised.
+	Format string `json:"format,omitempty"`
+	// Publication is the release marker inferred from the source filename.
+	Publication string `json:"publication,omitempty"`
+	// SHA256 identifies the exact local publication without copying it.
+	SHA256 string `json:"sha256,omitempty"`
+	// Warnings disclose information the selected source format cannot carry.
+	Warnings []string `json:"warnings,omitempty"`
 	// Codes are every code, sorted by set then code.
 	Codes []ExternalCode `json:"codes"`
 
@@ -80,11 +91,11 @@ func (e *ExternalSets) Set(name string) []ExternalCode {
 		return nil
 	}
 	if members, ok := e.bySet[name]; ok {
-		return members
+		return append([]ExternalCode(nil), members...)
 	}
 	for known, members := range e.bySet {
 		if strings.EqualFold(known, name) {
-			return members
+			return append([]ExternalCode(nil), members...)
 		}
 	}
 	return nil
@@ -95,7 +106,7 @@ func (e *ExternalSets) Lookup(code string) []ExternalCode {
 	if e == nil {
 		return nil
 	}
-	return e.byCode[strings.ToUpper(strings.TrimSpace(code))]
+	return append([]ExternalCode(nil), e.byCode[strings.ToUpper(strings.TrimSpace(code))]...)
 }
 
 // Search matches a code, a set name, or descriptive text.
@@ -141,6 +152,17 @@ func (e *ExternalSets) index() {
 	}
 }
 
+func cloneExternalSets(sets *ExternalSets) *ExternalSets {
+	if sets == nil {
+		return nil
+	}
+	clone := *sets
+	clone.Warnings = append([]string(nil), sets.Warnings...)
+	clone.Codes = append([]ExternalCode(nil), sets.Codes...)
+	clone.index()
+	return &clone
+}
+
 // ---------------------------------------------------------------------------
 // Importing
 // ---------------------------------------------------------------------------
@@ -183,6 +205,11 @@ func ImportExternalSets(path string) (*ExternalSets, error) {
 			filepath.Base(path))
 	}
 	sets.Source = path
+	sets.Publication = publicationFromName(filepath.Base(path))
+	sets.SHA256, err = externalFileSHA256(path)
+	if err != nil {
+		return nil, err
+	}
 	sets.index()
 	return sets, nil
 }
@@ -196,7 +223,10 @@ func importExternalJSON(path string) (*ExternalSets, error) {
 	if err != nil {
 		return nil, fmt.Errorf("reading %s: %w", path, err)
 	}
+	return parseExternalJSON(filepath.Base(path), data)
+}
 
+func parseExternalJSON(name string, data []byte) (*ExternalSets, error) {
 	var flat []struct {
 		Set        string `json:"set"`
 		CodeSet    string `json:"codeSet"`
@@ -207,7 +237,7 @@ func importExternalJSON(path string) (*ExternalSets, error) {
 		Definition string `json:"definition"`
 	}
 	if err := json.Unmarshal(data, &flat); err == nil && len(flat) > 0 {
-		out := &ExternalSets{}
+		out := &ExternalSets{Format: "json-records"}
 		for _, r := range flat {
 			code := firstOf(r.Code, r.CodeValue)
 			set := firstOf(r.Set, r.CodeSet)
@@ -224,16 +254,45 @@ func importExternalJSON(path string) (*ExternalSets, error) {
 		return out, nil
 	}
 
+	// Since v3 the Registration Authority also publishes the code sets as a
+	// JSON Schema: each definition is a named external code type and its enum
+	// contains the permitted values. That representation intentionally carries
+	// no per-code name or definition, so those fields remain empty rather than
+	// assigning the type-level description to every member.
+	var schema struct {
+		Definitions map[string]struct {
+			Type        string   `json:"type"`
+			Description string   `json:"description"`
+			Enum        []string `json:"enum"`
+		} `json:"definitions"`
+	}
+	if err := json.Unmarshal(data, &schema); err == nil && len(schema.Definitions) > 0 {
+		out := &ExternalSets{Format: "json-schema"}
+		for set, definition := range schema.Definitions {
+			for _, code := range definition.Enum {
+				if strings.TrimSpace(code) == "" {
+					continue
+				}
+				out.Codes = append(out.Codes, ExternalCode{Set: set, Code: code})
+			}
+		}
+		if len(out.Codes) > 0 {
+			out.Warnings = append(out.Warnings,
+				"the JSON Schema publication carries permitted values but no per-code names or definitions")
+		}
+		return out, nil
+	}
+
 	var grouped map[string][]struct {
 		Code       string `json:"code"`
 		Name       string `json:"name"`
 		Definition string `json:"definition"`
 	}
 	if err := json.Unmarshal(data, &grouped); err != nil {
-		return nil, fmt.Errorf("%s is not a shape AskISO recognises: %w", filepath.Base(path), err)
+		return nil, fmt.Errorf("%s is not a shape AskISO recognises: %w", name, err)
 	}
 
-	out := &ExternalSets{}
+	out := &ExternalSets{Format: "json-groups"}
 	for set, members := range grouped {
 		for _, m := range members {
 			if m.Code == "" {
@@ -245,6 +304,33 @@ func importExternalJSON(path string) (*ExternalSets, error) {
 		}
 	}
 	return out, nil
+}
+
+var publicationNameRE = regexp.MustCompile(`(?i)([1-4]Q[0-9]{4})(?:[_-].*?v([0-9]+))?`)
+
+func publicationFromName(name string) string {
+	match := publicationNameRE.FindStringSubmatch(name)
+	if match == nil {
+		return ""
+	}
+	publication := strings.ToUpper(match[1])
+	if match[2] != "" {
+		publication += "/v" + match[2]
+	}
+	return publication
+}
+
+func externalFileSHA256(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", fmt.Errorf("fingerprinting %s: %w", filepath.Base(path), err)
+	}
+	defer func() { _ = f.Close() }()
+	h := sha256.New()
+	if _, err := io.Copy(h, io.LimitReader(f, maxImportSize+1)); err != nil {
+		return "", fmt.Errorf("fingerprinting %s: %w", filepath.Base(path), err)
+	}
+	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
 func firstOf(values ...string) string {
@@ -292,7 +378,7 @@ func importExternalSpreadsheet(path string) (*ExternalSets, error) {
 			filepath.Base(path), strings.Join(rows[0], ", "))
 	}
 
-	out := &ExternalSets{}
+	out := &ExternalSets{Format: "xlsx"}
 	for _, row := range rows[1:] {
 		set := at(row, columns.set)
 		code := at(row, columns.code)
@@ -307,6 +393,56 @@ func importExternalSpreadsheet(path string) (*ExternalSets, error) {
 		})
 	}
 	return out, nil
+}
+
+// SpreadsheetText extracts searchable cell text from every worksheet in a
+// local XLSX file. It does not persist cells or evaluate formulas. Legacy .xls
+// is a binary format and is deliberately rejected rather than guessed at.
+func SpreadsheetText(path string) (string, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", fmt.Errorf("reading %s: %w", path, err)
+	}
+	if !strings.EqualFold(filepath.Ext(path), ".xlsx") {
+		return "", fmt.Errorf("%s is not an XLSX workbook; save legacy .xls as .xlsx", filepath.Base(path))
+	}
+	if info.Size() > maxImportSize {
+		return "", fmt.Errorf("%s is %d bytes, above the %d-byte limit", filepath.Base(path), info.Size(), maxImportSize)
+	}
+	zr, err := zip.OpenReader(path)
+	if err != nil {
+		return "", fmt.Errorf("opening %s: %w", filepath.Base(path), err)
+	}
+	defer func() { _ = zr.Close() }()
+	shared, err := readSharedStrings(&zr.Reader)
+	if err != nil {
+		return "", err
+	}
+	var sheets []*zip.File
+	for _, entry := range zr.File {
+		if strings.HasPrefix(entry.Name, "xl/worksheets/") && strings.HasSuffix(entry.Name, ".xml") {
+			sheets = append(sheets, entry)
+		}
+	}
+	if len(sheets) == 0 {
+		return "", errors.New("the file holds no worksheet; is it really a spreadsheet?")
+	}
+	sort.Slice(sheets, func(i, j int) bool { return sheets[i].Name < sheets[j].Name })
+	var text strings.Builder
+	for _, sheet := range sheets {
+		rows, err := readWorksheet(sheet, shared)
+		if err != nil {
+			return "", err
+		}
+		for _, row := range rows {
+			line := strings.Join(row, "\t") + "\n"
+			if text.Len()+len(line) > maxImportSize {
+				return "", fmt.Errorf("searchable workbook text exceeds %d bytes", maxImportSize)
+			}
+			text.WriteString(line)
+		}
+	}
+	return text.String(), nil
 }
 
 // sheetColumns is where each field sits in the spreadsheet.
@@ -412,7 +548,10 @@ func readFirstSheet(zr *zip.Reader, shared []string) ([][]string, error) {
 	if f == nil {
 		return nil, fmt.Errorf("the file holds no worksheet; is it really a spreadsheet?")
 	}
+	return readWorksheet(f, shared)
+}
 
+func readWorksheet(f *zip.File, shared []string) ([][]string, error) {
 	rc, err := f.Open()
 	if err != nil {
 		return nil, fmt.Errorf("opening %s: %w", f.Name, err)

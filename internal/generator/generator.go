@@ -4,11 +4,17 @@
 package generator
 
 import (
+	"bytes"
 	"crypto/rand"
+	"encoding/xml"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
+
+	"github.com/sebastienrousseau/askiso/internal/linter"
 )
 
 // Options holds parameters for generating synthetic ISO 20022 messages.
@@ -40,6 +46,10 @@ type Options struct {
 	CreditorMemberID  string
 	DebtorAccountID   string
 	CreditorAccountID string
+
+	// presetApplied records that callers deliberately applied rail defaults
+	// before setting explicit overrides such as Currency.
+	presetApplied bool
 }
 
 // Account identification schemes.
@@ -75,8 +85,31 @@ func DefaultOptions(msgType string) Options {
 	}
 }
 
+// Presets returns the supported regional clearing presets.
+func Presets() []string {
+	return []string{"standard", "sepa", "fednow", "fedwire", "target2", "chaps"}
+}
+
+// ValidPreset reports whether name is a supported preset. An empty name uses
+// the standard defaults for backwards compatibility.
+func ValidPreset(name string) bool {
+	name = strings.ToLower(strings.TrimSpace(name))
+	if name == "" {
+		return true
+	}
+	for _, preset := range Presets() {
+		if name == preset {
+			return true
+		}
+	}
+	return false
+}
+
 // ApplyPreset customizes options based on regional clearing guidelines.
 func (opt *Options) ApplyPreset() {
+	if opt.presetApplied {
+		return
+	}
 	preset := strings.ToLower(strings.TrimSpace(opt.Preset))
 	switch preset {
 	case "sepa":
@@ -116,6 +149,7 @@ func (opt *Options) ApplyPreset() {
 		opt.DebtorBIC = "NWBKGB2LXXX"
 		opt.CreditorBIC = "BARCGB22XXX"
 	}
+	opt.presetApplied = true
 }
 
 // messageDefinitionID returns the full identifier the Business Application
@@ -130,34 +164,89 @@ func messageDefinitionID(msgType, doc string) string {
 
 var namespaceMsgID = regexp.MustCompile(`urn:iso:std:iso:20022:tech:xsd:([a-z]{4}\.\d{3}\.\d{3}\.\d{2})`)
 
+// EscapeText returns s encoded for use as XML character data or an attribute
+// value. Hand-written templates must never interpolate caller input directly.
+func EscapeText(s string) string {
+	var b bytes.Buffer
+	_ = xml.EscapeText(&b, []byte(s))
+	return b.String()
+}
+
+// ValidateOptions rejects values that would make a hand-written payment
+// template lexically or semantically invalid.
+func ValidateOptions(opt Options) error {
+	for name, value := range map[string]string{
+		"amount": opt.Amount, "currency": opt.Currency, "debtor": opt.Debtor,
+		"creditor": opt.Creditor, "debtor IBAN": opt.DebtorIBAN,
+		"creditor IBAN": opt.CreditorIBAN, "debtor BIC": opt.DebtorBIC,
+		"creditor BIC": opt.CreditorBIC, "end-to-end ID": opt.EndToEndID,
+		"UETR": opt.UETR, "clearing system": opt.ClearingSystem,
+		"debtor member ID": opt.DebtorMemberID, "creditor member ID": opt.CreditorMemberID,
+		"debtor account ID": opt.DebtorAccountID, "creditor account ID": opt.CreditorAccountID,
+	} {
+		if !utf8.ValidString(value) || strings.IndexFunc(value, func(r rune) bool {
+			return r != '\t' && r != '\n' && r != '\r' && (r < 0x20 || r == 0xFFFE || r == 0xFFFF)
+		}) >= 0 {
+			return fmt.Errorf("%s contains a character XML cannot represent", name)
+		}
+	}
+	if ok, reason := linter.ValidateCurrencyAmount(opt.Currency, opt.Amount); !ok {
+		return errors.New(reason)
+	}
+	if ok, reason := linter.ValidateBIC(opt.DebtorBIC); !ok {
+		return fmt.Errorf("debtor BIC: %s", reason)
+	}
+	if ok, reason := linter.ValidateBIC(opt.CreditorBIC); !ok {
+		return fmt.Errorf("creditor BIC: %s", reason)
+	}
+	if ok, reason := linter.ValidateUETR(opt.UETR); !ok {
+		return fmt.Errorf("UETR: %s", reason)
+	}
+	if opt.AccountScheme != SchemeOther {
+		if ok, reason := linter.ValidateIBAN(opt.DebtorIBAN); !ok {
+			return fmt.Errorf("debtor IBAN: %s", reason)
+		}
+		if ok, reason := linter.ValidateIBAN(opt.CreditorIBAN); !ok {
+			return fmt.Errorf("creditor IBAN: %s", reason)
+		}
+	}
+	return nil
+}
+
 // accountBlock renders <Id> for an account, honouring the rail's scheme. Rails
 // without an IBAN scheme identify accounts by a domestic number under <Othr>.
-func accountBlock(opt Options, iban, other string, indent string) string {
+func AccountBlock(opt Options, iban, other string, indent string) string {
 	if opt.AccountScheme == SchemeOther || iban == "" {
 		id := other
 		if id == "" {
 			id = "000000000"
 		}
-		return fmt.Sprintf("%s<Othr>\n%s  <Id>%s</Id>\n%s</Othr>", indent, indent, id, indent)
+		return fmt.Sprintf("%s<Othr>\n%s  <Id>%s</Id>\n%s</Othr>", indent, indent, EscapeText(id), indent)
 	}
-	return fmt.Sprintf("%s<IBAN>%s</IBAN>", indent, iban)
+	return fmt.Sprintf("%s<IBAN>%s</IBAN>", indent, EscapeText(iban))
 }
 
 // agentBlock renders <FinInstnId> for an agent. On a rail with a clearing
 // system, the member identifier is carried alongside the BIC.
-func agentBlock(opt Options, bic, memberID, indent string) string {
+func AgentBlock(opt Options, bic, memberID, indent string) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s<BICFI>%s</BICFI>", indent, bic)
+	fmt.Fprintf(&b, "%s<BICFI>%s</BICFI>", indent, EscapeText(bic))
 	if opt.ClearingSystem != "" && memberID != "" {
 		fmt.Fprintf(&b, "\n%s<ClrSysMmbId>\n%s  <ClrSysId>\n%s    <Cd>%s</Cd>\n%s  </ClrSysId>\n%s  <MmbId>%s</MmbId>\n%s</ClrSysMmbId>",
-			indent, indent, indent, opt.ClearingSystem, indent, indent, memberID, indent)
+			indent, indent, indent, EscapeText(opt.ClearingSystem), indent, indent, EscapeText(memberID), indent)
 	}
 	return b.String()
 }
 
 // Generate creates a compliant ISO 20022 XML message payload string.
 func Generate(opt Options) (string, error) {
-	opt.ApplyPreset()
+	if !ValidPreset(opt.Preset) {
+		return "", fmt.Errorf("unknown preset %q (available: %s)",
+			opt.Preset, strings.Join(Presets(), ", "))
+	}
+	if !opt.presetApplied {
+		opt.ApplyPreset()
+	}
 	norm := strings.ToLower(strings.TrimSpace(opt.MsgType))
 	now := time.Now().UTC().Format("2006-01-02T15:04:05Z")
 	today := time.Now().UTC().Format("2006-01-02")
@@ -193,10 +282,15 @@ func Generate(opt Options) (string, error) {
 	if opt.UETR == "" {
 		opt.UETR = generateUUIDv4()
 	}
+	if err := ValidateOptions(opt); err != nil {
+		return "", fmt.Errorf("invalid generator option: %w", err)
+	}
 
 	clearingSys := "TARGET2"
 	if strings.ToLower(opt.Preset) == "fednow" {
 		clearingSys = "FDNW"
+	} else if strings.ToLower(opt.Preset) == "fedwire" {
+		clearingSys = "FEDWIRE"
 	} else if strings.ToLower(opt.Preset) == "chaps" {
 		clearingSys = "CHAPS"
 	} else if strings.ToLower(opt.Preset) == "sepa" {
@@ -204,6 +298,17 @@ func Generate(opt Options) (string, error) {
 	}
 
 	var xmlDoc string
+	safe := opt
+	safe.Amount = EscapeText(opt.Amount)
+	safe.Currency = EscapeText(opt.Currency)
+	safe.Debtor = EscapeText(opt.Debtor)
+	safe.Creditor = EscapeText(opt.Creditor)
+	safe.DebtorIBAN = EscapeText(opt.DebtorIBAN)
+	safe.CreditorIBAN = EscapeText(opt.CreditorIBAN)
+	safe.DebtorBIC = EscapeText(opt.DebtorBIC)
+	safe.CreditorBIC = EscapeText(opt.CreditorBIC)
+	safe.EndToEndID = EscapeText(opt.EndToEndID)
+	safe.UETR = EscapeText(opt.UETR)
 
 	switch {
 	case strings.Contains(norm, "pacs.008") || strings.Contains(norm, "pacs008"):
@@ -259,13 +364,13 @@ func Generate(opt Options) (string, error) {
       </RmtInf>
     </CdtTrfTxInf>
   </FIToFICstmrCdtTrf>
-</Document>`, msgID, now, clearingSys, opt.EndToEndID, opt.UETR, opt.Currency, opt.Amount, today,
-			opt.Debtor,
-			accountBlock(opt, opt.DebtorIBAN, opt.DebtorAccountID, "          "),
-			agentBlock(opt, opt.DebtorBIC, opt.DebtorMemberID, "          "),
-			agentBlock(opt, opt.CreditorBIC, opt.CreditorMemberID, "          "),
-			opt.Creditor,
-			accountBlock(opt, opt.CreditorIBAN, opt.CreditorAccountID, "          "),
+</Document>`, msgID, now, clearingSys, safe.EndToEndID, safe.UETR, safe.Currency, safe.Amount, today,
+			safe.Debtor,
+			AccountBlock(opt, opt.DebtorIBAN, opt.DebtorAccountID, "          "),
+			AgentBlock(opt, opt.DebtorBIC, opt.DebtorMemberID, "          "),
+			AgentBlock(opt, opt.CreditorBIC, opt.CreditorMemberID, "          "),
+			safe.Creditor,
+			AccountBlock(opt, opt.CreditorIBAN, opt.CreditorAccountID, "          "),
 			time.Now().Unix()%100000)
 
 	case strings.Contains(norm, "pacs.009") || strings.Contains(norm, "pacs009"):
@@ -311,12 +416,12 @@ func Generate(opt Options) (string, error) {
       </Cdtr>
     </CdtTrfTxInf>
   </FICdtTrf>
-</Document>`, msgID, now, clearingSys, opt.EndToEndID, opt.UETR, opt.Currency, opt.Amount, today,
-			opt.DebtorBIC, opt.CreditorBIC,
+</Document>`, msgID, now, clearingSys, safe.EndToEndID, safe.UETR, safe.Currency, safe.Amount, today,
+			safe.DebtorBIC, safe.CreditorBIC,
 			// In pacs.009 the debtor and creditor are financial institutions,
 			// not customers: this is a bank-to-bank transfer.
-			agentBlock(opt, opt.DebtorBIC, opt.DebtorMemberID, "          "),
-			agentBlock(opt, opt.CreditorBIC, opt.CreditorMemberID, "          "))
+			AgentBlock(opt, opt.DebtorBIC, opt.DebtorMemberID, "          "),
+			AgentBlock(opt, opt.CreditorBIC, opt.CreditorMemberID, "          "))
 
 	case strings.Contains(norm, "pain.001") || strings.Contains(norm, "pain001"):
 		xmlDoc = fmt.Sprintf(`<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.001.001.11">
@@ -340,12 +445,12 @@ func Generate(opt Options) (string, error) {
       </Dbtr>
       <DbtrAcct>
         <Id>
-          <IBAN>%s</IBAN>
+%s
         </Id>
       </DbtrAcct>
       <DbtrAgt>
         <FinInstnId>
-          <BICFI>%s</BICFI>
+%s
         </FinInstnId>
       </DbtrAgt>
       <CdtTrfTxInf>
@@ -357,7 +462,7 @@ func Generate(opt Options) (string, error) {
         </Amt>
         <CdtrAgt>
           <FinInstnId>
-            <BICFI>%s</BICFI>
+%s
           </FinInstnId>
         </CdtrAgt>
         <Cdtr>
@@ -365,13 +470,19 @@ func Generate(opt Options) (string, error) {
         </Cdtr>
         <CdtrAcct>
           <Id>
-            <IBAN>%s</IBAN>
+%s
           </Id>
         </CdtrAcct>
       </CdtTrfTxInf>
     </PmtInf>
   </CstmrCdtTrfInitn>
-</Document>`, msgID, now, opt.Debtor, time.Now().Unix()%100000, today, opt.Debtor, opt.DebtorIBAN, opt.DebtorBIC, opt.EndToEndID, opt.Currency, opt.Amount, opt.CreditorBIC, opt.Creditor, opt.CreditorIBAN)
+</Document>`, msgID, now, safe.Debtor, time.Now().Unix()%100000, today, safe.Debtor,
+			AccountBlock(opt, opt.DebtorIBAN, opt.DebtorAccountID, "          "),
+			AgentBlock(opt, opt.DebtorBIC, opt.DebtorMemberID, "          "),
+			safe.EndToEndID, safe.Currency, safe.Amount,
+			AgentBlock(opt, opt.CreditorBIC, opt.CreditorMemberID, "            "),
+			safe.Creditor,
+			AccountBlock(opt, opt.CreditorIBAN, opt.CreditorAccountID, "            "))
 
 	case strings.Contains(norm, "camt.053") || strings.Contains(norm, "camt053"):
 		xmlDoc = fmt.Sprintf(`<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.11">
@@ -385,7 +496,7 @@ func Generate(opt Options) (string, error) {
       <CreDtTm>%s</CreDtTm>
       <Acct>
         <Id>
-          <IBAN>%s</IBAN>
+%s
         </Id>
       </Acct>
       <Bal>
@@ -414,7 +525,9 @@ func Generate(opt Options) (string, error) {
       </Bal>
     </Stmt>
   </BkToCstmrStmt>
-</Document>`, msgID, now, today, now, opt.DebtorIBAN, opt.Currency, opt.Amount, today, opt.Currency, opt.Amount, today)
+</Document>`, msgID, now, today, now,
+			AccountBlock(opt, opt.DebtorIBAN, opt.DebtorAccountID, "          "),
+			safe.Currency, safe.Amount, today, safe.Currency, safe.Amount, today)
 
 	default:
 		return "", fmt.Errorf("generator for message type '%s' is not supported yet (supported: pacs.008, pacs.009, pain.001, camt.053)", opt.MsgType)
@@ -448,7 +561,7 @@ func Generate(opt Options) (string, error) {
     <CreDt>%s</CreDt>
   </AppHdr>
   %s
-</Envelope>`, opt.DebtorBIC, opt.CreditorBIC, msgID, messageDefinitionID(opt.MsgType, xmlDoc), now, xmlDoc), nil
+</Envelope>`, safe.DebtorBIC, safe.CreditorBIC, msgID, messageDefinitionID(opt.MsgType, xmlDoc), now, xmlDoc), nil
 	}
 
 	return fmt.Sprintf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n%s", xmlDoc), nil

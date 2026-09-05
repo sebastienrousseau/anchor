@@ -156,8 +156,16 @@ func run(t *testing.T, args ...string) (string, error) {
 func resetFlags(t *testing.T) {
 	t.Helper()
 	searchJSON, infoJSON, statsJSON = false, false, false
-	lintJSON, lintStrict, lintProfile = false, false, ""
-	validateJSON, validateEngine, validateStream = false, "go", false
+	rawOutput, textOutput, plainOutput, askCBPRPack, askCBPRLimit = false, false, false, "", 5
+	cbprWorkspace, cbprRelease, cbprExternalCodes, cbprExternalCodesAsOf, cbprRuleOverlay, cbprWorkspaceJSON = "", "SR2025", "", "", "", false
+	cbprGenerateSamples, cbprAcknowledgeEntitlement, cbprRequireUserSamples, cbprRequireExternalEvidence = false, false, true, false
+	cbprAsOf, cbprEvidence, cbprSampleOutput = "", "", ""
+	cbprTransportProfile, cbprSenderDN, cbprReceiverDN, cbprTransportService = "envelope", "", "", ""
+	cbprReviewer, cbprProvider, cbprEvidenceTime = "", "", ""
+	cbprEvidenceCases, cbprEvidencePassed, cbprAcknowledgeReview, cbprAcknowledgeVerdict = 0, false, false, false
+	cbprFromRelease, cbprToRelease = "SR2025", "SR2026"
+	lintJSON, lintStrict, lintProfile, lintCBPRPack, lintCBPRWorkspace = false, false, "", "", ""
+	validateJSON, validateEngine, validateStream, validateExternalCodes = false, "go", false, ""
 	codeJSON, codeCategory = false, ""
 	convertToJSON, convertToXML, convertOutput, convertCopy = false, false, "", false
 	formatMinify, formatCopy, formatOutput = false, false, ""
@@ -173,9 +181,11 @@ func resetFlags(t *testing.T) {
 	catalogStatusAll, showMatrix = false, false
 	diffJSON, diffBreakingOnly, diffStrict = false, false, false
 	translateOut, translateReport, translateFormat = "", false, "text"
-	batchProfile, batchFormat, batchSchema, batchWorkers, batchQuiet = "", "text", false, 0, false
+	batchProfile, batchFormat, batchSchema, batchWorkers, batchQuiet, batchCBPRPack, batchCBPRWorkspace = "", "text", false, 0, false, "", ""
+	cbprPackOutput = ""
 	codeSet, codeListSets, codeLimit, codeAll, codeImport = "", false, 25, false, ""
 	lintFormat = "text"
+	mockPort, mockHost, mockScenario = 8080, "", ""
 }
 
 func wantContains(t *testing.T, out string, subs ...string) {

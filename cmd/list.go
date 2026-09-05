@@ -12,6 +12,7 @@ import (
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all 56 ISO 20022 message set categories",
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		idx, err := loadCatalog()
 		if err != nil {

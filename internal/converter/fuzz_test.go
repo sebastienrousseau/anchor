@@ -4,7 +4,11 @@
 package converter_test
 
 import (
+	"bytes"
 	"encoding/json"
+	"encoding/xml"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/sebastienrousseau/askiso/internal/converter"
@@ -33,6 +37,9 @@ func FuzzRoundTrip(f *testing.F) {
 	f.Add("<unclosed>")
 
 	f.Fuzz(func(t *testing.T, data string) {
+		if len(data) > 1<<20 {
+			return
+		}
 		jsonBytes, err := converter.XMLToJSON([]byte(data))
 		if err != nil {
 			return
@@ -54,6 +61,57 @@ func FuzzRoundTrip(f *testing.F) {
 		}
 		if string(again) != string(jsonBytes) {
 			t.Fatalf("the round trip is not stable\nfirst:\n%s\nsecond:\n%s", jsonBytes, again)
+		}
+	})
+}
+
+// FuzzStructuredRoundTrip generates a bounded semantic document rather than
+// waiting for byte mutations to rediscover XML grammar. Adjacent repeated
+// transactions, attributes, optional elements, Unicode text and decimal
+// lexical forms all remain in the representable subset and therefore must be
+// bijective under XML -> JSON -> XML -> JSON.
+func FuzzStructuredRoundTrip(f *testing.F) {
+	f.Add("PAYMENT-1", uint8(1), uint64(2500000), true)
+	f.Add("A&B <priority>", uint8(8), ^uint64(0), false)
+	f.Add("東京-€-😀", uint8(255), uint64(1), true)
+
+	f.Fuzz(func(t *testing.T, rawID string, count uint8, cents uint64, optional bool) {
+		if len(rawID) > 4096 {
+			rawID = rawID[:4096]
+		}
+		var escaped bytes.Buffer
+		if err := xml.EscapeText(&escaped, []byte(rawID)); err != nil {
+			t.Fatal(err)
+		}
+		id := escaped.String()
+		txCount := int(count%16) + 1
+		amount := fmt.Sprintf("%d.%02d", (cents%1_000_000_000_000)/100, cents%100)
+
+		var tx strings.Builder
+		for i := range txCount {
+			fmt.Fprintf(&tx, `<Tx index="%d"><Amt Ccy="EUR">%s</Amt><Ref>%s</Ref></Tx>`, i, amount, id)
+		}
+		extra := ""
+		if optional {
+			extra = "<SupplementaryData><PlaceAndName>audit</PlaceAndName></SupplementaryData>"
+		}
+		doc := `<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.10"><GrpHdr><MsgId>` + id +
+			`</MsgId></GrpHdr>` + tx.String() + extra + `</Document>`
+
+		first, err := converter.XMLToJSON([]byte(doc))
+		if err != nil {
+			t.Fatalf("generated semantic XML was rejected: %v\n%s", err, doc)
+		}
+		back, err := converter.JSONToXML(first)
+		if err != nil {
+			t.Fatalf("JSONToXML rejected converter output: %v\n%s", err, first)
+		}
+		second, err := converter.XMLToJSON(back)
+		if err != nil {
+			t.Fatalf("XMLToJSON rejected round-trip XML: %v\n%s", err, back)
+		}
+		if !bytes.Equal(first, second) {
+			t.Fatalf("non-bijective conversion\nfirst: %s\nsecond: %s", first, second)
 		}
 	})
 }

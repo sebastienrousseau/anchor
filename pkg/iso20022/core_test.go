@@ -451,11 +451,21 @@ func TestMessageIDFromInstance(t *testing.T) {
 		t.Error("a document with no ISO namespace should be an error")
 	}
 
-	// Only the head of a large document is scanned.
+	// Namespace detection parses XML rather than scanning a fixed prefix.
 	big := append([]byte(strings.Repeat(" ", 9000)),
 		[]byte(`<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.11"/>`)...)
-	if _, err := iso20022.MessageIDFromInstance(big); err == nil {
-		t.Log("the namespace beyond the scan window was not found, as documented")
+	if id, err := iso20022.MessageIDFromInstance(big); err != nil || id != "camt.053.001.11" {
+		t.Errorf("large prefix: id=%q err=%v", id, err)
+	}
+
+	spoofed := []byte(`<!-- urn:iso:std:iso:20022:tech:xsd:pacs.008.001.10 --><Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.11"/>`)
+	if id, err := iso20022.MessageIDFromInstance(spoofed); err != nil || id != "camt.053.001.11" {
+		t.Errorf("comment spoof selected id=%q err=%v", id, err)
+	}
+
+	envelope := []byte(`<Envelope><AppHdr xmlns="urn:iso:std:iso:20022:tech:xsd:head.001.001.02"/><Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.10"/></Envelope>`)
+	if id, err := iso20022.MessageIDFromInstance(envelope); err != nil || id != "pacs.008.001.10" {
+		t.Errorf("envelope selected id=%q err=%v", id, err)
 	}
 }
 

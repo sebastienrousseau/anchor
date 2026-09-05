@@ -5,6 +5,8 @@ package swift_test
 
 import (
 	"encoding/xml"
+	"fmt"
+	"io"
 	"strings"
 	"testing"
 
@@ -41,6 +43,9 @@ MUELLER GMBH
 	f.Add("")
 
 	f.Fuzz(func(t *testing.T, data string) {
+		if len(data) > 1<<20 {
+			return
+		}
 		msg, err := swift.Parse([]byte(data))
 		if err != nil {
 			if msg != nil {
@@ -84,4 +89,157 @@ MUELLER GMBH
 			t.Fatalf("the report has %d entries for %d fields", len(conv.Report), len(msg.Fields))
 		}
 	})
+}
+
+// FuzzStructuredMT103 explores the valid MT103 grammar rather than relying on
+// arbitrary bytes to stumble into it.  The monetary tuple, reference and
+// charge bearer must survive MT -> MX -> MT; this is the business invariant
+// that a merely panic-free parser cannot prove.
+func FuzzStructuredMT103(f *testing.F) {
+	f.Add("REF1", uint64(2_500_000), uint8(0), uint8(0), true)
+	f.Add("EDGE/REFERENCE-16", uint64(0), uint8(1), uint8(1), false)
+	f.Add("PAYMENT?42", uint64(99_999_999_999_999), uint8(3), uint8(2), true)
+
+	currencies := [...]string{"EUR", "USD", "GBP", "JPY"}
+	charges := [...]string{"SHA", "OUR", "BEN"}
+	dates := [...]string{"260824", "000229", "991231", "800101"}
+
+	f.Fuzz(func(t *testing.T, rawReference string, rawCents uint64, currencyIndex, chargeIndex uint8, includeUETR bool) {
+		reference := swiftReference(rawReference, 16)
+		cents := rawCents % 100_000_000_000_000
+		currency := currencies[int(currencyIndex)%len(currencies)]
+		charge := charges[int(chargeIndex)%len(charges)]
+		date := dates[(int(currencyIndex)+int(chargeIndex))%len(dates)]
+		mtAmount := fmt.Sprintf("%d,%02d", cents/100, cents%100)
+		wantAmount := fmt.Sprintf("%d.%02d", cents/100, cents%100)
+
+		block3 := ""
+		if includeUETR {
+			block3 = "{3:{121:f3a1b2c4-5d6e-4f70-8a91-2b3c4d5e6f70}}"
+		}
+		raw := fmt.Sprintf("{1:F01BANKGB2LAXXX0000000000}{2:I103BANKDEFFXXXXN}%s{4:\n:20:%s\n:32A:%s%s%s\n:50K:/GB29NWBK60161331926819\nACME TRADING LIMITED\n:59:/DE89370400440532013000\nMUELLER GMBH\n:71A:%s\n-}",
+			block3, reference, date, currency, mtAmount, charge)
+
+		msg, err := swift.Parse([]byte(raw))
+		if err != nil {
+			t.Fatalf("generated MT103 did not parse: %v\n%s", err, raw)
+		}
+		if msg.Type != "103" {
+			t.Fatalf("parsed type %q, want 103", msg.Type)
+		}
+		ref, ok := msg.GetExact("20")
+		if !ok || ref.Value != reference {
+			t.Fatalf("reference = %q, %v; want %q", ref.Value, ok, reference)
+		}
+		field32A, ok := msg.GetExact("32A")
+		if !ok {
+			t.Fatal("generated MT103 lost field 32A")
+		}
+		vda, err := swift.ParseValueDateAmount(field32A.Value)
+		if err != nil {
+			t.Fatalf("generated monetary tuple is invalid: %v", err)
+		}
+		if vda.Currency != currency || vda.Amount != wantAmount {
+			t.Fatalf("parsed monetary tuple = %s %s; want %s %s", vda.Currency, vda.Amount, currency, wantAmount)
+		}
+
+		mx, err := swift.Convert(msg)
+		if err != nil {
+			t.Fatalf("valid MT103 conversion failed: %v", err)
+		}
+		if mx.SourceType != "103" || mx.TargetType != "pacs.008.001.10" {
+			t.Fatalf("conversion types = %s -> %s", mx.SourceType, mx.TargetType)
+		}
+		if err := xml.Unmarshal([]byte(mx.XML), new(struct{})); err != nil {
+			t.Fatalf("generated MX is not well-formed: %v", err)
+		}
+		gotReference, gotCurrency, gotAmount, err := mxPaymentValues(mx.XML)
+		if err != nil {
+			t.Fatalf("reading generated MX semantics: %v", err)
+		}
+		if gotReference != reference {
+			t.Fatalf("MX reference = %q; want %q", gotReference, reference)
+		}
+		if gotCurrency != currency || gotAmount != wantAmount {
+			t.Fatalf("MX monetary tuple = %s %s; want %s %s", gotCurrency, gotAmount, currency, wantAmount)
+		}
+
+		back, err := swift.ConvertMX([]byte(mx.XML))
+		if err != nil {
+			t.Fatalf("generated MX did not convert back: %v", err)
+		}
+		roundTrip, err := swift.Parse([]byte(back.XML))
+		if err != nil {
+			t.Fatalf("round-trip MT did not parse: %v\n%s", err, back.XML)
+		}
+		backRef, ok := roundTrip.GetExact("20")
+		if !ok || backRef.Value != reference {
+			t.Fatalf("round-trip reference = %q, %v; want %q", backRef.Value, ok, reference)
+		}
+		back32A, ok := roundTrip.GetExact("32A")
+		if !ok {
+			t.Fatal("round-trip MT lost field 32A")
+		}
+		backVDA, err := swift.ParseValueDateAmount(back32A.Value)
+		if err != nil {
+			t.Fatalf("round-trip monetary tuple is invalid: %v", err)
+		}
+		if backVDA != vda {
+			t.Fatalf("round-trip monetary tuple = %+v; want %+v", backVDA, vda)
+		}
+	})
+}
+
+func mxPaymentValues(document string) (reference, currency, amount string, err error) {
+	dec := xml.NewDecoder(strings.NewReader(document))
+	for {
+		token, tokenErr := dec.Token()
+		if tokenErr != nil {
+			if tokenErr == io.EOF {
+				return reference, currency, amount, nil
+			}
+			return "", "", "", tokenErr
+		}
+		start, ok := token.(xml.StartElement)
+		if !ok {
+			continue
+		}
+		switch start.Name.Local {
+		case "MsgId":
+			if reference == "" {
+				if err := dec.DecodeElement(&reference, &start); err != nil {
+					return "", "", "", err
+				}
+			}
+		case "IntrBkSttlmAmt":
+			for _, attr := range start.Attr {
+				if attr.Name.Local == "Ccy" {
+					currency = attr.Value
+				}
+			}
+			if err := dec.DecodeElement(&amount, &start); err != nil {
+				return "", "", "", err
+			}
+		}
+	}
+}
+
+func swiftReference(input string, limit int) string {
+	const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/-?:().,'+ "
+	var out strings.Builder
+	for _, r := range input {
+		if out.Len() == limit {
+			break
+		}
+		if r < 128 && strings.ContainsRune(alphabet, r) {
+			out.WriteRune(r)
+		} else {
+			out.WriteByte('X')
+		}
+	}
+	value := strings.TrimSpace(out.String())
+	if value == "" {
+		return "REF"
+	}
+	return value
 }

@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/sebastienrousseau/askiso/internal/rules"
 	"github.com/sebastienrousseau/askiso/pkg/iso20022"
@@ -19,11 +20,13 @@ import (
 )
 
 var (
-	batchProfile string
-	batchFormat  string
-	batchSchema  bool
-	batchWorkers int
-	batchQuiet   bool
+	batchProfile       string
+	batchFormat        string
+	batchSchema        bool
+	batchWorkers       int
+	batchQuiet         bool
+	batchCBPRPack      string
+	batchCBPRWorkspace string
 )
 
 // FileReport is the outcome for one message.
@@ -39,14 +42,15 @@ type FileReport struct {
 
 // BatchReport aggregates a run.
 type BatchReport struct {
-	Files    int          `json:"files"`
-	Passed   int          `json:"passed"`
-	Failed   int          `json:"failed"`
-	Errors   int          `json:"error_count"`
-	Profile  string       `json:"profile,omitempty"`
-	Reports  []FileReport `json:"reports"`
-	Skipped  int          `json:"skipped"`
-	Duration string       `json:"-"`
+	Files    int                 `json:"files"`
+	Passed   int                 `json:"passed"`
+	Failed   int                 `json:"failed"`
+	Errors   int                 `json:"error_count"`
+	Profile  string              `json:"profile,omitempty"`
+	Pack     *rules.CBPRPackInfo `json:"cbpr_pack,omitempty"`
+	Reports  []FileReport        `json:"reports"`
+	Skipped  int                 `json:"skipped"`
+	Duration string              `json:"-"`
 }
 
 var batchCmd = &cobra.Command{
@@ -65,6 +69,14 @@ rather than silently merged.`,
   askiso batch ./out --schema --profile cbpr-2026`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		format, err := normalizeChoice("format", batchFormat, "text", "json", "sarif")
+		if err != nil {
+			return err
+		}
+		batchFormat = format
+		if batchWorkers < 0 {
+			return fmt.Errorf("--workers must be zero or greater")
+		}
 		files, err := collectMessages(args)
 		if err != nil {
 			return err
@@ -73,9 +85,17 @@ rather than silently merged.`,
 			return fmt.Errorf("no .xml files found in %s", strings.Join(args, ", "))
 		}
 
-		if batchProfile != "" {
-			if _, err := rules.Get(batchProfile); err != nil {
-				return err
+		var runtimeProfile *rules.Profile
+		var workspaceExternal *iso20022.ExternalCodeSets
+		if batchProfile != "" || batchCBPRPack != "" || batchCBPRWorkspace != "" {
+			profile, workspaceRuntime, profileErr := resolveRuleProfileWithWorkspace(batchProfile, batchCBPRPack, batchCBPRWorkspace)
+			if profileErr != nil {
+				return profileErr
+			}
+			batchProfile = profile.Name
+			runtimeProfile = &profile
+			if workspaceRuntime != nil {
+				workspaceExternal = workspaceRuntime.ExternalCodes
 			}
 		}
 
@@ -87,17 +107,11 @@ rather than silently merged.`,
 			}
 		}
 
-		report := runBatch(files, cat)
+		report := runBatchWithRuntime(files, cat, runtimeProfile, workspaceExternal)
 
 		switch batchFormat {
 		case "sarif":
-			results := make([]*rules.Result, 0, len(report.Reports))
-			for i := range report.Reports {
-				if report.Reports[i].Profile != nil {
-					results = append(results, report.Reports[i].Profile)
-				}
-			}
-			if err := rules.WriteSARIF(os.Stdout, results...); err != nil {
+			if err := rules.WriteDiagnosticsSARIF(os.Stdout, batchSARIFDiagnostics(report)); err != nil {
 				return err
 			}
 		case "json":
@@ -149,7 +163,10 @@ func collectMessages(args []string) ([]string, error) {
 			continue
 		}
 		err = filepath.Walk(arg, func(p string, fi os.FileInfo, err error) error {
-			if err != nil || fi.IsDir() {
+			if err != nil {
+				return err
+			}
+			if fi.IsDir() {
 				return nil
 			}
 			add(p)
@@ -166,7 +183,11 @@ func collectMessages(args []string) ([]string, error) {
 
 // runBatch checks every file, in parallel. Reports come back in input order so
 // output is deterministic regardless of scheduling.
-func runBatch(files []string, cat *iso20022.Catalogue) *BatchReport {
+func runBatchWithProfile(files []string, cat *iso20022.Catalogue, profile *rules.Profile) *BatchReport {
+	return runBatchWithRuntime(files, cat, profile, nil)
+}
+
+func runBatchWithRuntime(files []string, cat *iso20022.Catalogue, profile *rules.Profile, external *iso20022.ExternalCodeSets) *BatchReport {
 	workers := batchWorkers
 	if workers <= 0 {
 		workers = runtime.NumCPU()
@@ -184,7 +205,7 @@ func runBatch(files []string, cat *iso20022.Catalogue) *BatchReport {
 		go func() {
 			defer wg.Done()
 			for i := range jobs {
-				reports[i] = checkOne(files[i], cat)
+				reports[i] = checkOneWithRuntime(files[i], cat, profile, external)
 			}
 		}()
 	}
@@ -195,6 +216,10 @@ func runBatch(files []string, cat *iso20022.Catalogue) *BatchReport {
 	wg.Wait()
 
 	out := &BatchReport{Files: len(files), Profile: batchProfile, Reports: reports}
+	if profile != nil {
+		out.Profile = profile.Name
+		out.Pack = profile.Pack
+	}
 	for _, r := range reports {
 		if r.ErrorCount > 0 || r.Err != "" {
 			out.Failed++
@@ -207,6 +232,20 @@ func runBatch(files []string, cat *iso20022.Catalogue) *BatchReport {
 }
 
 func checkOne(path string, cat *iso20022.Catalogue) FileReport {
+	var profile *rules.Profile
+	if batchProfile != "" {
+		if resolved, err := rules.Get(batchProfile); err == nil {
+			profile = &resolved
+		}
+	}
+	return checkOneWithProfile(path, cat, profile)
+}
+
+func checkOneWithProfile(path string, cat *iso20022.Catalogue, profile *rules.Profile) FileReport {
+	return checkOneWithRuntime(path, cat, profile, nil)
+}
+
+func checkOneWithRuntime(path string, cat *iso20022.Catalogue, profile *rules.Profile, external *iso20022.ExternalCodeSets) FileReport {
 	rep := FileReport{File: path}
 
 	data, err := os.ReadFile(path)
@@ -229,20 +268,28 @@ func checkOne(path string, cat *iso20022.Catalogue) FileReport {
 	rep.ErrorCount += lintRes.Errors
 
 	if cat != nil {
-		schemaRes, err := cat.Validate(data)
+		var schemaRes *iso20022.SchemaResult
+		if external == nil {
+			schemaRes, err = cat.Validate(data)
+		} else {
+			var schemaPath string
+			schemaPath, err = cat.SchemaPath(rep.MessageID)
+			if err == nil {
+				schemaRes, err = iso20022.ValidateFileWithExternalCodes(data, schemaPath, external)
+			}
+		}
 		switch {
 		case err != nil:
-			// A message whose schema is not installed is reported, not counted
-			// as a failure of the message itself.
 			rep.Err = err.Error()
+			rep.ErrorCount++
 		default:
 			rep.Schema = schemaRes
 			rep.ErrorCount += len(schemaRes.Errors)
 		}
 	}
 
-	if batchProfile != "" {
-		profRes, err := iso20022.CheckProfile(data, batchProfile, path)
+	if profile != nil {
+		profRes, err := runResolvedProfile(data, path, *profile)
 		if err != nil {
 			rep.Err = err.Error()
 			rep.ErrorCount++
@@ -253,6 +300,99 @@ func checkOne(path string, cat *iso20022.Catalogue) FileReport {
 	}
 
 	return rep
+}
+
+func sarifRuleID(prefix, name string) string {
+	var b strings.Builder
+	b.WriteString(prefix)
+	lastDash := false
+	for _, r := range strings.ToLower(name) {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+			lastDash = false
+		} else if !lastDash {
+			b.WriteByte('-')
+			lastDash = true
+		}
+	}
+	return strings.TrimRight(b.String(), "-")
+}
+
+func batchSARIFDiagnostics(report *BatchReport) []rules.SARIFDiagnostic {
+	var out []rules.SARIFDiagnostic
+	profileRules := map[string]rules.Rule{}
+	if report.Profile != "" {
+		if p, err := rules.Get(report.Profile); err == nil {
+			for _, rule := range p.Rules {
+				profileRules[rule.ID] = rule
+			}
+		}
+	}
+	for _, rep := range report.Reports {
+		if rep.Lint != nil {
+			for _, issue := range rep.Lint.Issues {
+				severity := rules.SeverityInfo
+				switch issue.Severity {
+				case iso20022.SeverityError:
+					severity = rules.SeverityError
+				case iso20022.SeverityWarning:
+					severity = rules.SeverityWarning
+				}
+				description := issue.Expected
+				if description == "" {
+					description = issue.Rule
+				}
+				help := issue.Remediation
+				if help == "" {
+					help = "Correct the field and run AskISO again."
+				}
+				out = append(out, rules.SARIFDiagnostic{
+					RuleID: sarifRuleID("lint/", issue.Rule), Name: issue.Rule,
+					Description: description, Help: help, Severity: severity,
+					Message: issue.Message, File: rep.File, Path: issue.Path,
+					Properties: map[string]string{"engine": "linter"},
+				})
+			}
+		}
+		if rep.Schema != nil {
+			for _, issue := range rep.Schema.Errors {
+				out = append(out, rules.SARIFDiagnostic{
+					RuleID: sarifRuleID("xsd/", issue.Rule), Name: issue.Rule,
+					Description: "ISO 20022 XML Schema validation failure",
+					Help:        "Change the element or attribute to satisfy the message schema.",
+					Severity:    rules.SeverityError, Message: issue.Message,
+					File: rep.File, Path: issue.Path,
+					Properties: map[string]string{"engine": "schema"},
+				})
+			}
+		}
+		if rep.Profile != nil {
+			for _, finding := range rep.Profile.Findings {
+				rule := profileRules[finding.RuleID]
+				help := finding.Remediation
+				if help == "" {
+					help = rule.Remediation
+				}
+				out = append(out, rules.SARIFDiagnostic{
+					RuleID: finding.RuleID, Name: finding.Rule,
+					Description: rule.Description, HelpURI: finding.Reference,
+					Help: help, Severity: finding.Severity, Message: finding.Message,
+					File: rep.File, Path: finding.Path,
+					Properties: map[string]string{"engine": "profile", "profile": report.Profile},
+				})
+			}
+		}
+		if rep.Err != "" && rep.ErrorCount > 0 && rep.Lint == nil {
+			out = append(out, rules.SARIFDiagnostic{
+				RuleID: "askiso/input", Name: "Input could not be checked",
+				Description: "AskISO could not read or parse the input document.",
+				Help:        "Correct the input or catalogue error and run AskISO again.",
+				Severity:    rules.SeverityError, Message: firstLineOf(rep.Err), File: rep.File,
+				Properties: map[string]string{"engine": "askiso"},
+			})
+		}
+	}
+	return out
 }
 
 func printBatchText(report *BatchReport) {
@@ -316,5 +456,9 @@ func init() {
 		"Also validate each message against its schema (needs an installed catalogue)")
 	batchCmd.Flags().IntVar(&batchWorkers, "workers", 0, "Parallel workers (default: one per CPU)")
 	batchCmd.Flags().BoolVarP(&batchQuiet, "quiet", "s", false, "Only list files that failed")
+	batchCmd.Flags().StringVar(&batchCBPRPack, "cbpr-pack", "",
+		"Local CBPR+ PDF directory or compiled .cbpr-pack.json (implies --profile cbpr-plus)")
+	batchCmd.Flags().StringVar(&batchCBPRWorkspace, "cbpr-workspace", "",
+		"Verified private CBPR+ workspace and external-code index")
 	RootCmd.AddCommand(batchCmd)
 }

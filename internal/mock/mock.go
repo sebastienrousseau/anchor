@@ -17,6 +17,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/sebastienrousseau/askiso/internal/generator"
@@ -77,6 +78,7 @@ type Server struct {
 	Port     int
 	Srv      *http.Server
 	scenario Scenario
+	sequence atomic.Uint64
 }
 
 // NewServer creates a mock rail on loopback.
@@ -87,11 +89,13 @@ func NewServer(port int) *Server {
 // NewServerWith creates a mock rail from explicit options.
 func NewServerWith(opt Options) *Server {
 	s := &Server{Port: opt.Port, scenario: opt.Scenario}
+	s.sequence.Store(uint64(time.Now().UnixNano()))
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/health", s.handleHealth)
 	mux.HandleFunc("/v1/payments", s.handlePayment)
 	mux.HandleFunc("/v1/accounts/", s.handleAccountStatement)
+	mux.HandleFunc("/v1/returns/", s.handleReturn)
 
 	host := opt.Host
 	if host == "" {
@@ -129,6 +133,11 @@ func (s *Server) Start() error {
 func (s *Server) Shutdown(ctx context.Context) error { return s.Srv.Shutdown(ctx) }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":   "UP",
 		"service":  "AskISO ISO 20022 Mock Clearing Rail",
@@ -146,6 +155,7 @@ func scenarioName(sc Scenario) string {
 
 func (s *Server) handlePayment(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -162,7 +172,7 @@ func (s *Server) handlePayment(w http.ResponseWriter, r *http.Request) {
 
 	wantsJSON := strings.Contains(r.Header.Get("Accept"), "application/json")
 	now := time.Now().UTC().Format(time.RFC3339)
-	ref := time.Now().Unix()
+	ref := s.sequence.Add(1)
 
 	// A forced rejection scenario short-circuits the business rules.
 	if reason, forced := forcedRejection(s.scenario); forced {
@@ -193,20 +203,26 @@ func (s *Server) handlePayment(w http.ResponseWriter, r *http.Request) {
 			"timestamp":   now,
 		}
 		if s.scenario == ScenarioReturn {
-			payload["follow_up"] = "pacs.004"
+			payload["follow_up"] = map[string]any{
+				"message_type": "pacs.004.001.11",
+				"href":         fmt.Sprintf("/v1/returns/%d", ref),
+			}
 		}
 		writeJSON(w, http.StatusOK, payload)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/xml")
+	if s.scenario == ScenarioReturn {
+		w.Header().Set("Link", fmt.Sprintf("</v1/returns/%d>; rel=follow-up; type=application/xml", ref))
+	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(acceptedReport(status, detail, ref, now)))
 }
 
 // reject writes a pacs.002 rejection, or its JSON equivalent.
 func (s *Server) reject(w http.ResponseWriter, wantsJSON bool, reason, detail string,
-	issues []linter.Issue, now string, ref int64) {
+	issues []linter.Issue, now string, ref uint64) {
 
 	if wantsJSON {
 		payload := map[string]any{
@@ -260,7 +276,7 @@ func reasonForFindings(res *linter.Result) string {
 	return "NARR"
 }
 
-func acceptedReport(status, detail string, ref int64, now string) string {
+func acceptedReport(status, detail string, ref uint64, now string) string {
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.002.001.12">
   <FIToFIPmtStsRpt>
@@ -275,10 +291,10 @@ func acceptedReport(status, detail string, ref int64, now string) string {
       </StsRsnInf>
     </TxInfAndSts>
   </FIToFIPmtStsRpt>
-</Document>`, ref, now, status, detail)
+</Document>`, ref, generator.EscapeText(now), generator.EscapeText(status), generator.EscapeText(detail))
 }
 
-func rejectedReport(reason, detail string, ref int64, now string) string {
+func rejectedReport(reason, detail string, ref uint64, now string) string {
 	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
 <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.002.001.12">
   <FIToFIPmtStsRpt>
@@ -294,16 +310,25 @@ func rejectedReport(reason, detail string, ref int64, now string) string {
       </StsRsnInf>
     </TxInfAndSts>
   </FIToFIPmtStsRpt>
-</Document>`, ref, now, reason, detail)
+</Document>`, ref, generator.EscapeText(now), generator.EscapeText(reason), generator.EscapeText(detail))
 }
 
 func (s *Server) handleAccountStatement(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	account := strings.TrimPrefix(r.URL.Path, "/v1/accounts/")
 	if i := strings.IndexByte(account, '/'); i >= 0 {
 		account = account[:i]
 	}
 	if account == "" {
 		http.Error(w, "Account identifier required in path", http.StatusBadRequest)
+		return
+	}
+	if valid, _ := linter.ValidateIBAN(account); !valid {
+		http.Error(w, "Invalid IBAN account identifier", http.StatusBadRequest)
 		return
 	}
 
@@ -319,6 +344,45 @@ func (s *Server) handleAccountStatement(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/xml")
 	_, _ = w.Write([]byte(doc))
+}
+
+// handleReturn serves the asynchronous pacs.004 promised by the return
+// scenario. The fixture is stateless, so the path reference is echoed as the
+// original instruction identifier rather than looked up in a database.
+func (s *Server) handleReturn(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", http.MethodGet)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if s.scenario != ScenarioReturn {
+		http.NotFound(w, r)
+		return
+	}
+	ref := strings.TrimPrefix(r.URL.Path, "/v1/returns/")
+	if ref == "" || strings.ContainsRune(ref, '/') {
+		http.Error(w, "Return reference required in path", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/xml")
+	_, _ = w.Write([]byte(returnedPayment(ref, time.Now().UTC().Format(time.RFC3339))))
+}
+
+func returnedPayment(ref, now string) string {
+	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.004.001.11">
+  <PmtRtr>
+    <GrpHdr>
+      <MsgId>MSG-RETURN-%s</MsgId>
+      <CreDtTm>%s</CreDtTm>
+    </GrpHdr>
+    <TxInf>
+      <OrgnlInstrId>MSG-ACCP-%s</OrgnlInstrId>
+      <RtrRsnInf><Rsn><Cd>AC04</Cd></Rsn><AddtlInf>Funds returned by mock scenario</AddtlInf></RtrRsnInf>
+    </TxInf>
+  </PmtRtr>
+</Document>`, generator.EscapeText(ref), generator.EscapeText(now), generator.EscapeText(ref))
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {

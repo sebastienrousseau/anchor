@@ -5,9 +5,9 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/atotto/clipboard"
+	"github.com/sebastienrousseau/askiso/internal/generator"
 	"github.com/sebastienrousseau/askiso/internal/graph"
 	"github.com/spf13/cobra"
 )
@@ -26,19 +26,28 @@ var graphCmd = &cobra.Command{
 flows between Debtor, Debtor Bank, Clearing Network, Creditor Bank, and Creditor. 
 Outputs formatted Mermaid markdown diagrams or terminal ASCII flows.`,
 	Example: `  askiso graph pacs.008
-  askiso graph --preset fednow --format ascii
-  askiso graph --format mermaid --copy`,
+	  askiso graph --preset fednow --format ascii
+	  askiso graph --format mermaid --copy`,
+	Args: cobra.RangeArgs(0, 1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		format, err := normalizeChoice("format", graphFormat, "ascii", "mermaid")
+		if err != nil {
+			return err
+		}
+		preset, err := normalizeChoice("preset", graphPreset, generator.Presets()...)
+		if err != nil {
+			return err
+		}
 		msgType := "pacs.008"
 		if len(args) > 0 {
 			msgType = args[0]
 		}
 
 		var output string
-		if strings.ToLower(graphFormat) == "mermaid" {
-			output = graph.GenerateMermaid(msgType, graphPreset)
+		if format == "mermaid" {
+			output = graph.GenerateMermaid(msgType, preset)
 		} else {
-			output = graph.GenerateASCII(msgType, graphPreset)
+			output = graph.GenerateASCII(msgType, preset)
 		}
 
 		if graphCopy {
@@ -47,7 +56,7 @@ Outputs formatted Mermaid markdown diagrams or terminal ASCII flows.`,
 			}
 		}
 
-		if !graphCopy || graphFormat == "ascii" {
+		if !graphCopy || format == "ascii" {
 			fmt.Println(output)
 		}
 		return nil
@@ -55,7 +64,7 @@ Outputs formatted Mermaid markdown diagrams or terminal ASCII flows.`,
 }
 
 func init() {
-	graphCmd.Flags().StringVarP(&graphPreset, "preset", "p", "sepa", "Clearing network preset (sepa, fednow, target2, chaps)")
+	graphCmd.Flags().StringVarP(&graphPreset, "preset", "p", "sepa", "Clearing network preset (standard, sepa, fednow, fedwire, target2, chaps)")
 	graphCmd.Flags().StringVarP(&graphFormat, "format", "f", "ascii", "Diagram format: ascii or mermaid")
 	graphCmd.Flags().BoolVarP(&graphCopy, "copy", "y", false, "Copy diagram to clipboard")
 

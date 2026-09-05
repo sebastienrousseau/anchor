@@ -8,8 +8,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/sebastienrousseau/askiso/internal/mcp"
 	"github.com/sebastienrousseau/askiso/pkg/iso20022"
@@ -44,7 +46,8 @@ func session(t *testing.T, requests ...string) []map[string]any {
 	return replies
 }
 
-const initialize = `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","clientInfo":{"name":"test","version":"1"}}}`
+const initialize = `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","clientInfo":{"name":"test","version":"1"}}}` + "\n" +
+	`{"jsonrpc":"2.0","method":"notifications/initialized"}`
 
 // call builds a tools/call request.
 func call(id int, name string, args map[string]any) string {
@@ -216,6 +219,33 @@ func TestCallsBeforeInitialize(t *testing.T) {
 		if !strings.Contains(e["message"].(string), "initialize") {
 			t.Errorf("error = %v", e)
 		}
+	}
+}
+
+func TestToolsRequireInitializedNotification(t *testing.T) {
+	rawInitialize := `{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}`
+	replies := session(t,
+		rawInitialize,
+		`{"jsonrpc":"2.0","id":2,"method":"tools/list"}`,
+		`{"jsonrpc":"2.0","method":"notifications/initialized"}`,
+		`{"jsonrpc":"2.0","id":3,"method":"tools/list"}`,
+	)
+	if len(replies) != 3 {
+		t.Fatalf("got %d replies, want 3: %v", len(replies), replies)
+	}
+	if _, refused := replies[1]["error"]; !refused {
+		t.Fatalf("tools/list entered operation phase before initialized notification: %v", replies[1])
+	}
+	if _, accepted := replies[2]["result"]; !accepted {
+		t.Fatalf("tools/list stayed unavailable after initialized notification: %v", replies[2])
+	}
+
+	unsolicited := session(t,
+		`{"jsonrpc":"2.0","method":"notifications/initialized"}`,
+		`{"jsonrpc":"2.0","id":4,"method":"tools/list"}`,
+	)
+	if len(unsolicited) != 1 || unsolicited[0]["error"] == nil {
+		t.Fatalf("unsolicited initialized notification unlocked tools: %v", unsolicited)
 	}
 }
 
@@ -577,6 +607,24 @@ func TestServeStopsOnCancelledContext(t *testing.T) {
 	}
 	if out.Len() != 0 {
 		t.Errorf("a cancelled server still replied: %s", out.String())
+	}
+}
+
+func TestServeCancellationInterruptsBlockedRead(t *testing.T) {
+	reader, writer := io.Pipe()
+	defer func() { _ = writer.Close() }()
+	s := mcp.New(reader, &bytes.Buffer{}, &bytes.Buffer{})
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- s.Serve(ctx) }()
+	cancel()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("Serve returned %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Serve stayed blocked after cancellation")
 	}
 }
 

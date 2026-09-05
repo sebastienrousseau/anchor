@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // Message is a parsed MT message.
@@ -222,9 +223,14 @@ func splitBlocks(text string, m *Message) error {
 			return fmt.Errorf("block {%s: is not closed", num)
 		}
 
-		// Content is what sits between "{n:" and the matching "}".
-		content := text[loc[1]:end]
-		m.Blocks[num] = strings.TrimSuffix(strings.TrimSpace(content), "-")
+		// Content is what sits between "{n:" and the matching "}".  Only
+		// block 4 has a dash terminator, and it is a line of its own. Removing
+		// an arbitrary trailing dash corrupts legitimate values such as :20:-.
+		content := strings.TrimSpace(text[loc[1]:end])
+		if num == "4" {
+			content = strings.TrimSuffix(content, "\n-")
+		}
+		m.Blocks[num] = content
 	}
 	return nil
 }
@@ -293,8 +299,6 @@ func parseFields(body string) []Field {
 		}
 
 		value := strings.Trim(body[valueStart:valueEnd], "\n")
-		value = strings.TrimSuffix(value, "\n-")
-		value = strings.TrimRight(value, "\n-")
 
 		fields = append(fields, Field{
 			Tag:    tag,
@@ -311,7 +315,7 @@ func parseFields(body string) []Field {
 
 // amountRe matches field 32A: a six-digit value date, a currency, and an amount
 // written with a comma as the decimal separator.
-var amountRe = regexp.MustCompile(`^(\d{6})([A-Z]{3})([\d,]+)$`)
+var amountRe = regexp.MustCompile(`^(\d{6})([A-Z]{3})(\d+[,]?\d*)$`)
 
 // ValueDateAmount is the decomposition of a :32A: field.
 type ValueDateAmount struct {
@@ -359,8 +363,7 @@ func yymmddToISO(v string) (string, error) {
 	}
 	iso := century + yy + "-" + v[2:4] + "-" + v[4:6]
 
-	mm, dd := v[2:4], v[4:6]
-	if mm < "01" || mm > "12" || dd < "01" || dd > "31" {
+	if _, err := time.Parse("2006-01-02", iso); err != nil {
 		return "", fmt.Errorf("%q is not a valid date", v)
 	}
 	return iso, nil
@@ -368,7 +371,7 @@ func yymmddToISO(v string) (string, error) {
 
 // ccyAmountRe matches a currency and amount without a date, as fields 33B, 71F
 // and 71G carry them.
-var ccyAmountRe = regexp.MustCompile(`^([A-Z]{3})([\d,]+)$`)
+var ccyAmountRe = regexp.MustCompile(`^([A-Z]{3})(\d+[,]?\d*)$`)
 
 // CurrencyAmount is a currency and an amount with no value date.
 type CurrencyAmount struct {
@@ -416,7 +419,7 @@ type StatementLine struct {
 // date, and it is followed by the debit or credit mark; requiring that mark is
 // what keeps the amount from being read as a date.
 var statementLineRe = regexp.MustCompile(
-	`^(\d{6})(\d{4})?(RC|RD|EC|ED|C|D)([A-Z])?([\d,]+)([NFS][A-Z0-9]{3})(.*)$`)
+	`^(\d{6})(\d{4})?(RC|RD|EC|ED|C|D)([A-Z])?(\d+[,]?\d*)([NFS][A-Z0-9]{3})(.*)$`)
 
 // ParseStatementLine decomposes an MT940 statement line.
 func ParseStatementLine(value string) (StatementLine, error) {

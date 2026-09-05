@@ -4,6 +4,8 @@
 package generator
 
 import (
+	"encoding/xml"
+	"io"
 	"strings"
 	"testing"
 )
@@ -26,6 +28,42 @@ func TestGenerateMessages(t *testing.T) {
 		}
 		if !strings.Contains(xml, "1234.56") {
 			t.Errorf("Generated XML for %s missing amount", ty)
+		}
+	}
+}
+
+func TestGenerateEscapesCallerValues(t *testing.T) {
+	for _, ty := range TemplateTypes() {
+		opt := DefaultOptions(ty)
+		switch ty {
+		case "pacs.008", "pain.001":
+			opt.Debtor = `A&B <Holdings>`
+		case "pacs.009":
+			opt.EndToEndID = `E2E&<ID>`
+		case "camt.053":
+			opt.Currency = `E&<`
+		}
+		doc, err := Generate(opt)
+		if ty == "camt.053" {
+			if err == nil {
+				t.Fatal("markup in a typed currency field should be rejected")
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatalf("%s: %v", ty, err)
+		}
+		dec := xml.NewDecoder(strings.NewReader(doc))
+		for {
+			if _, err := dec.Token(); err != nil {
+				if err == io.EOF {
+					break
+				}
+				t.Fatalf("%s generated malformed XML: %v\n%s", ty, err, doc)
+			}
+		}
+		if !strings.Contains(doc, "&amp;") || !strings.Contains(doc, "&lt;") {
+			t.Errorf("%s did not escape text content", ty)
 		}
 	}
 }

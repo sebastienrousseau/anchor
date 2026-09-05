@@ -39,8 +39,12 @@ var mockCmd = &cobra.Command{
 	Long: `Mock starts an embedded HTTP server simulating a live ISO 20022 clearing network.
 Accepts pacs.008 payments, runs semantic validation, and returns synchronous pacs.002 ACK/RJCT.`,
 	Example: `  askiso mock --port 8080
-  askiso mock`,
+	  askiso mock`,
+	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if mockPort < 0 || mockPort > 65535 {
+			return fmt.Errorf("--port must be between 0 and 65535")
+		}
 		if mockScenario != "" && !validScenario(mockScenario) {
 			return fmt.Errorf("unknown scenario %q (available: %s)",
 				mockScenario, strings.Join(mock.Scenarios(), ", "))
@@ -69,20 +73,35 @@ Accepts pacs.008 payments, runs semantic validation, and returns synchronous pac
 		// Shut down cleanly on interrupt so in-flight requests finish.
 		stop := make(chan os.Signal, 1)
 		signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+		defer signal.Stop(stop)
 
-		errCh := make(chan error, 1)
-		go func() { errCh <- srv.Start() }()
-
-		select {
-		case err := <-errCh:
-			return err
-		case <-stop:
-			fmt.Println("\nShutting down...")
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			return srv.Shutdown(ctx)
-		}
+		return serveMockUntilSignal(srv, stop)
 	},
+}
+
+type mockLifecycle interface {
+	Start() error
+	Shutdown(context.Context) error
+}
+
+func serveMockUntilSignal(srv mockLifecycle, stop <-chan os.Signal) error {
+	errCh := make(chan error, 1)
+	go func() { errCh <- srv.Start() }()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-stop:
+		fmt.Println("\nShutting down...")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		shutdownErr := srv.Shutdown(ctx)
+		serveErr := <-errCh
+		if shutdownErr != nil {
+			return shutdownErr
+		}
+		return serveErr
+	}
 }
 
 func init() {

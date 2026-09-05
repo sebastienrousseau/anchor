@@ -122,3 +122,39 @@ func TestLoadIsIdempotent(t *testing.T) {
 		t.Error("Load and MustLoad should share the cached registry")
 	}
 }
+
+func TestCustomRegistrySortsSetsAndRanksSetNameMatches(t *testing.T) {
+	r := &Registry{
+		Sets: []Set{
+			{ID: "old", Name: "Obscure Clearing Widget", Version: "v01"},
+			{ID: "new", Name: "Obscure Clearing Widget", Version: "v09"},
+		},
+		Messages: []Message{
+			{ID: "pacs.008.001.10", BaseCode: "pacs.008", Domain: "pacs", SetIDs: []string{"old", "new"}},
+			{ID: "pacs.008-extra", BaseCode: "pacs.other", Domain: "pacs"},
+			{ID: "admi.024.001.01", BaseCode: "admi.024", Domain: "admi", SetIDs: []string{"old"}},
+		},
+		setByID: map[string]Set{
+			"old": {ID: "old", Name: "Obscure Clearing Widget", Version: "v01"},
+			"new": {ID: "new", Name: "Obscure Clearing Widget", Version: "v09"},
+		},
+		messageMap: map[string]Message{},
+	}
+	for _, m := range r.Messages {
+		r.messageMap[m.ID] = m
+	}
+	sets := r.SetsFor("pacs.008.001.10")
+	if len(sets) != 2 || sets[0].Version != "v09" {
+		t.Fatalf("publishing sets were not sorted newest first: %+v", sets)
+	}
+	hits := r.Search("obscure clearing widget")
+	if len(hits) != 2 {
+		t.Fatalf("set-name search returned %+v", hits)
+	}
+	// Mix an exact and a prefix hit so the score comparator, rather than only
+	// the identifier tie-breaker, determines the order.
+	hits = r.Search("pacs.008")
+	if len(hits) != 2 || hits[0].BaseCode != "pacs.008" {
+		t.Fatalf("score-ranked search returned %+v", hits)
+	}
+}

@@ -29,6 +29,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/sebastienrousseau/askiso/internal/codes"
 	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
@@ -45,6 +46,10 @@ type Options struct {
 	// Values overrides generated content by element name, so a caller can put
 	// a real amount or a real BIC into an otherwise synthetic message.
 	Values map[string]string
+	// ExternalCodes supplies Registration Authority values omitted from ISO
+	// 20022 XSD enumerations. A matching real code replaces the shape-only
+	// placeholder used when no publication is available.
+	ExternalCodes *codes.ExternalSets
 }
 
 // DefaultOptions is a minimal message: mandatory elements only.
@@ -322,6 +327,9 @@ func (g *generator) simpleValue(typeName, elementName, path string) string {
 	// constrains only the shape. A single letter satisfies that and reads as
 	// nothing; a four-character token reads as a code.
 	if isExternalCodeType(typeName) {
+		if members := g.opts.ExternalCodes.Set(typeName); len(members) > 0 {
+			return members[0].Code
+		}
 		return codePlaceholder(facets)
 	}
 	return v
@@ -370,7 +378,10 @@ func valueForFacets(base string, f xsd.Facets) (string, error) {
 	case "date":
 		return "2026-11-14", nil
 	case "dateTime":
-		return "2026-11-14T09:00:00Z", nil
+		// An explicit UTC offset is valid xs:dateTime and also satisfies the
+		// CBPR_DateTime restriction, which deliberately rejects the equivalent
+		// shorthand "Z" form.
+		return "2026-11-14T09:00:00+00:00", nil
 	case "time":
 		return "09:00:00", nil
 	case "gYear":

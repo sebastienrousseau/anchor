@@ -8,11 +8,23 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/sebastienrousseau/askiso/internal/catalog"
 	"github.com/sebastienrousseau/askiso/internal/tui"
 	"github.com/spf13/cobra"
 )
+
+func normalizeChoice(flag, value string, choices ...string) (string, error) {
+	normalized := strings.ToLower(strings.TrimSpace(value))
+	for _, choice := range choices {
+		if normalized == choice {
+			return normalized, nil
+		}
+	}
+	return "", fmt.Errorf("invalid --%s value %q (available: %s)",
+		flag, value, strings.Join(choices, ", "))
+}
 
 var (
 	showLogo    bool

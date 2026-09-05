@@ -83,7 +83,17 @@ var addressExemptMessages = map[string]bool{
 // exemptFromAddressRules matches on the base code, so every version of an
 // exempted message is covered.
 func exemptFromAddressRules(msgID string) bool {
-	return addressExemptMessages[baseCode(msgID)]
+	base := baseCode(msgID)
+	parts := strings.Split(base, ".")
+	if len(parts) == 0 {
+		return true
+	}
+	switch parts[0] {
+	case "pacs", "pain", "camt":
+		return addressExemptMessages[base]
+	default:
+		return true
+	}
 }
 
 const addressReference = "https://www.swift.com/standards/iso-20022/removal-unstructured-address"

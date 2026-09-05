@@ -4,6 +4,8 @@
 package flow
 
 import (
+	"encoding/xml"
+	"io"
 	"regexp"
 	"strings"
 	"testing"
@@ -24,6 +26,41 @@ func TestGenerateUUIDv4Shape(t *testing.T) {
 			t.Fatalf("duplicate UUID after %d draws: %s", i, u)
 		}
 		seen[u] = true
+	}
+}
+
+func TestGenerateLifecycleEscapesCallerValues(t *testing.T) {
+	opt := generator.DefaultOptions("pacs.008")
+	opt.Debtor = `A&B <Holdings>`
+	opt.Creditor = `"Quoted" & Co`
+	opt.EndToEndID = `E2E<&>`
+	chain, err := GenerateLifecycle(opt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if chain.Debtor != opt.Debtor || chain.Creditor != opt.Creditor {
+		t.Fatal("chain metadata should preserve caller values")
+	}
+	for _, step := range chain.Steps {
+		dec := xml.NewDecoder(strings.NewReader(step.XMLPayload))
+		for {
+			if _, err := dec.Token(); err != nil {
+				if err == io.EOF {
+					break
+				}
+				t.Fatalf("%s generated malformed XML: %v\n%s", step.MsgType, err, step.XMLPayload)
+			}
+		}
+	}
+}
+
+func TestFedwireNamesItsClearingSystem(t *testing.T) {
+	chain, err := GenerateLifecycle(generator.Options{MsgType: "pacs.008", Preset: "fedwire"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(chain.Steps[1].XMLPayload, "<Prtry>FEDWIRE</Prtry>") {
+		t.Errorf("fedwire lifecycle used the wrong clearing system:\n%s", chain.Steps[1].XMLPayload)
 	}
 }
 
@@ -88,6 +125,12 @@ func TestGenerateLifecycleHonoursPresets(t *testing.T) {
 				t.Errorf("preset %q produced %d steps", preset, len(chain.Steps))
 			}
 		})
+	}
+}
+
+func TestGenerateLifecycleRejectsUnknownPreset(t *testing.T) {
+	if _, err := GenerateLifecycle(generator.Options{MsgType: "pacs.008", Preset: "not-a-rail"}); err == nil || !strings.Contains(err.Error(), "unknown preset") {
+		t.Fatalf("unknown preset error = %v", err)
 	}
 }
 

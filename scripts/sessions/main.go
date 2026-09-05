@@ -23,8 +23,10 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -43,16 +45,25 @@ type session struct {
 }
 
 func main() {
-	record := flag.Bool("record", false, "rewrite the recorded output instead of verifying it")
-	content := flag.String("content", "web/content", "directory of content to check")
-	fixtures := flag.String("fixtures", "testdata/sessions", "directory the sessions run in")
-	bin := flag.String("bin", "", "askiso binary to run (default: build one)")
-	flag.Parse()
+	os.Exit(mainExit(os.Args[1:], os.Stderr))
+}
+
+func mainExit(args []string, stderr io.Writer) int {
+	flags := flag.NewFlagSet("sessions", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	record := flags.Bool("record", false, "rewrite the recorded output instead of verifying it")
+	content := flags.String("content", "web/content", "directory of content to check")
+	fixtures := flags.String("fixtures", "testdata/sessions", "directory the sessions run in")
+	bin := flags.String("bin", "", "askiso binary to run (default: build one)")
+	if err := flags.Parse(args); err != nil {
+		return 2
+	}
 
 	if err := run(*content, *fixtures, *bin, *record); err != nil {
-		fmt.Fprintf(os.Stderr, "sessions: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(stderr, "sessions: %v\n", err)
+		return 1
 	}
+	return 0
 }
 
 func run(contentDir, fixtures, bin string, record bool) error {
@@ -237,7 +248,11 @@ func replay(bin, dir string, lines []string) ([]string, int, error) {
 		var buf bytes.Buffer
 		cmd.Stdout = &buf
 		cmd.Stderr = &buf
-		_ = cmd.Run() // a non-zero exit is a real result for a linter
+		err := cmd.Run()
+		var exitErr *exec.ExitError
+		if err != nil && !errors.As(err, &exitErr) {
+			return nil, skipped, fmt.Errorf("starting %q: %w", bin, err)
+		}
 
 		out = append(out, clean(buf.String())...)
 	}

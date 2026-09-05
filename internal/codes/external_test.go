@@ -131,6 +131,20 @@ func TestImportSpreadsheet(t *testing.T) {
 	}
 }
 
+func TestSpreadsheetText(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "guidelines.xlsx")
+	writeSpreadsheet(t, path,
+		[]string{"Rule", "Definition"},
+		[][]string{{"CBPR-UETR", "Unique transaction reference is mandatory."}})
+	text, err := codes.SpreadsheetText(path)
+	if err != nil || !strings.Contains(text, "Unique transaction reference") {
+		t.Fatalf("spreadsheet text = %q, %v", text, err)
+	}
+	if _, err := codes.SpreadsheetText(filepath.Join(t.TempDir(), "legacy.xls")); err == nil {
+		t.Fatal("legacy XLS was accepted")
+	}
+}
+
 func TestImportSpreadsheetColumnOrderAndNames(t *testing.T) {
 	// The Registration Authority has renamed and reordered these columns
 	// between publications, so the import finds them by heading.
@@ -240,6 +254,51 @@ func TestImportJSONArray(t *testing.T) {
 	}
 	if got := sets.Lookup("SALA"); len(got) != 1 || got[0].Name != "Salary Payment" {
 		t.Errorf("Lookup(SALA) = %+v", got)
+	}
+}
+
+func TestImportJSONSchemaPublication(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "2Q2026_externalcodesets_v3.json")
+	body := `{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "definitions":{
+    "ExternalPurpose1Code":{"type":"string","description":"Purpose","enum":["SALA","SUPP"]},
+    "ExternalOpenType":{"type":"string","minLength":1,"maxLength":4}
+  }
+}`
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sets, err := codes.ImportExternalSets(path)
+	if err != nil {
+		t.Fatalf("importing JSON Schema publication: %v", err)
+	}
+	if sets.Format != "json-schema" || sets.Publication != "2Q2026/v3" {
+		t.Fatalf("provenance = format %q, publication %q", sets.Format, sets.Publication)
+	}
+	if len(sets.SHA256) != 64 || sets.Total() != 2 || len(sets.SetNames()) != 1 {
+		t.Fatalf("schema import summary = sha %q, %d codes, sets %v", sets.SHA256, sets.Total(), sets.SetNames())
+	}
+	if got := sets.Lookup("SALA"); len(got) != 1 || got[0].Set != "ExternalPurpose1Code" || got[0].Definition != "" {
+		t.Fatalf("schema enum lookup = %+v", got)
+	}
+	if len(sets.Warnings) != 1 || !strings.Contains(sets.Warnings[0], "no per-code") {
+		t.Fatalf("schema information-loss warning = %v", sets.Warnings)
+	}
+}
+
+func TestImportOfficialExternalCodesFromEnvironment(t *testing.T) {
+	path := os.Getenv("ASKISO_TEST_EXTERNAL_CODES")
+	if path == "" {
+		t.Skip("set ASKISO_TEST_EXTERNAL_CODES to exercise a locally downloaded publication")
+	}
+	sets, err := codes.ImportExternalSets(path)
+	if err != nil {
+		t.Fatalf("importing local official publication: %v", err)
+	}
+	if sets.Format == "" || sets.Total() == 0 || len(sets.SetNames()) == 0 || len(sets.SHA256) != 64 {
+		t.Fatalf("incomplete official publication summary: format=%q codes=%d sets=%d sha=%q",
+			sets.Format, sets.Total(), len(sets.SetNames()), sets.SHA256)
 	}
 }
 
@@ -380,6 +439,10 @@ func TestSaveAndLoad(t *testing.T) {
 	if loaded.Total() != sets.Total() {
 		t.Errorf("loaded %d of %d codes", loaded.Total(), sets.Total())
 	}
+	if loaded.Format != sets.Format || loaded.Publication != sets.Publication || loaded.SHA256 != sets.SHA256 {
+		t.Errorf("stored provenance changed: got %s/%s/%s, want %s/%s/%s",
+			loaded.Format, loaded.Publication, loaded.SHA256, sets.Format, sets.Publication, sets.SHA256)
+	}
 
 	// A tab or a newline in a definition would otherwise split the row.
 	tabs := loaded.Lookup("TABS")
@@ -411,7 +474,7 @@ func TestLoadIgnoresCommentsAndShortRows(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	body := "# a comment\n\nExternalPurposeCode\tSALA\tSalary Payment\tPays salaries\n" +
+	body := "# a comment\n# format=tsv ignored-field publication=manual sha256=test\n\nExternalPurposeCode\tSALA\tSalary Payment\tPays salaries\n" +
 		"tooshort\n" +
 		"ExternalPurposeCode\tSUPP\n"
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
@@ -424,6 +487,9 @@ func TestLoadIgnoresCommentsAndShortRows(t *testing.T) {
 	}
 	if loaded.Total() != 2 {
 		t.Errorf("Total() = %d, want 2: %+v", loaded.Total(), loaded.Codes)
+	}
+	if loaded.Format != "tsv" || loaded.Publication != "manual" || loaded.SHA256 != "test" {
+		t.Fatalf("stored header metadata = %s/%s/%s", loaded.Format, loaded.Publication, loaded.SHA256)
 	}
 	// A row with only a set and a code is still a code.
 	if got := loaded.Lookup("SUPP"); len(got) != 1 || got[0].Name != "" {
@@ -462,9 +528,15 @@ func TestExternalSetsForCaches(t *testing.T) {
 	if first.Total() != 1 {
 		t.Fatalf("Total() = %d", first.Total())
 	}
-	// The second call comes from the cache: same pointer, no second read.
-	if codes.ExternalSetsFor(root) != first {
-		t.Error("the publication was read twice")
+	// Cached state is returned as an independent snapshot: callers cannot
+	// mutate the publication shared by later lookups.
+	second := codes.ExternalSetsFor(root)
+	if second == first || second.Total() != first.Total() {
+		t.Error("cached publication was not returned as an independent snapshot")
+	}
+	first.Codes[0].Code = "CALLER-MUTATION"
+	if fresh := codes.ExternalSetsFor(root); fresh.Codes[0].Code == "CALLER-MUTATION" {
+		t.Error("caller mutation contaminated the cached publication")
 	}
 
 	// A fresh import has to be visible without restarting.

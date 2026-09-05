@@ -10,6 +10,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/sebastienrousseau/askiso/internal/catalog"
+	"github.com/sebastienrousseau/askiso/internal/registry"
 )
 
 // writeSetZip builds an archive shaped like a Registration Authority download.
@@ -279,5 +282,94 @@ func TestFetchWatchOnAFileRatherThanADirectory(t *testing.T) {
 func TestZipsInReportsAMissingDirectory(t *testing.T) {
 	if _, err := zipsIn(filepath.Join(t.TempDir(), "absent")); err == nil {
 		t.Error("a missing directory was accepted")
+	}
+}
+
+func TestMatchSetsFallsBackToPublishedSetNames(t *testing.T) {
+	reg := &registry.Registry{Sets: []registry.Set{
+		{ID: "old", Name: "Special Settlement", Version: "v01"},
+		{ID: "new", Name: "Special Settlement", Version: "v02"},
+		{ID: "other", Name: "Other", Version: "v01"},
+	}}
+	sets := matchSets(reg, "special")
+	if len(sets) != 1 || sets[0].ID != "new" {
+		t.Fatalf("set-name fallback should retain the latest version: %+v", sets)
+	}
+}
+
+func TestWaitForArchiveReportsDirectoryDisappearing(t *testing.T) {
+	dir := t.TempDir()
+	go func() {
+		time.Sleep(200 * time.Millisecond)
+		_ = os.RemoveAll(dir)
+	}()
+	if _, err := waitForArchive(dir, 3*time.Second); err == nil || !strings.Contains(err.Error(), "reading") {
+		t.Fatalf("disappearing watch directory should fail: %v", err)
+	}
+}
+
+func TestImportFetchedDestinationPrecedence(t *testing.T) {
+	archive := filepath.Join(t.TempDir(), "set.zip")
+	writeSetZip(t, archive)
+	set := registry.Set{Name: "Payments Clearing and Settlement", Version: "v11"}
+	previousFetch, previousCatalog := fetchDest, catalogPath
+	t.Cleanup(func() { fetchDest, catalogPath = previousFetch, previousCatalog })
+
+	// Persistent --catalog is the first fallback after an explicit --to.
+	fetchDest = ""
+	catalogPath = filepath.Join(t.TempDir(), "from-flag")
+	captureStdout(t, func() {
+		if err := importFetched(archive, set); err != nil {
+			t.Fatalf("catalog flag destination: %v", err)
+		}
+	})
+	if _, err := os.Stat(catalogPath); err != nil {
+		t.Fatalf("catalog flag destination was not created: %v", err)
+	}
+
+	// The environment is next when neither destination flag is set.
+	catalogPath = ""
+	envDest := filepath.Join(t.TempDir(), "from-env")
+	t.Setenv(catalog.EnvCatalog, envDest)
+	captureStdout(t, func() {
+		if err := importFetched(archive, set); err != nil {
+			t.Fatalf("environment destination: %v", err)
+		}
+	})
+	if _, err := os.Stat(envDest); err != nil {
+		t.Fatalf("environment destination was not created: %v", err)
+	}
+
+	// Finally use the platform default, isolated under a temporary home.
+	t.Setenv(catalog.EnvCatalog, "")
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, "data"))
+	captureStdout(t, func() {
+		if err := importFetched(archive, set); err != nil {
+			t.Fatalf("default destination: %v", err)
+		}
+	})
+	if _, err := os.Stat(catalog.DefaultDir()); err != nil {
+		t.Fatalf("default destination was not created: %v", err)
+	}
+}
+
+func TestZipScanSkipsDirectoriesAndBrowserStartErrors(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, "folder.zip"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "notes.txt"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := zipsIn(dir); err != nil || len(got) != 0 {
+		t.Fatalf("non-archive entries should be skipped: %v %v", got, err)
+	}
+
+	// Prevent a real GUI launch while exercising the platform command path.
+	t.Setenv("PATH", t.TempDir())
+	if err := openInBrowser("https://example.invalid/"); err == nil {
+		t.Error("missing platform opener should be reported")
 	}
 }

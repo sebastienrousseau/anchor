@@ -8,7 +8,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
@@ -35,6 +37,10 @@ type MessageAnswer struct {
 	Details     string
 	Suggestions []string
 	RelatedMsgs []catalog.Message
+	// ProviderWarning explains why an explicitly configured model provider was
+	// not used. The offline answer still succeeds, but the fallback is no
+	// longer silent.
+	ProviderWarning string
 }
 
 var (
@@ -79,7 +85,9 @@ func NormalizeQuery(input string) string {
 }
 
 // Query processes a natural language prompt and returns an answer.
-func (e *Engine) Query(prompt string) MessageAnswer {
+func (e *Engine) Query(prompt string) (answer MessageAnswer) {
+	var providerWarning string
+	defer func() { answer.ProviderWarning = providerWarning }()
 	rawPrompt := strings.TrimSpace(prompt)
 	if rawPrompt == "" {
 		return MessageAnswer{
@@ -98,7 +106,8 @@ func (e *Engine) Query(prompt string) MessageAnswer {
 	p := strings.ToLower(normPrompt)
 
 	// 1. Check for external / local LLMs (OpenAI / Ollama / Gemini / Claude)
-	if llmResp, ok := e.queryExternalLLM(rawPrompt); ok && len(llmResp) > 15 {
+	llmResp, ok, providerWarning := e.queryExternalLLM(rawPrompt)
+	if ok && len(llmResp) > 15 {
 		return MessageAnswer{
 			Summary: "AskISO Ask AI (Connected LLM)",
 			Details: llmResp,
@@ -469,20 +478,29 @@ var (
 )
 
 func isValidEndpoint(rawURL string) bool {
-	lower := strings.ToLower(rawURL)
-	return strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://")
+	parsed, err := url.Parse(rawURL)
+	return err == nil && parsed.Host != "" && (parsed.Scheme == "http" || parsed.Scheme == "https")
 }
 
-func (e *Engine) queryExternalLLM(prompt string) (string, bool) {
+const maxLLMResponse = 2 << 20
+
+func (e *Engine) queryExternalLLM(prompt string) (string, bool, string) {
+	var failures []string
 	// 1. Check Ollama
-	ollamaHost := os.Getenv("OLLAMA_HOST")
+	ollamaHost, ollamaConfigured := os.LookupEnv("OLLAMA_HOST")
+	ollamaConfigured = ollamaConfigured && strings.TrimSpace(ollamaHost) != ""
 	if ollamaHost == "" {
 		ollamaHost = "http://localhost:11434"
 	}
 	if isValidEndpoint(ollamaHost) {
 		if resp, ok := e.callOllama(ollamaHost, prompt); ok {
-			return resp, true
+			return resp, true, ""
 		}
+		if ollamaConfigured {
+			failures = append(failures, "the configured Ollama provider was unavailable or returned an invalid response")
+		}
+	} else if ollamaConfigured {
+		failures = append(failures, "OLLAMA_HOST is not a valid HTTP(S) endpoint")
 	}
 
 	// 2. Check OpenAI Compatible API
@@ -494,12 +512,15 @@ func (e *Engine) queryExternalLLM(prompt string) (string, bool) {
 		}
 		if isValidEndpoint(baseURL) {
 			if resp, ok := e.callOpenAI(openaiKey, baseURL, prompt); ok {
-				return resp, true
+				return resp, true, ""
 			}
+			failures = append(failures, "the configured OpenAI-compatible provider was unavailable or returned an invalid response")
+		} else {
+			failures = append(failures, "OPENAI_BASE_URL is not a valid HTTP(S) endpoint")
 		}
 	}
 
-	return "", false
+	return "", false, strings.Join(failures, "; ")
 }
 
 func (e *Engine) callOllama(host, prompt string) (string, bool) {
@@ -507,8 +528,12 @@ func (e *Engine) callOllama(host, prompt string) (string, bool) {
 	defer cancel()
 
 	url := fmt.Sprintf("%s/api/generate", strings.TrimRight(host, "/"))
+	model := os.Getenv("OLLAMA_MODEL")
+	if model == "" {
+		model = "llama3"
+	}
 	payload := map[string]interface{}{
-		"model":  "llama3",
+		"model":  model,
 		"prompt": fmt.Sprintf("You are an expert ISO 20022 financial architect. Answer concisely with markdown formatting:\n\n%s", prompt),
 		"stream": false,
 	}
@@ -524,15 +549,23 @@ func (e *Engine) callOllama(host, prompt string) (string, bool) {
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := sharedHTTPClient.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
+	if err != nil {
 		return "", false
 	}
 	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 64<<10))
+		return "", false
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxLLMResponse+1))
+	if err != nil || len(body) > maxLLMResponse {
+		return "", false
+	}
 
 	var result struct {
 		Response string `json:"response"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(body, &result); err != nil {
 		return "", false
 	}
 	return strings.TrimSpace(result.Response), true
@@ -544,8 +577,12 @@ func (e *Engine) callOpenAI(apiKey, baseURL, prompt string) (string, bool) {
 
 	url := fmt.Sprintf("%s/chat/completions", strings.TrimRight(baseURL, "/"))
 
+	model := os.Getenv("OPENAI_MODEL")
+	if model == "" {
+		model = "gpt-4o-mini"
+	}
 	payload := map[string]interface{}{
-		"model": "gpt-4o-mini",
+		"model": model,
 		"messages": []map[string]string{
 			{"role": "system", "content": "You are AskISO Ask AI, an expert ISO 20022 financial messaging assistant. Answer accurately with clear markdown formatting."},
 			{"role": "user", "content": prompt},
@@ -565,10 +602,18 @@ func (e *Engine) callOpenAI(apiKey, baseURL, prompt string) (string, bool) {
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
 
 	resp, err := sharedHTTPClient.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
+	if err != nil {
 		return "", false
 	}
 	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 64<<10))
+		return "", false
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxLLMResponse+1))
+	if err != nil || len(body) > maxLLMResponse {
+		return "", false
+	}
 
 	var result struct {
 		Choices []struct {
@@ -577,7 +622,7 @@ func (e *Engine) callOpenAI(apiKey, baseURL, prompt string) (string, bool) {
 			} `json:"message"`
 		} `json:"choices"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil || len(result.Choices) == 0 {
+	if err := json.Unmarshal(body, &result); err != nil || len(result.Choices) == 0 {
 		return "", false
 	}
 	return strings.TrimSpace(result.Choices[0].Message.Content), true

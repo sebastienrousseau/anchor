@@ -42,7 +42,7 @@ The gap is rarely located in the payment engine. It sits in the customer data fe
 AskISO reports which addresses are unstructured, where they are, and what each
 one needs.
 
-**Start here:** [what changes in November 2026](/deadline/).
+**Start here:** [what the deferred structured-address requirement changes](/deadline/).
 
 ## Migrate from SWIFT MT
 

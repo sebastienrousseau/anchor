@@ -4,10 +4,12 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -321,6 +323,23 @@ func TestRunReportsMissingFixtures(t *testing.T) {
 	}
 }
 
+func TestRunReportsInvalidGlobAndReplayFailure(t *testing.T) {
+	fixtures := t.TempDir()
+	if err := run("[", fixtures, "/bin/echo", false); err == nil {
+		t.Fatal("invalid content glob was accepted")
+	}
+
+	content := t.TempDir()
+	if err := os.WriteFile(filepath.Join(content, "page.md"),
+		[]byte("```console\n$ askiso version\n```\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	err := run(content, fixtures, filepath.Join(t.TempDir(), "missing-binary"), false)
+	if err == nil || !strings.Contains(err.Error(), "page.md") {
+		t.Fatalf("replay launch error = %v", err)
+	}
+}
+
 // build() is what makes verification trustworthy: it compiles the binary from
 // this working tree rather than trusting whatever `askiso` happens to be on
 // PATH. If it silently produced nothing, every session would verify against a
@@ -380,5 +399,83 @@ func TestRunAcceptsASessionWithNothingToExecute(t *testing.T) {
 
 	if err := run(content, fixtures, bin, false); err != nil {
 		t.Errorf("a session with no executable commands should pass: %v", err)
+	}
+}
+
+func TestRunBuildsTheDefaultBinary(t *testing.T) {
+	if testing.Short() {
+		t.Skip("compiles the CLI")
+	}
+	content := t.TempDir()
+	fixtures := t.TempDir()
+	if err := run(content, fixtures, "", false); err != nil {
+		t.Fatalf("automatic build: %v", err)
+	}
+}
+
+func TestBuildReportsAMissingGoTool(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	if _, _, err := build(); err == nil || !strings.Contains(err.Error(), "locating the module") {
+		t.Fatalf("build without go = %v", err)
+	}
+}
+
+func TestBuildReportsTemporaryDirectoryFailure(t *testing.T) {
+	blocked := filepath.Join(t.TempDir(), "not-a-directory")
+	if err := os.WriteFile(blocked, []byte("blocked"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TMPDIR", blocked)
+	if _, _, err := build(); err == nil {
+		t.Fatal("build ignored an unusable temporary directory")
+	}
+}
+
+func TestModuleRootRejectsNoModuleAndBuildReportsCompilerFailure(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("uses a POSIX test executable")
+	}
+	dir := t.TempDir()
+	fakeGo := filepath.Join(dir, "go")
+	if err := os.WriteFile(fakeGo, []byte("#!/bin/sh\nprintf '/dev/null\\n'\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+	if _, err := moduleRoot(); err == nil || !strings.Contains(err.Error(), "not inside") {
+		t.Fatalf("moduleRoot with GOMOD=/dev/null = %v", err)
+	}
+
+	root, err := filepath.Abs(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatal(err)
+	}
+	script := "#!/bin/sh\nif [ \"$1\" = env ]; then printf '%s/go.mod\\n' '" + root + "'; exit 0; fi\nexit 1\n"
+	if err := os.WriteFile(fakeGo, []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := build(); err == nil || !strings.Contains(err.Error(), "building askiso") {
+		t.Fatalf("compiler failure = %v", err)
+	}
+}
+
+func TestMainExitCodesAndDiagnostics(t *testing.T) {
+	var stderr bytes.Buffer
+	if code := mainExit([]string{"-definitely-not-a-flag"}, &stderr); code != 2 {
+		t.Fatalf("parse error exit = %d, want 2", code)
+	}
+	if stderr.Len() == 0 {
+		t.Fatal("parse error wrote no diagnostic")
+	}
+
+	stderr.Reset()
+	code := mainExit([]string{"-content", t.TempDir(), "-fixtures", filepath.Join(t.TempDir(), "missing"), "-bin", "/bin/echo"}, &stderr)
+	if code != 1 || !strings.Contains(stderr.String(), "fixtures") {
+		t.Fatalf("runtime failure = exit %d, stderr %q", code, stderr.String())
+	}
+
+	stderr.Reset()
+	code = mainExit([]string{"-content", t.TempDir(), "-fixtures", t.TempDir(), "-bin", "/bin/echo"}, &stderr)
+	if code != 0 || stderr.Len() != 0 {
+		t.Fatalf("success = exit %d, stderr %q", code, stderr.String())
 	}
 }

@@ -159,6 +159,7 @@ func printImport(r *importer.Result) {
 var catalogWhereCmd = &cobra.Command{
 	Use:   "where",
 	Short: "Show the locations AskISO searches for a catalogue",
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		fmt.Printf("\n%s\n\n", headStyle.Render(" CATALOGUE RESOLUTION "))
 
@@ -203,6 +204,7 @@ var catalogWhereCmd = &cobra.Command{
 var catalogStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Compare what you have installed against the published standard",
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		reg, err := registry.Load()
 		if err != nil {

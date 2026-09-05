@@ -30,18 +30,22 @@ var flowCmd = &cobra.Command{
 pacs.002 -> camt.053) with shared UETR, EndToEndId, and settlement amounts. 
 Can export all 4 connected XML payloads into an output directory for integration testing.`,
 	Example: `  askiso flow pacs.008 --preset sepa
-  askiso flow --preset fednow --output-dir ./test-suite/
-  askiso flow --json`,
+	  askiso flow --preset fednow --output-dir ./test-suite/
+	  askiso flow --json`,
+	Args: cobra.RangeArgs(0, 1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		preset, err := normalizeChoice("preset", flowPreset, generator.Presets()...)
+		if err != nil {
+			return err
+		}
 		msgType := "pacs.008"
 		if len(args) > 0 {
 			msgType = args[0]
 		}
 
 		opts := generator.DefaultOptions(msgType)
-		if flowPreset != "" {
-			opts.Preset = flowPreset
-		}
+		opts.Preset = preset
+		opts.ApplyPreset()
 		if flowAmount != "" {
 			opts.Amount = flowAmount
 		}
@@ -101,7 +105,7 @@ Can export all 4 connected XML payloads into an output directory for integration
 }
 
 func init() {
-	flowCmd.Flags().StringVarP(&flowPreset, "preset", "p", "sepa", "Clearing network preset (sepa, fednow, target2, chaps)")
+	flowCmd.Flags().StringVarP(&flowPreset, "preset", "p", "sepa", "Clearing network preset (standard, sepa, fednow, fedwire, target2, chaps)")
 	flowCmd.Flags().StringVarP(&flowAmount, "amount", "a", "15000.00", "Transfer / settlement amount")
 	flowCmd.Flags().StringVarP(&flowCurrency, "currency", "c", "EUR", "ISO 4217 Currency code")
 	flowCmd.Flags().StringVarP(&flowOutputDir, "output-dir", "o", "", "Export all 4 XML payloads into a directory")

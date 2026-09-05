@@ -4,8 +4,10 @@
 package validator_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
+	"unicode"
 
 	"github.com/sebastienrousseau/askiso/internal/validator"
 	"github.com/sebastienrousseau/askiso/internal/xsd"
@@ -110,6 +112,9 @@ func FuzzValidate(f *testing.F) {
 	f.Add("<!DOCTYPE x [<!ENTITY e SYSTEM \"file:///etc/passwd\">]><Document>&e;</Document>")
 
 	f.Fuzz(func(t *testing.T, data string) {
+		if len(data) > 1<<20 {
+			return
+		}
 		res := validator.Validate([]byte(data), schema)
 		if res == nil {
 			t.Fatal("Validate returned nil")
@@ -135,4 +140,83 @@ func FuzzValidate(f *testing.F) {
 			}
 		}
 	})
+}
+
+// FuzzStructuredValidation explores the schema's semantic state space instead
+// of hoping arbitrary bytes happen to form an ISO 20022 document. Each defect
+// is introduced in isolation, so the validity oracle is exact, and the tree
+// and streaming engines must agree on every generated instance.
+func FuzzStructuredValidation(f *testing.F) {
+	schema, err := xsd.Parse(strings.NewReader(fuzzSchema))
+	if err != nil {
+		f.Fatalf("the fuzz schema does not parse: %v", err)
+	}
+
+	f.Add(uint8(0), uint64(2500000), uint8(1), true, "PAYMENT-1")
+	f.Add(uint8(1), uint64(0), uint8(8), false, "A")
+	f.Add(uint8(4), ^uint64(0), uint8(255), true, "unicode-GBP")
+	f.Add(uint8(6), uint64(1), uint8(2), false, "ORDER")
+
+	f.Fuzz(func(t *testing.T, defect uint8, cents uint64, count uint8, iban bool, rawLabel string) {
+		defect %= 7
+		transactions := int(count%8) + 1
+		label := fuzzIdentifier(rawLabel)
+		msgID := label
+		currency := "EUR"
+		amount := fmt.Sprintf("%d.%02d", (cents%1_000_000_000_000)/100, cents%100)
+		choice := "<Othr>" + label + "</Othr>"
+		if iban {
+			choice = "<IBAN>GB29NWBK60161331926819</IBAN>"
+		}
+
+		switch defect {
+		case 1:
+			msgID = ""
+		case 2:
+			msgID = strings.Repeat("X", 36)
+		case 3:
+			amount = "-0.01"
+		case 4:
+			currency = "EURO"
+		case 5:
+			choice = ""
+		}
+
+		var tx strings.Builder
+		for range transactions {
+			fmt.Fprintf(&tx, `<Tx><Amt Ccy="%s">%s</Amt>%s<ChrgBr>SHAR</ChrgBr></Tx>`, currency, amount, choice)
+		}
+		group := "<GrpHdr><MsgId>" + msgID + "</MsgId></GrpHdr>"
+		body := group + tx.String()
+		if defect == 6 {
+			body = tx.String() + "<GrpHdr><MsgId>" + msgID + "</MsgId></GrpHdr>"
+		}
+		doc := `<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.10"><CstmrCdtTrf>` + body + `</CstmrCdtTrf></Document>`
+
+		tree := validator.Validate([]byte(doc), schema)
+		stream := validator.ValidateReader(strings.NewReader(doc), schema)
+		wantValid := defect == 0
+		if tree.Valid != wantValid {
+			t.Fatalf("tree validity=%v want %v for defect %d: %+v\n%s", tree.Valid, wantValid, defect, tree.Errors, doc)
+		}
+		if stream.Valid != tree.Valid {
+			t.Fatalf("stream/tree disagreement for defect %d: stream=%+v tree=%+v\n%s", defect, stream, tree, doc)
+		}
+	})
+}
+
+func fuzzIdentifier(raw string) string {
+	var b strings.Builder
+	for _, r := range raw {
+		if (unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-' || r == '_') && r <= unicode.MaxASCII {
+			b.WriteRune(r)
+			if b.Len() == 24 {
+				break
+			}
+		}
+	}
+	if b.Len() == 0 {
+		return "X"
+	}
+	return b.String()
 }

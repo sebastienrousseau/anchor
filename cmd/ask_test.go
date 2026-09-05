@@ -4,12 +4,30 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/sebastienrousseau/askiso/internal/ai"
 	"github.com/sebastienrousseau/askiso/internal/catalog"
 )
+
+func TestTerminalWidthUsesTerminfoFallback(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("uses a POSIX tput stand-in")
+	}
+	dir := t.TempDir()
+	tput := filepath.Join(dir, "tput")
+	if err := os.WriteFile(tput, []byte("#!/bin/sh\nprintf '91\\n'\n"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+	if got := getTerminalWidth(); got != 91 {
+		t.Fatalf("terminal database width = %d", got)
+	}
+}
 
 func TestAskOneShot(t *testing.T) {
 	withCatalogue(t)
@@ -165,6 +183,27 @@ func TestRenderAnswerVariants(t *testing.T) {
 
 	// An empty answer must not panic.
 	captureStdout(t, func() { renderAnswerWithContext(ai.MessageAnswer{}, false) })
+}
+
+func TestRenderAnswerStyledBranch(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	t.Setenv("TERM", "xterm-256color")
+	oldText, oldPlain := textOutput, plainOutput
+	textOutput, plainOutput = false, false
+	t.Cleanup(func() { textOutput, plainOutput = oldText, oldPlain })
+
+	ans := ai.MessageAnswer{
+		Summary:         "Styled answer",
+		Details:         "## Details\n\nA **rendered** answer.",
+		Suggestions:     []string{"first", "second"},
+		ProviderWarning: "configured provider unavailable",
+	}
+	for _, repl := range []bool{false, true} {
+		out := captureStdout(t, func() { renderAnswerWithContext(ans, repl) })
+		if !strings.Contains(out, "Styled answer") || !strings.Contains(out, "first") || !strings.Contains(out, "Provider warning") {
+			t.Errorf("styled output is incomplete:\n%s", out)
+		}
+	}
 }
 
 func TestPrintReplHelp(t *testing.T) {

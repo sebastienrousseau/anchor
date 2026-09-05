@@ -8,6 +8,18 @@ import (
 	"testing"
 )
 
+func TestRuleNamesListsThePublicChecks(t *testing.T) {
+	names := RuleNames()
+	if len(names) != 5 {
+		t.Fatalf("RuleNames returned %d checks, want 5", len(names))
+	}
+	for _, name := range names {
+		if name == "" {
+			t.Error("rule names must not be empty")
+		}
+	}
+}
+
 func TestValidateIBANRejections(t *testing.T) {
 	cases := map[string]string{
 		"too short":            "DE89",
@@ -52,12 +64,14 @@ func TestValidateCurrencyAmountRejections(t *testing.T) {
 	if ok, _ := ValidateCurrencyAmount("BHD", "1.2345"); ok {
 		t.Error("BHD permits at most three decimal places")
 	}
-	// An unknown code falls back to two decimals.
-	if ok, _ := ValidateCurrencyAmount("XYZ", "1.00"); !ok {
-		t.Error("an unknown currency should default to two decimals")
+	if ok, _ := ValidateCurrencyAmount("XYZ", "1.00"); ok {
+		t.Error("an unknown currency should be rejected")
 	}
-	if ok, _ := ValidateCurrencyAmount("XYZ", "1.000"); ok {
-		t.Error("an unknown currency should reject three decimals")
+	if ok, _ := ValidateCurrencyAmount("123", "1.00"); ok {
+		t.Error("a numeric currency code should be rejected")
+	}
+	if ok, _ := ValidateCurrencyAmount("EUR", "1.2.3"); ok {
+		t.Error("a malformed decimal should be rejected")
 	}
 	// An empty amount only checks the code.
 	if ok, _ := ValidateCurrencyAmount("EUR", ""); !ok {
@@ -66,6 +80,23 @@ func TestValidateCurrencyAmountRejections(t *testing.T) {
 	// An integer amount has no fraction to check.
 	if ok, _ := ValidateCurrencyAmount("JPY", "100"); !ok {
 		t.Error("an integer JPY amount is valid")
+	}
+}
+
+func TestTemporalCheckAcceptsTimezoneLessCreationAndChecksEverySettlement(t *testing.T) {
+	doc := `<Document><CreDtTm>2026-08-24T10:00:00</CreDtTm><IntrBkSttlmDt>2026-08-24</IntrBkSttlmDt><IntrBkSttlmDt>2026-08-23</IntrBkSttlmDt></Document>`
+	res, err := Lint([]byte(doc), "dates.xml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var temporal int
+	for _, issue := range res.Issues {
+		if issue.Rule == "Temporal Sequence Sanity" {
+			temporal++
+		}
+	}
+	if temporal != 1 {
+		t.Fatalf("got %d temporal findings, want one: %+v", temporal, res.Issues)
 	}
 }
 

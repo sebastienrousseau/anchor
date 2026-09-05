@@ -21,9 +21,10 @@ import (
 )
 
 var (
-	validateJSON   bool
-	validateEngine string
-	validateStream bool
+	validateJSON          bool
+	validateEngine        string
+	validateStream        bool
+	validateExternalCodes string
 )
 
 // headBytes is how much of a large document is read to find its namespace. The
@@ -78,6 +79,14 @@ verdict is identical either way; --stream forces it on a smaller file.`,
   askiso validate statement.xml --stream`,
 	Args: cobra.RangeArgs(1, 2),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		engine, err := normalizeChoice("engine", validateEngine, "go", "libxml2")
+		if err != nil {
+			return err
+		}
+		validateEngine = engine
+		if validateExternalCodes != "" && validateEngine == "libxml2" {
+			return errors.New("--external-codes requires the Go validation engine")
+		}
 		xmlPath := filepath.Clean(args[0])
 
 		info, err := os.Stat(xmlPath)
@@ -118,19 +127,29 @@ verdict is identical either way; --stream forces it on a smaller file.`,
 			return validateWithXmllint(schemaPath, xmlPath)
 		}
 
+		var external *iso20022.ExternalCodeSets
+		if validateExternalCodes != "" {
+			external, err = iso20022.ReadExternalCodeSets(validateExternalCodes)
+			if err != nil {
+				return err
+			}
+		} else {
+			external = externalSets()
+		}
+
 		var res *iso20022.SchemaResult
 		if streaming {
 			f, err := os.Open(xmlPath)
 			if err != nil {
 				return fmt.Errorf("reading %s: %w", xmlPath, err)
 			}
-			res, err = iso20022.ValidateStream(f, schemaPath)
+			res, err = iso20022.ValidateStreamWithExternalCodes(f, schemaPath, external)
 			_ = f.Close()
 			if err != nil {
 				return err
 			}
 		} else {
-			res, err = iso20022.ValidateFile(xmlData, schemaPath)
+			res, err = iso20022.ValidateFileWithExternalCodes(xmlData, schemaPath, external)
 			if err != nil {
 				return err
 			}
@@ -214,6 +233,8 @@ func init() {
 		"Validation engine: \"go\" (built in) or \"libxml2\" (external xmllint, for cross-checking)")
 	validateCmd.Flags().BoolVar(&validateStream, "stream", false,
 		"Validate as the file is read rather than holding it in memory (automatic above 8 MiB)")
+	validateCmd.Flags().StringVar(&validateExternalCodes, "external-codes", "",
+		"Local Registration Authority XLSX or JSON code-set publication")
 	RootCmd.AddCommand(validateCmd)
 }
 

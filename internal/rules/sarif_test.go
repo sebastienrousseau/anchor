@@ -183,3 +183,31 @@ func TestSARIFWithNoFindings(t *testing.T) {
 		t.Error("rules should be an empty array, not null")
 	}
 }
+
+func TestGenericSARIFDiagnosticsDeduplicateRulesAndHandleAllLevels(t *testing.T) {
+	diagnostics := []rules.SARIFDiagnostic{
+		{RuleID: "lint/example", Name: "Example", Description: "Example rule", Help: "Fix it", Severity: rules.SeverityWarning, Message: "warning", File: "a.xml"},
+		{RuleID: "lint/example", Name: "Example", Description: "Example rule", Help: "Fix it", Severity: rules.SeverityError, Message: "error", File: "b.xml", Path: "/Document"},
+		{RuleID: "lint/note", Name: "Note", Description: "Note rule", Help: "Review it", Severity: rules.SeverityInfo, Message: "note", File: "c.xml"},
+	}
+	var buf strings.Builder
+	if err := rules.WriteDiagnosticsSARIF(&buf, diagnostics); err != nil {
+		t.Fatal(err)
+	}
+	var doc sarifDoc
+	if err := json.Unmarshal([]byte(buf.String()), &doc); err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Runs[0].Tool.Driver.Rules) != 2 {
+		t.Errorf("rules = %d, want two unique descriptions", len(doc.Runs[0].Tool.Driver.Rules))
+	}
+	wantLevels := []string{"warning", "error", "note"}
+	for i, want := range wantLevels {
+		if got := doc.Runs[0].Results[i].Level; got != want {
+			t.Errorf("result %d level = %q, want %q", i, got, want)
+		}
+	}
+	if got := doc.Runs[0].Results[0].Locations[0].LogicalLocations; len(got) != 0 {
+		t.Errorf("an absent XML path should not create a logical location: %+v", got)
+	}
+}

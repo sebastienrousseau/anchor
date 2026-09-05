@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sebastienrousseau/askiso/internal/codes"
 	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
@@ -70,6 +71,14 @@ type node struct {
 
 // Validate checks an XML instance against a schema.
 func Validate(instance []byte, schema *xsd.Schema) *Result {
+	return ValidateWithExternalSets(instance, schema, nil)
+}
+
+// ValidateWithExternalSets checks an XML instance and, when supplied, enforces
+// Registration Authority code sets referenced by simple types such as
+// ExternalPurpose1Code. Those values are deliberately absent from ISO 20022
+// XSDs and therefore cannot be checked by schema facets alone.
+func ValidateWithExternalSets(instance []byte, schema *xsd.Schema, external *codes.ExternalSets) *Result {
 	res := &Result{Valid: true}
 
 	root, err := parseInstance(instance)
@@ -83,7 +92,7 @@ func Validate(instance []byte, schema *xsd.Schema) *Result {
 		return res
 	}
 
-	v := &validation{schema: schema, res: res}
+	v := &validation{schema: schema, res: res, external: external}
 
 	decl, ok := schema.Elements[root.Name]
 	if !ok {
@@ -113,8 +122,9 @@ func Validate(instance []byte, schema *xsd.Schema) *Result {
 }
 
 type validation struct {
-	schema *xsd.Schema
-	res    *Result
+	schema   *xsd.Schema
+	res      *Result
+	external *codes.ExternalSets
 }
 
 func (v *validation) fail(n *node, path, rule, expected, actual, msg string) {
@@ -428,6 +438,27 @@ func (v *validation) value(typeName, text string, n *node, path string) {
 		v.fail(n, path, "type", base, text,
 			fmt.Sprintf("%q is not a valid %s", truncate(text), base))
 		return
+	}
+
+	if v.external != nil && len(facets.Enumeration) == 0 {
+		if members := v.external.Set(typeName); len(members) > 0 {
+			allowed := make([]string, 0, len(members))
+			found := false
+			for _, member := range members {
+				allowed = append(allowed, member.Code)
+				if member.Code == text {
+					found = true
+				}
+			}
+			if !found {
+				if len(allowed) > 12 {
+					allowed = append(append([]string{}, allowed[:12]...), "…")
+				}
+				v.fail(n, path, "external code set", strings.Join(allowed, ", "), text,
+					fmt.Sprintf("%q is not active in %s from the imported external code publication", truncate(text), typeName))
+				return
+			}
+		}
 	}
 
 	if len(facets.Enumeration) > 0 {

@@ -8,6 +8,12 @@ import (
 	"testing"
 )
 
+func TestMessageDefinitionIDFallsBackWithoutNamespace(t *testing.T) {
+	if got := messageDefinitionID("pacs.008", `<Document/>`); got != "pacs.008" {
+		t.Fatalf("message definition fallback = %q", got)
+	}
+}
+
 // Every blank field must be filled, so a bare Options still yields a complete
 // message rather than one with holes in it.
 func TestGenerateFillsEveryBlank(t *testing.T) {
@@ -68,15 +74,65 @@ func TestPresetsSetTheirOwnDefaults(t *testing.T) {
 		})
 	}
 
-	// An unrecognised preset leaves the defaults alone.
-	if _, err := Generate(Options{MsgType: "pacs.008", Preset: "nonexistent"}); err != nil {
-		t.Errorf("an unknown preset should fall back to defaults: %v", err)
+	if _, err := Generate(Options{MsgType: "pacs.008", Preset: "nonexistent"}); err == nil {
+		t.Error("an unknown preset should be rejected")
+	}
+}
+
+func TestExplicitOverrideAfterPresetIsPreserved(t *testing.T) {
+	opt := DefaultOptions("pacs.008")
+	opt.Preset = "fednow"
+	opt.ApplyPreset()
+	opt.Currency = "CAD"
+
+	xml, err := Generate(opt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(xml, `Ccy="CAD"`) {
+		t.Error("an explicit option set after ApplyPreset should override the preset default")
+	}
+}
+
+func TestValidateOptionsRejectsEveryInvalidTypedField(t *testing.T) {
+	valid := DefaultOptions("pacs.008")
+	tests := map[string]func(*Options){
+		"XML control character": func(o *Options) { o.Debtor = "bad\x00name" },
+		"amount":                func(o *Options) { o.Amount = "1.234" },
+		"debtor BIC":            func(o *Options) { o.DebtorBIC = "BAD" },
+		"creditor BIC":          func(o *Options) { o.CreditorBIC = "BAD" },
+		"UETR":                  func(o *Options) { o.UETR = "not-a-uetr" },
+		"debtor IBAN":           func(o *Options) { o.DebtorIBAN = "DE00BAD" },
+		"creditor IBAN":         func(o *Options) { o.CreditorIBAN = "FR00BAD" },
+	}
+	for name, mutate := range tests {
+		t.Run(name, func(t *testing.T) {
+			opt := valid
+			mutate(&opt)
+			if err := ValidateOptions(opt); err == nil {
+				t.Fatal("invalid option should be rejected")
+			}
+		})
+	}
+
+	domestic := valid
+	domestic.AccountScheme = SchemeOther
+	domestic.DebtorIBAN, domestic.CreditorIBAN = "", ""
+	if err := ValidateOptions(domestic); err != nil {
+		t.Fatalf("non-IBAN account schemes should skip IBAN validation: %v", err)
+	}
+}
+
+func TestAccountBlockFallsBackToSyntheticDomesticID(t *testing.T) {
+	got := AccountBlock(Options{AccountScheme: SchemeOther}, "", "", "  ")
+	if !strings.Contains(got, "000000000") {
+		t.Errorf("empty domestic ID should get a safe placeholder: %s", got)
 	}
 }
 
 func TestClearingSystemFollowsPreset(t *testing.T) {
 	for preset, want := range map[string]string{
-		"sepa": "SEPA", "fednow": "FDNW", "chaps": "CHAPS", "target2": "TARGET2", "": "TARGET2",
+		"sepa": "SEPA", "fednow": "FDNW", "fedwire": "FEDWIRE", "chaps": "CHAPS", "target2": "TARGET2", "": "TARGET2",
 	} {
 		xml, err := Generate(Options{MsgType: "pacs.008", Preset: preset})
 		if err != nil {

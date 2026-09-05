@@ -11,10 +11,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/sebastienrousseau/askiso/internal/generator"
+	"go.uber.org/goleak"
 )
 
 func validPayment(t *testing.T) string {
@@ -97,6 +99,9 @@ func TestHandlePaymentRejectsBadRequests(t *testing.T) {
 	if rec.Code != http.StatusMethodNotAllowed {
 		t.Errorf("GET should be rejected, got %d", rec.Code)
 	}
+	if rec.Header().Get("Allow") != http.MethodPost {
+		t.Errorf("Allow = %q, want POST", rec.Header().Get("Allow"))
+	}
 
 	rec = httptest.NewRecorder()
 	s.handlePayment(rec, httptest.NewRequest(http.MethodPost, "/v1/payments", strings.NewReader("")))
@@ -128,6 +133,20 @@ func TestHandleAccountStatement(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Errorf("a missing account should be rejected, got %d", rec.Code)
 	}
+
+	rec = httptest.NewRecorder()
+	s.handleAccountStatement(rec,
+		httptest.NewRequest(http.MethodGet, "/v1/accounts/DE00BAD", nil))
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("an invalid IBAN should be rejected as a client error, got %d", rec.Code)
+	}
+
+	rec = httptest.NewRecorder()
+	s.handleAccountStatement(rec,
+		httptest.NewRequest(http.MethodPost, "/v1/accounts/DE89370400440532013000", nil))
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Errorf("POST statement should be rejected, got %d", rec.Code)
+	}
 }
 
 func TestHandleHealth(t *testing.T) {
@@ -141,6 +160,14 @@ func TestHandleHealth(t *testing.T) {
 	}
 	if payload["status"] != "UP" {
 		t.Errorf("status = %v, want UP", payload["status"])
+	}
+}
+
+func TestHealthRejectsUnsupportedMethods(t *testing.T) {
+	rec := httptest.NewRecorder()
+	NewServer(0).handleHealth(rec, httptest.NewRequest(http.MethodPost, "/v1/health", nil))
+	if rec.Code != http.StatusMethodNotAllowed || rec.Header().Get("Allow") != http.MethodGet {
+		t.Errorf("status/Allow = %d/%q, want 405/GET", rec.Code, rec.Header().Get("Allow"))
 	}
 }
 
@@ -344,8 +371,104 @@ func TestReturnScenarioAnnouncesFollowUp(t *testing.T) {
 
 	var payload map[string]any
 	_ = json.Unmarshal(rec.Body.Bytes(), &payload)
-	if payload["follow_up"] != "pacs.004" {
-		t.Errorf("the return scenario should announce a pacs.004: %v", payload)
+	followUp, ok := payload["follow_up"].(map[string]any)
+	if !ok || followUp["message_type"] != "pacs.004.001.11" {
+		t.Fatalf("the return scenario should announce a retrievable pacs.004: %v", payload)
+	}
+	href, _ := followUp["href"].(string)
+	returnRec := httptest.NewRecorder()
+	s.handleReturn(returnRec, httptest.NewRequest(http.MethodGet, href, nil))
+	if returnRec.Code != http.StatusOK || !strings.Contains(returnRec.Body.String(), "pacs.004.001.11") {
+		t.Errorf("follow-up %q did not return a pacs.004: %d\n%s", href, returnRec.Code, returnRec.Body.String())
+	}
+}
+
+func TestReturnEndpointRejectsInvalidRequests(t *testing.T) {
+	normal := NewServer(0)
+	rec := httptest.NewRecorder()
+	normal.handleReturn(rec, httptest.NewRequest(http.MethodGet, "/v1/returns/1", nil))
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("normal scenario status = %d, want 404", rec.Code)
+	}
+
+	returns := NewServerWith(Options{Scenario: ScenarioReturn})
+	for _, tc := range []struct {
+		method string
+		path   string
+		want   int
+	}{
+		{http.MethodPost, "/v1/returns/1", http.StatusMethodNotAllowed},
+		{http.MethodGet, "/v1/returns/", http.StatusBadRequest},
+		{http.MethodGet, "/v1/returns/one/two", http.StatusBadRequest},
+	} {
+		rec = httptest.NewRecorder()
+		returns.handleReturn(rec, httptest.NewRequest(tc.method, tc.path, nil))
+		if rec.Code != tc.want {
+			t.Errorf("%s %s = %d, want %d", tc.method, tc.path, rec.Code, tc.want)
+		}
+	}
+}
+
+func TestPaymentReferencesAreUnique(t *testing.T) {
+	s := NewServer(0)
+	refs := make(map[string]bool)
+	for i := 0; i < 20; i++ {
+		rec := httptest.NewRecorder()
+		s.handlePayment(rec,
+			httptest.NewRequest(http.MethodPost, "/v1/payments", strings.NewReader(validPayment(t))))
+		body := rec.Body.String()
+		start := strings.Index(body, "<MsgId>")
+		end := strings.Index(body, "</MsgId>")
+		if start < 0 || end <= start {
+			t.Fatalf("response has no MsgId: %s", body)
+		}
+		ref := body[start+len("<MsgId>") : end]
+		if refs[ref] {
+			t.Fatalf("duplicate response reference %q", ref)
+		}
+		refs[ref] = true
+	}
+}
+
+func TestPaymentReferencesAreUniqueUnderContention(t *testing.T) {
+	defer goleak.VerifyNone(t, goleak.IgnoreCurrent())
+	s := NewServer(0)
+	payment := validPayment(t)
+
+	const requests = 256
+	refs := make(chan string, requests)
+	errs := make(chan string, requests)
+	var wg sync.WaitGroup
+	for range requests {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			rec := httptest.NewRecorder()
+			s.handlePayment(rec, httptest.NewRequest(http.MethodPost, "/v1/payments", strings.NewReader(payment)))
+			body := rec.Body.String()
+			start, end := strings.Index(body, "<MsgId>"), strings.Index(body, "</MsgId>")
+			if rec.Code != http.StatusOK || start < 0 || end <= start {
+				errs <- body
+				return
+			}
+			refs <- body[start+len("<MsgId>") : end]
+		}()
+	}
+	wg.Wait()
+	close(refs)
+	close(errs)
+	for body := range errs {
+		t.Fatalf("invalid concurrent payment response: %s", body)
+	}
+	seen := make(map[string]struct{}, requests)
+	for ref := range refs {
+		if _, duplicate := seen[ref]; duplicate {
+			t.Fatalf("duplicate concurrent reference %q", ref)
+		}
+		seen[ref] = struct{}{}
+	}
+	if len(seen) != requests {
+		t.Fatalf("references=%d want %d", len(seen), requests)
 	}
 }
 

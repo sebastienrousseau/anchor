@@ -33,8 +33,8 @@ type Server struct {
 	Name    string
 	Version string
 	// Profile is the scheme rule profile applied alongside the linter. The
-	// client may change it; cbpr-2026 is the default because the deadline it
-	// checks is the one people are working towards.
+	// client may change or disable it; cbpr-2026 remains the default as a
+	// readiness check for the deferred structured-address requirement.
 	Profile string
 
 	conn   *conn
@@ -42,6 +42,9 @@ type Server struct {
 
 	mu   sync.RWMutex
 	docs map[string]*Document
+	// schemas caches parsed XSDs by path; editor changes should validate the
+	// document again, not reparse the same catalogue file on every keystroke.
+	schemas map[string]*xsd.Schema
 
 	// catalogue opens the user's installed schemas. Absent one, the server
 	// still lints and still applies rule profiles.
@@ -55,7 +58,9 @@ type Server struct {
 type CatalogueFunc func() (*iso20022.Catalogue, error)
 
 // New builds a server reading from in and writing to out. Diagnostics about the
-// server itself go to errOut, which must not be the same stream as out.
+// server itself go to errOut, which must not be the same stream as out. If in
+// implements io.ReadCloser, Serve owns it and closes it when stopping so that a
+// blocked transport read cannot leak a goroutine.
 func New(in io.Reader, out, errOut io.Writer) *Server {
 	return &Server{
 		Name:      "askiso-lsp",
@@ -64,6 +69,7 @@ func New(in io.Reader, out, errOut io.Writer) *Server {
 		conn:      newConn(in, out),
 		errOut:    errOut,
 		docs:      map[string]*Document{},
+		schemas:   map[string]*xsd.Schema{},
 		catalogue: openInstalledCatalogue(),
 	}
 }
@@ -71,6 +77,8 @@ func New(in io.Reader, out, errOut io.Writer) *Server {
 // SetVersion records the build version reported to the client.
 func (s *Server) SetVersion(v string) {
 	if v != "" {
+		s.mu.Lock()
+		defer s.mu.Unlock()
 		s.Version = v
 	}
 }
@@ -78,6 +86,8 @@ func (s *Server) SetVersion(v string) {
 // SetCatalogue replaces how the server reaches the user's installed schemas.
 func (s *Server) SetCatalogue(open CatalogueFunc) {
 	if open != nil {
+		s.mu.Lock()
+		defer s.mu.Unlock()
 		s.catalogue = open
 	}
 }
@@ -85,46 +95,108 @@ func (s *Server) SetCatalogue(open CatalogueFunc) {
 // openInstalledCatalogue reads the user's catalogue once and caches the result.
 func openInstalledCatalogue() CatalogueFunc {
 	var (
-		once sync.Once
-		cat  *iso20022.Catalogue
-		err  error
+		mu  sync.Mutex
+		cat *iso20022.Catalogue
 	)
 	return func() (*iso20022.Catalogue, error) {
-		once.Do(func() { cat, err = iso20022.OpenCatalogue("") })
-		return cat, err
+		mu.Lock()
+		defer mu.Unlock()
+		if cat != nil {
+			return cat, nil
+		}
+		opened, err := iso20022.OpenCatalogue("")
+		if err != nil {
+			return nil, err
+		}
+		cat = opened
+		return cat, nil
 	}
 }
 
 // Serve handles messages until the stream ends, the client says exit, or the
 // context is cancelled.
 func (s *Server) Serve(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if !s.conn.canInterruptRead() {
+		return s.serveBlocking(ctx)
+	}
+
+	type readResult struct {
+		msg *message
+		err error
+	}
+	reads := make(chan readResult)
+	readerDone := make(chan struct{})
+	stopReader := make(chan struct{})
+	go func() {
+		defer close(readerDone)
+		for {
+			msg, err := s.conn.read()
+			select {
+			case reads <- readResult{msg: msg, err: err}:
+			case <-ctx.Done():
+				return
+			case <-stopReader:
+				return
+			}
+			if err != nil {
+				return
+			}
+		}
+	}()
+	defer func() {
+		close(stopReader)
+		_ = s.conn.interruptRead()
+		<-readerDone
+	}()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		default:
-		}
-
-		msg, err := s.conn.read()
-		switch {
-		case errors.Is(err, io.EOF):
-			return nil
-		case err != nil:
-			var pe *parseError
-			if errors.As(err, &pe) {
-				// A body that did not decode is answerable; the stream is still
-				// synchronised because the framing was correct.
-				_ = s.conn.replyError(nil, codeParse, "the request body is not valid JSON: "+pe.Error())
-				continue
+		case result := <-reads:
+			stop, err := s.consume(result.msg, result.err)
+			if stop {
+				return err
 			}
-			// A framing error desynchronises the stream, so there is no
-			// recovering from it.
+		}
+	}
+}
+
+// serveBlocking avoids a helper goroutine for readers that cannot be closed.
+// Cancellation remains observable between messages; an arbitrary io.Reader
+// cannot be interrupted safely while Read itself is blocked.
+func (s *Server) serveBlocking(ctx context.Context) error {
+	for {
+		if err := ctx.Err(); err != nil {
 			return err
 		}
-
-		if s.handle(msg) {
-			return nil
+		stop, err := s.consume(s.conn.read())
+		if stop {
+			return err
 		}
+	}
+}
+
+func (s *Server) consume(msg *message, err error) (stop bool, result error) {
+	switch {
+	case errors.Is(err, io.EOF):
+		return true, nil
+	case err != nil:
+		var pe *parseError
+		if errors.As(err, &pe) {
+			// A body that did not decode is answerable; the stream is still
+			// synchronised because the framing was correct.
+			_ = s.conn.replyError(nil, codeParse, "the request body is not valid JSON: "+pe.Error())
+			return false, nil
+		}
+		// A framing error desynchronises the stream, so there is no
+		// recovering from it.
+		return true, err
+	default:
+		return s.handle(msg), nil
 	}
 }
 
@@ -182,6 +254,9 @@ func (s *Server) handle(msg *message) (stop bool) {
 	case "textDocument/documentSymbol":
 		s.request(msg, s.documentSymbol)
 
+	case "textDocument/diagnostic":
+		s.request(msg, s.documentDiagnostic)
+
 	case "workspace/didChangeConfiguration":
 		s.didChangeConfiguration(msg.Params)
 
@@ -208,6 +283,9 @@ func (s *Server) request(msg *message, handler func(json.RawMessage) (any, error
 }
 
 func (s *Server) capabilities() map[string]any {
+	s.mu.RLock()
+	name, version := s.Name, s.Version
+	s.mu.RUnlock()
 	return map[string]any{
 		"capabilities": map[string]any{
 			// Full synchronisation: ISO 20022 messages are small, and rebuilding
@@ -227,8 +305,8 @@ func (s *Server) capabilities() map[string]any {
 			},
 		},
 		"serverInfo": map[string]any{
-			"name":    s.Name,
-			"version": s.Version,
+			"name":    name,
+			"version": version,
 		},
 	}
 }
@@ -308,15 +386,16 @@ func (s *Server) didChangeConfiguration(params json.RawMessage) {
 	if err := json.Unmarshal(params, &p); err != nil {
 		return
 	}
-	if p.Settings.AskISO.Profile == "" {
-		return
-	}
-	if _, err := iso20022.CheckProfile([]byte("<Document/>"), p.Settings.AskISO.Profile, ""); err != nil {
-		s.logf("ignoring unknown rule profile %q", p.Settings.AskISO.Profile)
-		return
+	if p.Settings.AskISO.Profile != "" {
+		if _, err := iso20022.CheckProfile([]byte("<Document/>"), p.Settings.AskISO.Profile, ""); err != nil {
+			s.logf("ignoring unknown rule profile %q", p.Settings.AskISO.Profile)
+			return
+		}
 	}
 
+	s.mu.Lock()
 	s.Profile = p.Settings.AskISO.Profile
+	s.mu.Unlock()
 
 	// The setting changes every verdict, so every open document is rechecked.
 	s.mu.RLock()
@@ -363,7 +442,10 @@ func (s *Server) schemaFor(doc *Document) (*xsd.Schema, string, bool) {
 	if err != nil {
 		return nil, "", false
 	}
-	cat, err := s.catalogue()
+	s.mu.RLock()
+	open := s.catalogue
+	s.mu.RUnlock()
+	cat, err := open()
 	if err != nil {
 		return nil, msgID, false
 	}
@@ -371,12 +453,37 @@ func (s *Server) schemaFor(doc *Document) (*xsd.Schema, string, bool) {
 	if err != nil {
 		return nil, msgID, false
 	}
+	s.mu.RLock()
+	cached := s.schemas[path]
+	s.mu.RUnlock()
+	if cached != nil {
+		return cached, msgID, true
+	}
 	schema, err := xsd.ParseFile(path)
 	if err != nil {
 		s.logf("parsing %s: %v", path, err)
 		return nil, msgID, false
 	}
+	s.mu.Lock()
+	s.schemas[path] = schema
+	s.mu.Unlock()
 	return schema, msgID, true
+}
+
+func (s *Server) documentDiagnostic(params json.RawMessage) (any, error) {
+	var p struct {
+		TextDocument struct {
+			URI string `json:"uri"`
+		} `json:"textDocument"`
+	}
+	if err := json.Unmarshal(params, &p); err != nil || p.TextDocument.URI == "" {
+		return nil, errors.New("textDocument.uri is required")
+	}
+	doc, ok := s.document(p.TextDocument.URI)
+	if !ok {
+		return nil, fmt.Errorf("document is not open: %s", p.TextDocument.URI)
+	}
+	return map[string]any{"kind": "full", "items": s.diagnose(doc)}, nil
 }
 
 // trimNamespace removes a namespace prefix from an element name.

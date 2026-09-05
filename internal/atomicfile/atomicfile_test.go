@@ -1,0 +1,100 @@
+// SPDX-FileCopyrightText: 2026 Sebastien Rousseau <sebastian.rousseau@gmail.com>
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+package atomicfile
+
+import (
+	"bytes"
+	"os"
+	"path/filepath"
+	"sync"
+	"testing"
+)
+
+func TestConcurrentReadersOnlyObserveCompletePublications(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "publication.json")
+	first := append([]byte(`{"generation":1,"payload":"`), bytes.Repeat([]byte("A"), 1<<16)...)
+	first = append(first, []byte(`"}`)...)
+	second := append([]byte(`{"generation":2,"payload":"`), bytes.Repeat([]byte("B"), 1<<16)...)
+	second = append(second, []byte(`"}`)...)
+	if err := Write(path, first, 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	const readers = 32
+	const writes = 100
+	stop := make(chan struct{})
+	errs := make(chan string, readers)
+	var wg sync.WaitGroup
+	for range readers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+				}
+				got, err := os.ReadFile(path)
+				if err != nil {
+					errs <- err.Error()
+					return
+				}
+				if !bytes.Equal(got, first) && !bytes.Equal(got, second) {
+					errs <- "reader observed a partial or mixed publication"
+					return
+				}
+			}
+		}()
+	}
+	for i := range writes {
+		data := first
+		if i%2 == 0 {
+			data = second
+		}
+		if err := Write(path, data, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	close(stop)
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		t.Error(err)
+	}
+
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := info.Mode().Perm(); got != 0o600 {
+		t.Fatalf("mode = %o, want 600", got)
+	}
+	matches, err := filepath.Glob(filepath.Join(dir, ".publication.json.tmp-*"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matches) != 0 {
+		t.Fatalf("temporary files remain: %v", matches)
+	}
+}
+
+func TestWriteFailureLeavesExistingDestinationIntact(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "publication")
+	if err := os.WriteFile(path, []byte("complete"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := Write(filepath.Join(dir, "missing", "publication"), []byte("replacement"), 0o600); err == nil {
+		t.Fatal("write below a missing directory succeeded")
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "complete" {
+		t.Fatalf("existing destination changed to %q", got)
+	}
+}

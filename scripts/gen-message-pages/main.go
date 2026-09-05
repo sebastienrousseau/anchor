@@ -21,6 +21,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -35,14 +36,23 @@ import (
 )
 
 func main() {
-	out := flag.String("out", "web/content/messages", "directory to write pages into")
-	date := flag.String("date", "2026-08-25", "publication date for the front matter")
-	flag.Parse()
+	os.Exit(mainExit(os.Args[1:], os.Stderr))
+}
+
+func mainExit(args []string, stderr io.Writer) int {
+	flags := flag.NewFlagSet("gen-message-pages", flag.ContinueOnError)
+	flags.SetOutput(stderr)
+	out := flags.String("out", "web/content/messages", "directory to write pages into")
+	date := flags.String("date", "2026-08-25", "publication date for the front matter")
+	if err := flags.Parse(args); err != nil {
+		return 2
+	}
 
 	if err := run(*out, *date); err != nil {
-		fmt.Fprintf(os.Stderr, "gen-message-pages: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(stderr, "gen-message-pages: %v\n", err)
+		return 1
 	}
+	return 0
 }
 
 func run(outDir, date string) error {

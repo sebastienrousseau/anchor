@@ -22,7 +22,12 @@ import (
 
 // Node is one element of an XML document, with its children in document order.
 type Node struct {
-	Name     string
+	Name  string
+	QName string
+	// Space is the resolved namespace URI. QName preserves the spelling used
+	// in the source; Space lets validators distinguish a real ISO element from
+	// a foreign element that happens to use the same local name.
+	Space    string
 	Attrs    []xml.Attr
 	Text     string
 	Children []*Node
@@ -43,6 +48,9 @@ func (e *ErrInterleaved) Error() string {
 
 // Parse reads an XML document into an ordered tree.
 func Parse(data []byte) (*Node, error) {
+	if err := validateXML(data); err != nil {
+		return nil, err
+	}
 	dec := xml.NewDecoder(bytes.NewReader(data))
 	dec.Strict = true
 	// encoding/xml never resolves external entities; this rejects internal ones
@@ -51,9 +59,10 @@ func Parse(data []byte) (*Node, error) {
 
 	var root *Node
 	var stack []*Node
+	var namespaces []*namespaceFrame
 
 	for {
-		tok, err := dec.Token()
+		tok, err := dec.RawToken()
 		if err == io.EOF {
 			break
 		}
@@ -67,15 +76,28 @@ func Parse(data []byte) (*Node, error) {
 			// a name AskISO accepts here is one it would have to emit later.
 			// Refusing it now is better than producing JSON that cannot be
 			// converted back.
-			if !validXMLName(t.Name.Local) {
-				return nil, fmt.Errorf("xml decode error: %q is not a valid XML element name", t.Name.Local)
+			qname := rawName(t.Name)
+			if !validXMLName(qname) {
+				return nil, fmt.Errorf("xml decode error: %q is not a valid XML element name", qname)
 			}
 			for _, a := range t.Attr {
-				if !validXMLName(a.Name.Local) {
-					return nil, fmt.Errorf("xml decode error: %q is not a valid XML attribute name", a.Name.Local)
+				if !validXMLName(rawName(a.Name)) {
+					return nil, fmt.Errorf("xml decode error: %q is not a valid XML attribute name", rawName(a.Name))
 				}
 			}
-			n := &Node{Name: t.Name.Local, Attrs: append([]xml.Attr(nil), t.Attr...)}
+			frame := &namespaceFrame{bindings: map[string]string{}}
+			if len(namespaces) > 0 {
+				frame.parent = namespaces[len(namespaces)-1]
+			}
+			for _, attr := range t.Attr {
+				switch {
+				case attr.Name.Space == "" && attr.Name.Local == "xmlns":
+					frame.bindings[""] = attr.Value
+				case attr.Name.Space == "xmlns":
+					frame.bindings[attr.Name.Local] = attr.Value
+				}
+			}
+			n := &Node{Name: t.Name.Local, QName: qname, Space: frame.resolve(t.Name.Space), Attrs: append([]xml.Attr(nil), t.Attr...)}
 			if len(stack) == 0 {
 				if root != nil {
 					return nil, fmt.Errorf("document has more than one root element")
@@ -86,11 +108,14 @@ func Parse(data []byte) (*Node, error) {
 				parent.Children = append(parent.Children, n)
 			}
 			stack = append(stack, n)
+			namespaces = append(namespaces, frame)
 
 		case xml.EndElement:
-			if len(stack) > 0 {
-				stack = stack[:len(stack)-1]
+			if len(stack) == 0 || stack[len(stack)-1].QName != rawName(t.Name) {
+				return nil, fmt.Errorf("xml decode error: unexpected closing element </%s>", rawName(t.Name))
 			}
+			stack = stack[:len(stack)-1]
+			namespaces = namespaces[:len(namespaces)-1]
 
 		case xml.CharData:
 			if len(stack) > 0 {
@@ -102,8 +127,67 @@ func Parse(data []byte) (*Node, error) {
 	if root == nil {
 		return nil, fmt.Errorf("document has no elements")
 	}
+	if len(stack) != 0 {
+		return nil, fmt.Errorf("xml decode error: unclosed element <%s>", stack[len(stack)-1].QName)
+	}
 	normalise(root)
 	return root, nil
+}
+
+type namespaceFrame struct {
+	parent   *namespaceFrame
+	bindings map[string]string
+}
+
+func (f *namespaceFrame) resolve(prefix string) string {
+	if prefix == "xml" {
+		return "http://www.w3.org/XML/1998/namespace"
+	}
+	for current := f; current != nil; current = current.parent {
+		if uri, ok := current.bindings[prefix]; ok {
+			return uri
+		}
+	}
+	return ""
+}
+
+func validateXML(data []byte) error {
+	dec := xml.NewDecoder(bytes.NewReader(data))
+	dec.Strict = true
+	dec.Entity = xml.HTMLEntity
+	for {
+		tok, err := dec.Token()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return fmt.Errorf("xml decode error: %w", err)
+		}
+		if start, ok := tok.(xml.StartElement); ok {
+			if !validXMLName(start.Name.Local) {
+				return fmt.Errorf("xml decode error: %q is not a valid XML element name", start.Name.Local)
+			}
+			for _, attr := range start.Attr {
+				if !validXMLName(attr.Name.Local) {
+					return fmt.Errorf("xml decode error: %q is not a valid XML attribute name", attr.Name.Local)
+				}
+			}
+		}
+	}
+}
+
+func rawName(name xml.Name) string {
+	if name.Space != "" {
+		return name.Space + ":" + name.Local
+	}
+	return name.Local
+}
+
+func nodeName(n *Node) string {
+	if n.QName != "" {
+		return n.QName
+	}
+	return n.Name
 }
 
 // normalise drops whitespace-only text. An element with children never carries a
@@ -132,7 +216,7 @@ func XMLToJSON(xmlData []byte) ([]byte, error) {
 
 	var buf bytes.Buffer
 	buf.WriteString("{\n")
-	if err := writeMember(&buf, root.Name, root, 1); err != nil {
+	if err := writeMember(&buf, nodeName(root), root, 1); err != nil {
 		return nil, err
 	}
 	buf.WriteString("\n}")
@@ -170,7 +254,7 @@ func writeNode(buf *bytes.Buffer, n *Node, depth int) error {
 		attr := a
 		if err := emit(func() error {
 			writeIndent(buf, depth+1)
-			buf.WriteString(quote("@" + attr.Name.Local))
+			buf.WriteString(quote("@" + rawName(attr.Name)))
 			buf.WriteString(": ")
 			buf.WriteString(quote(attr.Value))
 			return nil
@@ -201,14 +285,14 @@ func writeNode(buf *bytes.Buffer, n *Node, depth int) error {
 	// an array. A non-adjacent repeat cannot be represented and is an error.
 	seen := map[string]bool{}
 	for i := 0; i < len(n.Children); {
-		name := n.Children[i].Name
+		name := nodeName(n.Children[i])
 		if seen[name] {
 			return &ErrInterleaved{Parent: n.Name, Child: name}
 		}
 		seen[name] = true
 
 		j := i
-		for j < len(n.Children) && n.Children[j].Name == name {
+		for j < len(n.Children) && nodeName(n.Children[j]) == name {
 			j++
 		}
 		run := n.Children[i:j]
@@ -252,10 +336,7 @@ func writeIndent(buf *bytes.Buffer, depth int) {
 }
 
 func quote(s string) string {
-	b, err := json.Marshal(s)
-	if err != nil {
-		return strconv.Quote(s)
-	}
+	b, _ := json.Marshal(s) // encoding a string cannot fail
 	return string(b)
 }
 
@@ -271,6 +352,12 @@ func JSONToXML(jsonData []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("json unmarshal error: %w", err)
 	}
+	if tok, err := dec.Token(); err != io.EOF {
+		if err == nil {
+			return nil, fmt.Errorf("json unmarshal error: unexpected trailing token %v", tok)
+		}
+		return nil, fmt.Errorf("json unmarshal error: %w", err)
+	}
 
 	obj, ok := value.(*object)
 	if !ok {
@@ -278,6 +365,9 @@ func JSONToXML(jsonData []byte) ([]byte, error) {
 	}
 	if len(obj.keys) == 0 {
 		return nil, fmt.Errorf("json unmarshal error: document is empty")
+	}
+	if len(obj.keys) != 1 {
+		return nil, fmt.Errorf("json unmarshal error: document must contain exactly one root element")
 	}
 
 	// A key that is not a valid XML name would produce a document AskISO could
@@ -288,9 +378,7 @@ func JSONToXML(jsonData []byte) ([]byte, error) {
 
 	var buf bytes.Buffer
 	buf.WriteString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-	for i, k := range obj.keys {
-		writeXMLNode(&buf, k, obj.values[i], 0)
-	}
+	writeXMLNode(&buf, obj.keys[0], obj.values[0], 0)
 	return buf.Bytes(), nil
 }
 
@@ -486,8 +574,6 @@ func scalar(v any) string {
 
 func escapeText(s string) string {
 	var buf bytes.Buffer
-	if err := xml.EscapeText(&buf, []byte(s)); err != nil {
-		return s
-	}
+	_ = xml.EscapeText(&buf, []byte(s)) // bytes.Buffer writes cannot fail
 	return buf.String()
 }

@@ -59,7 +59,8 @@ var statsCmd = &cobra.Command{
 	Long: `Stats analyzes all ISO 20022 message definitions in the repository,
 providing a detailed breakdown by business domain, version density, and category totals.`,
 	Example: `  askiso stats
-  askiso stats --json`,
+	  askiso stats --json`,
+	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		domainCounts := make(map[string]int)
 		var totalCategories int

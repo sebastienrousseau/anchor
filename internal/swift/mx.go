@@ -4,7 +4,10 @@
 package swift
 
 import (
+	"bytes"
+	"encoding/xml"
 	"fmt"
+	"io"
 	"regexp"
 	"strings"
 
@@ -67,13 +70,24 @@ func SupportedMX() []string {
 	return []string{"pain.001", "pacs.008", "pain.008", "pacs.009", "pacs.010", "camt.053"}
 }
 
-var mxNamespace = regexp.MustCompile(`urn:iso:std:iso:20022:tech:xsd:([a-z]{4}\.\d{3}\.\d{3}\.\d{2})`)
+var mxNamespace = regexp.MustCompile(`^urn:iso:std:iso:20022:tech:xsd:([a-z]{4}\.\d{3}\.\d{3}\.\d{2})$`)
 
 func messageIDOf(document []byte) string {
-	if m := mxNamespace.FindSubmatch(document); m != nil {
-		return string(m[1])
+	dec := xml.NewDecoder(bytes.NewReader(document))
+	for {
+		tok, err := dec.Token()
+		if err == io.EOF {
+			return ""
+		}
+		if err != nil {
+			return ""
+		}
+		if start, ok := tok.(xml.StartElement); ok && start.Name.Local == "Document" {
+			if m := mxNamespace.FindStringSubmatch(start.Name.Space); m != nil {
+				return m[1]
+			}
+		}
 	}
-	return ""
 }
 
 func baseOf(msgID string) string {

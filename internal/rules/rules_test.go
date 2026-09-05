@@ -418,14 +418,54 @@ func TestRunOnMessageWithNoAddresses(t *testing.T) {
 	}
 }
 
-func TestProfilesWithNoRules(t *testing.T) {
+func TestBaseProfileRunsStructuralRules(t *testing.T) {
 	p, err := rules.Get("base")
 	if err != nil {
 		t.Fatal(err)
 	}
 	res := rules.Run(p, message(t, "pacs.008.001.10", `<A/>`), "pacs.008.001.10", "x.xml")
-	if !res.Valid() || len(res.Findings) != 0 {
-		t.Errorf("an empty profile should report nothing: %+v", res)
+	if !res.Valid() || len(res.Findings) != 0 || res.Checked != 2 {
+		t.Errorf("a valid message should pass both base rules: %+v", res)
+	}
+}
+
+func TestBaseProfileReportsMissingAndEmptyDocument(t *testing.T) {
+	p, err := rules.Get("base")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, doc := range map[string]string{
+		"no document":    `<Envelope><Payload/></Envelope>`,
+		"empty document": `<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.10"></Document>`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			root, err := converter.Parse([]byte(doc))
+			if err != nil {
+				t.Fatal(err)
+			}
+			res := rules.Run(p, root, "pacs.008.001.10", "x.xml")
+			if res.Valid() || len(res.Findings) == 0 {
+				t.Errorf("invalid structure should be reported: %+v", res)
+			}
+		})
+	}
+
+	root, err := converter.Parse([]byte(`<Envelope><Document><Business/></Document></Envelope>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res := rules.Run(p, root, "pacs.008.001.10", "x.xml"); !res.Valid() {
+		t.Errorf("a nested nonempty Document should pass the content rule: %+v", res)
+	}
+}
+
+func TestAddressRulesSkipNonPaymentDomains(t *testing.T) {
+	body := `<PstlAdr><AdrLine>12 High Street</AdrLine></PstlAdr>`
+	for _, msgID := range []string{"seev.031.001.09", "sese.023.001.12", "caaa.001.001.11"} {
+		res := check(t, msgID, body)
+		if !res.Valid() || res.Skipped != len(rules.AddressRules) {
+			t.Errorf("%s should be out of scope: %+v", msgID, res)
+		}
 	}
 }
 
@@ -434,14 +474,17 @@ func TestCBPRPlusProfile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	root := message(t, "pacs.008.001.10",
+	root := message(t, "pacs.008.001.08",
 		`<Dbtr><PstlAdr><TwnNm>X</TwnNm><Ctry>France</Ctry></PstlAdr></Dbtr>`)
-	res := rules.Run(p, root, "pacs.008.001.10", "x.xml")
+	res := rules.Run(p, root, "pacs.008.001.08", "x.xml")
 	if res.Valid() {
 		t.Error("the country-code rule applies today, not only from 2026")
 	}
 	// The unstructured-address rule is not in this profile.
 	if hasRule(res, "CBPR-ADDR-002") {
 		t.Error("cbpr-plus should not enforce the 2026 address shape")
+	}
+	if !hasRule(res, "CBPR-CTRY-001") {
+		t.Error("the live CBPR+ country-code rule did not run")
 	}
 }

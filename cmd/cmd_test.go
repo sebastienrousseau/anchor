@@ -17,7 +17,7 @@ func TestRootCommands(t *testing.T) {
 		t.Errorf("expected command name 'askiso', got '%s'", RootCmd.Use)
 	}
 
-	subCmds := []string{"search", "ask", "info", "list", "validate", "version", "generate", "translate", "diff", "sample", "schema", "lint", "completion", "flow", "doctor", "format", "code", "convert", "graph", "mock", "stats"}
+	subCmds := []string{"search", "ask", "info", "list", "validate", "version", "generate", "translate", "diff", "sample", "schema", "lint", "completion", "flow", "doctor", "format", "code", "convert", "graph", "mock", "stats", "cbpr-pack"}
 	for _, expected := range subCmds {
 		found := false
 		for _, c := range RootCmd.Commands() {

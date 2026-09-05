@@ -154,6 +154,9 @@ func ImportArchive(archivePath string, opt Options) (*Result, error) {
 	if opt.Root == "" {
 		return nil, errors.New("importer: Root is required")
 	}
+	if err := validateLimits(opt.Limits); err != nil {
+		return nil, err
+	}
 
 	res := &Result{Source: archivePath, Categories: map[string]bool{}}
 	cnt := &counter{}
@@ -173,13 +176,44 @@ func ImportArchive(archivePath string, opt Options) (*Result, error) {
 		version = versionFromArchiveName(archivePath)
 	}
 
-	if err := walkZip(&zr.Reader, category, version, opt, res, cnt, 0); err != nil {
+	walkOpt := opt
+	var staging string
+	if !opt.DryRun {
+		absRoot, err := filepath.Abs(opt.Root)
+		if err != nil {
+			return nil, fmt.Errorf("resolving catalogue root: %w", err)
+		}
+		if err := os.MkdirAll(filepath.Dir(absRoot), 0o755); err != nil {
+			return nil, fmt.Errorf("creating catalogue parent: %w", err)
+		}
+		staging, err = os.MkdirTemp(filepath.Dir(absRoot), ".askiso-import-")
+		if err != nil {
+			return nil, fmt.Errorf("creating import staging directory: %w", err)
+		}
+		defer func() { _ = os.RemoveAll(staging) }()
+		walkOpt.Root = staging
+	}
+
+	if err := walkZip(&zr.Reader, category, version, walkOpt, res, cnt, 0); err != nil {
 		return res, err
 	}
 	if res.Schemas+res.Samples+res.Reports+res.Guidelines+res.Docs == 0 {
 		return res, fmt.Errorf("%s: %w", filepath.Base(archivePath), ErrNoContent)
 	}
+	if !opt.DryRun {
+		if err := commitStaging(staging, opt.Root); err != nil {
+			res.BytesWritten = 0
+			return res, err
+		}
+	}
 	return res, nil
+}
+
+func validateLimits(lim Limits) error {
+	if lim.MaxFiles <= 0 || lim.MaxTotalSize <= 0 || lim.MaxFileSize <= 0 || lim.MaxDepth < 0 || lim.MaxRatio <= 0 {
+		return errors.New("importer: every size, file, and ratio limit must be positive")
+	}
+	return nil
 }
 
 func walkZip(zr *zip.Reader, category, version string, opt Options, res *Result, cnt *counter, depth int) error {
@@ -225,16 +259,22 @@ func walkZip(zr *zip.Reader, category, version string, opt Options, res *Result,
 		}
 		res.Categories[category] = true
 
+		var n int64
+		var err error
+		if opt.DryRun {
+			n, err = inspectEntry(f, opt.Limits)
+		} else {
+			n, err = extract(f, opt.Root, filepath.Join(opt.Root, t.Path()), opt.Limits)
+		}
+		if err != nil {
+			return err
+		}
+		if n > opt.Limits.MaxTotalSize-cnt.bytes {
+			return fmt.Errorf("import exceeded %d bytes", opt.Limits.MaxTotalSize)
+		}
+		cnt.bytes += n
 		if !opt.DryRun {
-			n, err := extract(f, opt.Root, filepath.Join(opt.Root, t.Path()), opt.Limits)
-			if err != nil {
-				return err
-			}
-			cnt.bytes += n
 			res.BytesWritten += n
-			if cnt.bytes > opt.Limits.MaxTotalSize {
-				return fmt.Errorf("import exceeded %d bytes", opt.Limits.MaxTotalSize)
-			}
 		}
 
 		switch class {
@@ -311,12 +351,14 @@ func withinRoot(root, dest string) error {
 }
 
 func checkEntry(f *zip.File, lim Limits) error {
-	if int64(f.UncompressedSize64) > lim.MaxFileSize {
+	// validateLimits rejects non-positive limits before this path is reached;
+	// the checked conversion is therefore bounded by the int64 field domain.
+	if f.UncompressedSize64 > uint64(lim.MaxFileSize) { // #nosec G115 -- validated positive int64 limit
 		return fmt.Errorf("entry is %d bytes, over the %d limit", f.UncompressedSize64, lim.MaxFileSize)
 	}
 	if f.CompressedSize64 > 0 {
-		ratio := int64(f.UncompressedSize64 / f.CompressedSize64)
-		if ratio > lim.MaxRatio {
+		ratio := f.UncompressedSize64 / f.CompressedSize64
+		if ratio > uint64(lim.MaxRatio) { // #nosec G115 -- validated positive int64 limit
 			return fmt.Errorf("compression ratio %d:1 exceeds %d:1", ratio, lim.MaxRatio)
 		}
 	}
@@ -337,19 +379,150 @@ func extract(f *zip.File, root, dest string, lim Limits) (int64, error) {
 	}
 	defer func() { _ = rc.Close() }()
 
-	out, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o644)
+	out, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
 	if err != nil {
 		return 0, fmt.Errorf("creating %s: %w", dest, err)
 	}
-	// The copy below is the operation whose failure matters; a close error on a
-	// file that already wrote its bytes adds nothing.
-	defer func() { _ = out.Close() }()
-
-	n, err := io.Copy(out, io.LimitReader(rc, lim.MaxFileSize))
+	n, err := io.Copy(out, io.LimitReader(rc, lim.MaxFileSize+1))
 	if err != nil {
+		_ = out.Close()
+		_ = os.Remove(dest)
 		return n, fmt.Errorf("writing %s: %w", dest, err)
 	}
+	if n > lim.MaxFileSize {
+		_ = out.Close()
+		_ = os.Remove(dest)
+		return n, fmt.Errorf("%s expands beyond the %d byte limit", f.Name, lim.MaxFileSize)
+	}
+	if err := out.Close(); err != nil {
+		_ = os.Remove(dest)
+		return n, fmt.Errorf("closing %s: %w", dest, err)
+	}
 	return n, nil
+}
+
+func inspectEntry(f *zip.File, lim Limits) (int64, error) {
+	rc, err := f.Open()
+	if err != nil {
+		return 0, fmt.Errorf("opening %s: %w", f.Name, err)
+	}
+	n, copyErr := io.Copy(io.Discard, io.LimitReader(rc, lim.MaxFileSize+1))
+	closeErr := rc.Close()
+	if copyErr != nil {
+		return n, fmt.Errorf("reading %s: %w", f.Name, copyErr)
+	}
+	if n > lim.MaxFileSize {
+		return n, fmt.Errorf("%s expands beyond the %d byte limit", f.Name, lim.MaxFileSize)
+	}
+	if closeErr != nil {
+		return n, fmt.Errorf("closing %s: %w", f.Name, closeErr)
+	}
+	return n, nil
+}
+
+// commitStaging copies a fully verified import into the catalogue. Destinations
+// are created exclusively, and every created file is removed if any later
+// commit step fails.
+func commitStaging(staging, root string) error {
+	var files []string
+	if err := filepath.WalkDir(staging, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.Type().IsRegular() {
+			files = append(files, path)
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("reading staged import: %w", err)
+	}
+	sort.Strings(files)
+
+	created := make([]string, 0, len(files))
+	rollback := func() {
+		for i := len(created) - 1; i >= 0; i-- {
+			_ = os.Remove(created[i])
+		}
+	}
+	for _, source := range files {
+		rel, err := filepath.Rel(staging, source)
+		if err != nil {
+			rollback()
+			return err
+		}
+		dest := filepath.Join(root, rel)
+		if err := prepareDestination(root, dest); err != nil {
+			rollback()
+			return err
+		}
+		if err := copyFileExclusive(source, dest); err != nil {
+			rollback()
+			return err
+		}
+		created = append(created, dest)
+	}
+	return nil
+}
+
+func prepareDestination(root, dest string) error {
+	if err := withinRoot(root, dest); err != nil {
+		return err
+	}
+	rel, err := filepath.Rel(root, filepath.Dir(dest))
+	if err != nil {
+		return err
+	}
+	current := root
+	if err := os.MkdirAll(current, 0o755); err != nil {
+		return fmt.Errorf("creating catalogue root: %w", err)
+	}
+	for _, part := range strings.Split(rel, string(filepath.Separator)) {
+		if part == "" || part == "." {
+			continue
+		}
+		current = filepath.Join(current, part)
+		info, err := os.Lstat(current)
+		switch {
+		case err == nil && info.Mode()&os.ModeSymlink != 0:
+			return fmt.Errorf("refusing to import through symlink %s", current)
+		case err == nil && !info.IsDir():
+			return fmt.Errorf("catalogue path %s is not a directory", current)
+		case errors.Is(err, os.ErrNotExist):
+			if err := os.Mkdir(current, 0o755); err != nil && !errors.Is(err, os.ErrExist) {
+				return fmt.Errorf("creating %s: %w", current, err)
+			}
+		case err != nil:
+			return err
+		}
+	}
+	if _, err := os.Lstat(dest); err == nil {
+		return fmt.Errorf("refusing to overwrite existing catalogue file %s", dest)
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	return nil
+}
+
+func copyFileExclusive(source, dest string) error {
+	in, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = in.Close() }()
+	out, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		return fmt.Errorf("creating %s: %w", dest, err)
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		_ = out.Close()
+		_ = os.Remove(dest)
+		return fmt.Errorf("committing %s: %w", dest, err)
+	}
+	if err := out.Close(); err != nil {
+		_ = os.Remove(dest)
+		return fmt.Errorf("closing %s: %w", dest, err)
+	}
+	return nil
 }
 
 // ImportDir imports every zip in a directory, or a directory that is already

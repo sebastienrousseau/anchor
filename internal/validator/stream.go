@@ -10,6 +10,7 @@ import (
 	"io"
 	"sort"
 
+	"github.com/sebastienrousseau/askiso/internal/codes"
 	"github.com/sebastienrousseau/askiso/internal/xsd"
 )
 
@@ -45,8 +46,14 @@ const StreamDepth = 2
 // element below StreamDepth, so a statement with a million entries costs the
 // same as one with ten.
 func ValidateReader(r io.Reader, schema *xsd.Schema) *Result {
+	return ValidateReaderWithExternalSets(r, schema, nil)
+}
+
+// ValidateReaderWithExternalSets is the bounded-memory validator with locally
+// imported Registration Authority code-set enforcement enabled.
+func ValidateReaderWithExternalSets(r io.Reader, schema *xsd.Schema, external *codes.ExternalSets) *Result {
 	res := &Result{Valid: true}
-	v := &validation{schema: schema, res: res}
+	v := &validation{schema: schema, res: res, external: external}
 
 	root, err := streamParse(r, schema, v)
 	if err != nil {

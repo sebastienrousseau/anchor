@@ -37,8 +37,11 @@ type Server struct {
 	Name    string
 	Version string
 
-	in  io.Reader
-	out io.Writer
+	in io.Reader
+	// inCloser is present when Serve can interrupt a blocked transport read.
+	// New transfers ownership of an io.ReadCloser to Serve.
+	inCloser io.Closer
+	out      io.Writer
 	// errOut receives diagnostics. It must never be the same stream as out.
 	errOut io.Writer
 
@@ -46,12 +49,14 @@ type Server struct {
 	byName map[string]Tool
 	// catalogue opens the user's installed schemas. SetCatalogue replaces it.
 	catalogue CatalogueFunc
+	mu        sync.RWMutex
 	writeMu   sync.Mutex
 
-	// initialized records that the handshake completed. Tool calls before it
-	// are refused, because a client that has not negotiated has not agreed to
-	// anything.
-	initialized bool
+	// initializeReceived and initialized distinguish the initialize response
+	// from the client's subsequent notifications/initialized boundary. MCP does
+	// not enter its operation phase until both have occurred.
+	initializeReceived bool
+	initialized        bool
 }
 
 // New builds a server reading requests from in and writing replies to out.
@@ -65,6 +70,9 @@ func New(in io.Reader, out, errOut io.Writer) *Server {
 		errOut:  errOut,
 		byName:  map[string]Tool{},
 	}
+	if closer, ok := in.(io.Closer); ok {
+		s.inCloser = closer
+	}
 	s.catalogue = openInstalledCatalogue()
 	s.register(defaultTools(s.catalogue)...)
 	return s
@@ -76,20 +84,30 @@ func (s *Server) SetCatalogue(open CatalogueFunc) {
 	if open == nil {
 		return
 	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.catalogue = open
 	s.tools = nil
 	s.byName = map[string]Tool{}
-	s.register(defaultTools(open)...)
+	s.registerLocked(defaultTools(open)...)
 }
 
 // SetVersion records the build version reported during the handshake.
 func (s *Server) SetVersion(v string) {
 	if v != "" {
+		s.mu.Lock()
+		defer s.mu.Unlock()
 		s.Version = v
 	}
 }
 
 func (s *Server) register(tools ...Tool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.registerLocked(tools...)
+}
+
+func (s *Server) registerLocked(tools ...Tool) {
 	for _, t := range tools {
 		if _, dup := s.byName[t.Name]; dup {
 			continue
@@ -99,8 +117,46 @@ func (s *Server) register(tools ...Tool) {
 	}
 }
 
-// Tools lists the registered tools in declaration order.
-func (s *Server) Tools() []Tool { return s.tools }
+// Tools lists the registered tools in declaration order. The returned slice is
+// detached so callers cannot mutate the registry through slice aliasing.
+func (s *Server) Tools() []Tool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]Tool, len(s.tools))
+	for i, tool := range s.tools {
+		out[i] = tool
+		out[i].Schema = cloneJSONObject(tool.Schema)
+	}
+	return out
+}
+
+func cloneJSONObject(in map[string]any) map[string]any {
+	if in == nil {
+		return nil
+	}
+	out := make(map[string]any, len(in))
+	for key, value := range in {
+		out[key] = cloneJSONValue(value)
+	}
+	return out
+}
+
+func cloneJSONValue(value any) any {
+	switch value := value.(type) {
+	case map[string]any:
+		return cloneJSONObject(value)
+	case []any:
+		out := make([]any, len(value))
+		for i := range value {
+			out[i] = cloneJSONValue(value[i])
+		}
+		return out
+	case []string:
+		return append([]string(nil), value...)
+	default:
+		return value
+	}
+}
 
 // ---------------------------------------------------------------------------
 // JSON-RPC framing
@@ -141,30 +197,76 @@ const maxLine = 8 << 20 // 8 MiB
 
 // Serve reads requests until the input ends or the context is cancelled.
 func (s *Server) Serve(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	scanner := bufio.NewScanner(s.in)
 	scanner.Buffer(make([]byte, 0, 64<<10), maxLine)
+	if s.inCloser == nil {
+		return s.serveBlocking(ctx, scanner)
+	}
 
-	for scanner.Scan() {
+	lines := make(chan []byte)
+	done := make(chan error, 1)
+	readerDone := make(chan struct{})
+	stopReader := make(chan struct{})
+	go func() {
+		defer close(readerDone)
+		for scanner.Scan() {
+			line := append([]byte(nil), scanner.Bytes()...)
+			select {
+			case lines <- line:
+			case <-ctx.Done():
+				done <- ctx.Err()
+				return
+			case <-stopReader:
+				return
+			}
+		}
+		done <- scanner.Err()
+	}()
+	defer func() {
+		close(stopReader)
+		_ = s.inCloser.Close()
+		<-readerDone
+	}()
+
+	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		default:
+		case err := <-done:
+			return scannerResult(err)
+		case line := <-lines:
+			if len(trimSpace(line)) == 0 {
+				continue
+			}
+			s.handleLine(ctx, line)
 		}
+	}
+}
 
+// serveBlocking performs no asynchronous read for a reader that cannot be
+// closed. That preserves the zero-leak guarantee; cancellation is checked
+// between records because io.Reader provides no general interruption contract.
+func (s *Server) serveBlocking(ctx context.Context, scanner *bufio.Scanner) error {
+	for scanner.Scan() {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		line := scanner.Bytes()
-		if len(trimSpace(line)) == 0 {
-			continue
+		if len(trimSpace(line)) != 0 {
+			s.handleLine(ctx, line)
 		}
-		s.handleLine(ctx, line)
 	}
+	return scannerResult(scanner.Err())
+}
 
-	if err := scanner.Err(); err != nil {
-		if errors.Is(err, bufio.ErrTooLong) {
-			return fmt.Errorf("a request exceeded the %d-byte limit", maxLine)
-		}
-		return err
+func scannerResult(err error) error {
+	if errors.Is(err, bufio.ErrTooLong) {
+		return fmt.Errorf("a request exceeded the %d-byte limit", maxLine)
 	}
-	return nil
+	return err
 }
 
 func trimSpace(b []byte) []byte {
@@ -215,20 +317,22 @@ func (s *Server) dispatch(ctx context.Context, req request) (any, *rpcError) {
 		return s.initialize(req.Params)
 
 	case "notifications/initialized", "initialized":
-		s.initialized = true
+		if !s.completeInitialization() {
+			return nil, &rpcError{Code: codeInvalidRequest, Message: "initialize must complete first"}
+		}
 		return map[string]any{}, nil
 
 	case "ping":
 		return map[string]any{}, nil
 
 	case "tools/list":
-		if !s.initialized {
+		if !s.isInitialized() {
 			return nil, &rpcError{Code: codeInvalidRequest, Message: "initialize must complete first"}
 		}
 		return map[string]any{"tools": s.toolDescriptors()}, nil
 
 	case "tools/call":
-		if !s.initialized {
+		if !s.isInitialized() {
 			return nil, &rpcError{Code: codeInvalidRequest, Message: "initialize must complete first"}
 		}
 		return s.callTool(ctx, req.Params)
@@ -252,18 +356,38 @@ func (s *Server) initialize(params json.RawMessage) (any, *rpcError) {
 		_ = json.Unmarshal(params, &p)
 	}
 
-	s.initialized = true
+	s.mu.Lock()
+	s.initializeReceived = true
+	s.initialized = false
+	name, version := s.Name, s.Version
+	s.mu.Unlock()
 	return map[string]any{
 		"protocolVersion": ProtocolVersion,
 		"capabilities": map[string]any{
 			"tools": map[string]any{"listChanged": false},
 		},
 		"serverInfo": map[string]any{
-			"name":    s.Name,
-			"version": s.Version,
+			"name":    name,
+			"version": version,
 		},
 		"instructions": instructions,
 	}, nil
+}
+
+func (s *Server) completeInitialization() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.initializeReceived {
+		return false
+	}
+	s.initialized = true
+	return true
+}
+
+func (s *Server) isInitialized() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.initialized
 }
 
 const instructions = `AskISO answers questions about ISO 20022 from the specification rather than from memory.

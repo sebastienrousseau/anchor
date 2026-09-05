@@ -202,7 +202,7 @@ func TestParseValueDateAmount(t *testing.T) {
 }
 
 func TestParseValueDateAmountRejects(t *testing.T) {
-	for _, raw := range []string{"", "not a field", "260824EU25000,00", "261324EUR1,00", "260832EUR1,00", "260824EUR,"} {
+	for _, raw := range []string{"", "not a field", "260824EU25000,00", "261324EUR1,00", "260832EUR1,00", "260231EUR1,00", "260824EUR,", "260824EUR1,2,3"} {
 		if _, err := ParseValueDateAmount(raw); err == nil {
 			t.Errorf("ParseValueDateAmount(%q) accepted an invalid field", raw)
 		}
@@ -223,7 +223,7 @@ func TestParseCurrencyAmount(t *testing.T) {
 	if got.Currency != "GBP" || got.Amount != "21000.00" {
 		t.Errorf("got %+v", got)
 	}
-	for _, raw := range []string{"", "21000,00", "GBP", "GBP,"} {
+	for _, raw := range []string{"", "21000,00", "GBP", "GBP,", "GBP1,2,3"} {
 		if _, err := ParseCurrencyAmount(raw); err == nil {
 			t.Errorf("ParseCurrencyAmount(%q) accepted an invalid field", raw)
 		}
@@ -297,5 +297,19 @@ func TestParseTruncatedBasicHeader(t *testing.T) {
 	}
 	if m.Sender != "BANKGB2LXXX" {
 		t.Errorf("Sender = %q, want BANKGB2LXXX", m.Sender)
+	}
+}
+
+func TestParsePreservesTrailingHyphensInFieldValues(t *testing.T) {
+	raw := "{1:F01BANKGB2LAXXX0000000000}{2:I103BANKDEFFXXXXN}{4:\n:20:-\n:70:INVOICE-\n:71A:SHA-\n-}"
+	m, err := Parse([]byte(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, want := range map[string]string{"20": "-", "70": "INVOICE-", "71A": "SHA-"} {
+		field, ok := m.GetExact(name)
+		if !ok || field.Value != want {
+			t.Errorf("field %s = %q, %v; want %q", name, field.Value, ok, want)
+		}
 	}
 }

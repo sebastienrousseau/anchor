@@ -14,7 +14,7 @@ var profiles = map[string]Profile{
 	"base": {
 		Name:        "base",
 		Description: "Structural sanity checks that apply to any ISO 20022 message.",
-		Rules:       nil,
+		Rules:       BaseRules,
 	},
 	"cbpr-2026": {
 		Name: "cbpr-2026",
@@ -25,8 +25,8 @@ var profiles = map[string]Profile{
 	},
 	"cbpr-plus": {
 		Name:        "cbpr-plus",
-		Description: "CBPR+ requirements in force today.",
-		Rules:       []Rule{CountryCodeFormat},
+		Description: "The live CBPR+ SR2025 message set: Usage Identifier dispatch, Business Application Header consistency, formal cross-message rules, address shapes, totals, UETRs and pacs.009 variants.",
+		Rules:       append(append([]Rule{}, BaseRules...), CBPRRules...),
 	},
 	"cbpr-2027": {
 		Name: "cbpr-2027",
@@ -49,10 +49,9 @@ var profiles = map[string]Profile{
 		Rules: VerificationRules,
 	},
 	"all": {
-		Name: "all",
-		Description: "Every rule AskISO knows. Findings from dates that have not " +
-			"arrived yet are warnings, so this is usable as a readiness report.",
-		Rules: allRules(),
+		Name:        "all",
+		Description: "Every rule AskISO implements. Select a dated profile when future-rule severity must be interpreted separately.",
+		Rules:       allRules(),
 	},
 }
 
@@ -62,8 +61,9 @@ func allRules() []Rule {
 	var out []Rule
 	seen := map[string]bool{}
 	for _, pack := range [][]Rule{
+		BaseRules,
+		CBPRRules,
 		AddressRules,
-		{CountryCodeFormat},
 		EnhancedRules,
 		InvestigationRules,
 		VerificationRules,
